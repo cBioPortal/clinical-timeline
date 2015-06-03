@@ -1,0 +1,134 @@
+<!doctype html>
+<html>
+<head>
+  <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+  <script src="js/lib/jquery.dataTables.min.js"></script>
+  <script src="js/lib/jquery.qtip.min.js"></script>
+  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script src="js/lib/d3-timeline.js"></script>
+  <link href="css/lib/jquery.qtip.min.css" type="text/css" rel="stylesheet"></link>
+  <link href="css/lib/dataTables.tableTools.min.css" type="text/css" rel="stylesheet"></link>
+  <style type="text/css">
+    .axis path,
+    .axis line {
+      fill: none;
+      stroke: black;
+      shape-rendering: crispEdges;
+    }
+
+    .axis text {
+      font-family: sans-serif;
+      font-size: 10px;
+    }
+
+    .timeline-label {
+      font-family: sans-serif;
+      font-size: 12px;
+    }
+
+    body {
+      text-align: center;
+    }
+    #jsonInput {
+      width: 500px;
+      height: 500px;
+    }
+  </style>
+  <script>
+    window.onload = function() {
+      $("#jsonInput").val(JSON.stringify(testDataRelativeDays, null, '    '));
+      timelineRelativeDays();
+      $("#parseJson").on("click", timelineRelativeDays);
+    }
+    var testDataRelativeDays = [
+      {label:"surgery", times:[{"starting_time": 1, "ending_time": 2}, {"starting_time": 2, "ending_time": 3}]},
+      {label:"diagnosis", times: [{"starting_time": 3, "ending_time": 4}]},
+      {label:"status", times: [{"starting_time": 9, "ending_time": 9,
+          "display":"circle"}]},
+    ];
+    function createDataTable(elem) {
+      var d = elem.prop("__data__");
+      var attributes = [];
+      for (k in d) {
+        attributes.push([k, d[k]]);
+      };
+      dataTable = {
+                      "dom": 'C<"clear">lfrtip',
+                      "sDom": 't',
+                      "bJQueryUI": true,
+                      "bDestroy": true,
+                      "aaData": attributes,
+                      "aoColumnDefs": [
+                          {
+                              "aTargets": [ 0 ],
+                              "sClass": "left-align-td",
+                              "mRender": function ( data, type, full ) {
+                                  return '<b>'+data+'</b>';
+                              }
+                          },
+                          {
+                              "aTargets": [ 1 ],
+                              "sClass": "left-align-td",
+                              "bSortable": false
+                          }
+                      ],
+                      "aaSorting": [[0,'asc']],
+                      "oLanguage": {
+                          "sInfo": "&nbsp;&nbsp;(_START_ to _END_ of _TOTAL_)&nbsp;&nbsp;",
+                          "sInfoFiltered": "",
+                          "sLengthMenu": "Show _MENU_ per page"
+                      },
+                      "iDisplayLength": -1
+                  };
+      return dataTable;
+    }
+    function addToolTip(elem) {
+         elem.qtip({
+                content: {
+                    text: "table"
+                },
+                events: {
+                    render: function(event, api) {
+                        $(this).html("<table style='background-color: white;'></table>");
+                        $(this).find("table").dataTable(createDataTable(elem));
+                    }
+                },
+                show: {event: "mouseover"},
+                hide: {fixed: true, delay: 0, event: "mouseout"},
+                style: { classes: 'qtip-light qtip-rounded qtip-wide' },
+                position: {my:'top middle',at:'bottom middle',viewport: $(window)},
+            }); 
+    }
+    function timelineRelativeDays() {
+      var chart = d3.timeline()
+        .relativeTime()
+        .stack()
+        .margin({left:70, right:30, top:0, bottom:0})
+        .tickFormat({
+          format: function(d) { return d3.time.format("%_d d")(d3.time.day.offset(new Date("2000-01-02"), d.valueOf()))},
+          tickInterval: 1,
+          tickSize: 15,
+      });
+
+      var width = 500;
+      $("#timelineRelativeDays").html("");
+      var svg = d3.select("#timelineRelativeDays").append("svg").attr("width", width)
+        .datum(JSON.parse($("#jsonInput").val())).call(chart);
+
+      $("[id^='timelineItem']").each(function() {
+        addToolTip($(this)); 
+      });
+    }
+  </script>
+</head>
+<body>
+  <div>
+    <h3>clinical timeline</h3>
+    <div width="100%" id="timelineRelativeDays"></div>
+    <h4>data</h4>
+    <button id="parseJson">Parse JSON</button><br />
+    <textarea id="jsonInput">
+    </textarea>
+  </div>
+</body>
+</html>
