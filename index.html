@@ -35,16 +35,23 @@
     }
   </style>
   <script>
+    var allData;
+
     window.onload = function() {
       $("#jsonInput").val(JSON.stringify(testDataRelativeDays, null, '    '));
-      timelineRelativeDays();
-      $("#parseJson").on("click", timelineRelativeDays);
+      $("#parseJson").on("click", function() {
+        allData = JSON.parse($("#jsonInput").val())
+        timelineRelativeDays(allData);
+      });
+      $("#parseJson").click();
     }
     var testDataRelativeDays = [
-      {label:"surgery", times:[{"starting_time": 1, "ending_time": 2}, {"starting_time": 2, "ending_time": 3}]},
-      {label:"diagnosis", times: [{"starting_time": 3, "ending_time": 4}]},
+      {label:"surgery", times:[{"starting_time": 1, "ending_time": 2},
+          {"starting_time": 2, "ending_time": 3}],visible:true},
+      {label:"diagnosis", times: [{"starting_time": 3, "ending_time":
+              4}],visible:true},
       {label:"status", times: [{"starting_time": 9, "ending_time": 9,
-          "display":"circle"}]},
+          "display":"circle"}],visible:true},
     ];
     function createDataTable(elem) {
       var d = elem.prop("__data__");
@@ -82,7 +89,7 @@
                   };
       return dataTable;
     }
-    function addToolTip(elem) {
+    function addDataPointToolTip(elem) {
          elem.qtip({
                 content: {
                     text: "table"
@@ -99,7 +106,75 @@
                 position: {my:'top middle',at:'bottom middle',viewport: $(window)},
             }); 
     }
-    function timelineRelativeDays() {
+    function toggleTrackVisibility(trackName) {
+       $.each(allData, function(i, x) {
+         if (x.label == trackName) {
+            x.visible = x.visible? false : true;
+         }
+       });
+       timelineRelativeDays(allData);
+    }
+    function addNewTrackTooltip(elem) {
+        elem.qtip({
+                content: {
+                    text: 'addtrack'
+                },
+                events: {
+                    render: function(event, api) {
+                        invisibleTracks = allData.filter(function (x) {
+                          return !x.visible
+                        });
+                        if (invisibleTracks.length == 0) {
+                            $(this).html("All tracks shown");
+                        }
+                        else {
+                            var trackAnchors = "";
+                            for (var i=0; i<invisibleTracks.length; i++) {
+                                trackAnchors +=
+                                    "<a href='#' class='show-track'>"+invisibleTracks[i].label+"</a><br />";
+                            }
+                            $(this).html(trackAnchors);
+                            $('.show-track').each(function () {
+                                $(this).on("click", function() {
+                                    toggleTrackVisibility($(this).prop("innerHTML"));
+                                });
+                            });
+                        }
+                    }
+                },
+                show: {event: "mouseover"},
+                hide: {fixed: true, delay: 0, event: "mouseout"},
+                style: { classes: 'qtip-light qtip-rounded qtip-wide' },
+                position: {my:'top middle',at:'top middle',viewport: $(window)},
+        })
+    }
+    function addTrackTooltip(elem) {
+         elem.qtip({
+                content: {
+                    text: 'track'
+                },
+                events: {
+                    render: function(event, api) {
+                        var a = $.parseHTML("<a href='#'>Hide " + elem.prop("innerHTML")
+                            + "</a>");
+                        $(a).on("click", function() {
+                            toggleTrackVisibility(elem.prop("innerHTML"));
+                        });
+                        $(this).html(a);
+                    }
+                },
+                show: {event: "mouseover"},
+                hide: {fixed: true, delay: 0, event: "mouseout"},
+                style: { classes: 'qtip-light qtip-rounded qtip-wide' },
+                position: {my:'top middle',at:'top middle',viewport: $(window)},
+            });
+    }
+    function filterTrack(data, track) {
+        return data.filter(function(x) {
+            return x.label != track
+        })
+    }
+    function timelineRelativeDays(data) {
       var chart = d3.timeline()
         .relativeTime()
         .stack()
@@ -113,11 +188,21 @@
       var width = 500;
       $("#timelineRelativeDays").html("");
       var svg = d3.select("#timelineRelativeDays").append("svg").attr("width", width)
-        .datum(JSON.parse($("#jsonInput").val())).call(chart);
-
+        .datum(data.filter(function(x) {
+          return x.visible
+        })).call(chart);
       $("[id^='timelineItem']").each(function() {
-        addToolTip($(this)); 
+        addDataPointToolTip($(this));
       });
+      $(".timeline-label").each(function() {
+        addTrackTooltip($(this));
+      });
+      svg.insert("text")
+        .attr("transform", "translate(0,20)")
+        .attr("class", "timeline-label")
+        .text("Add track")
+        .attr("id", "addtrack");
+      addNewTrackTooltip($("#addtrack"));
     }
   </script>
 </head>
