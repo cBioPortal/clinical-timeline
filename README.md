@@ -2,4 +2,4 @@
 Visualization of clinical data on a timeline
 
 ## Example
-- [Clinical timeline on GH Pages](https://http://cbioportal.github.io/clinical-timeline/)
+- [Clinical timeline on GH Pages](http://cbioportal.github.io/clinical-timeline/)
