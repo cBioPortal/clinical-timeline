@@ -193,24 +193,41 @@
             return x.label != track
         })
     }
+    function formatDays(dayCount) {
+        var dayFormat = [];
+        years = dayCount > 0? Math.floor(dayCount / 365) : Math.ceil(dayCount / 365);
+        months = dayCount > 0? Math.floor((dayCount % 365) / 30) : Math.ceil(dayCount / 365);
+        days = Math.floor((dayCount % 365) % 30);
+        if (years != 0) {
+            dayFormat = dayFormat.concat(years+"y");
+        }
+        if (months != 0) {
+            dayFormat = dayFormat.concat(months+"m");
+        } else if (years != 0) {
+            dayFormat = dayFormat.concat(months+"m");
+        }
+        dayFormat = dayFormat.concat(days+"d");
+        console.log(dayFormat);
+        return dayFormat.join(" ");
+    }
     function timelineRelativeDays(data) {
+       visibleData = data.filter(function(x) {
+          return x.visible
+      })
       var chart = d3.timeline()
-        .relativeTime()
         .stack()
         .margin({left:150, right:30, top:15, bottom:0})
         .tickFormat({
-          format: function(d) { return d3.time.format("%_d d")(d3.time.day.offset(new Date("2000-01-02"), d.valueOf()))},
-          tickInterval: 1,
+          format: function(d) { return formatDays(d.valueOf()) },
+          numTicks: 7,
           tickSize: 6,
         })
         .orient('top');
 
-      var width = 500;
+      var width = 800;
       $("#timelineRelativeDays").html("");
       var svg = d3.select("#timelineRelativeDays").append("svg").attr("width", width)
-        .datum(data.filter(function(x) {
-          return x.visible
-        })).call(chart);
+        .datum(visibleData).call(chart);
       $("[id^='timelineItem']").each(function() {
         addDataPointToolTip($(this));
       });
