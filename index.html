@@ -196,12 +196,13 @@
       var chart = d3.timeline()
         .relativeTime()
         .stack()
-        .margin({left:70, right:30, top:0, bottom:0})
+        .margin({left:150, right:30, top:15, bottom:0})
         .tickFormat({
           format: function(d) { return d3.time.format("%_d d")(d3.time.day.offset(new Date("2000-01-02"), d.valueOf()))},
           tickInterval: 1,
-          tickSize: 15,
-      });
+          tickSize: 6,
+        })
+        .orient('top');
 
       var width = 500;
       $("#timelineRelativeDays").html("");
@@ -215,12 +216,18 @@
       $(".timeline-label").each(function() {
         addTrackTooltip($(this));
       });
+      svg.attr("height", parseInt(svg.attr("height")) + 15)
       svg.insert("text")
-        .attr("transform", "translate(0,20)")
+        .attr("transform", "translate(0, 15)")
         .attr("class", "timeline-label")
-        .text("Add track")
+        .text("Time since diagnosis");
+      svg.insert("text")
+        .attr("transform", "translate(0,"+(d3.select("svg").attr("height"))+")")
+        .attr("class", "timeline-label")
+        .text("add track")
         .attr("id", "addtrack");
       addNewTrackTooltip($("#addtrack"));
+      d3.select(".axis").attr("transform", "translate(0,20)")
     }
   </script>
 </head>
