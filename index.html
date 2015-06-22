@@ -43,7 +43,13 @@
     var allData;
 
     window.onload = function() {
-      $("#jsonInput").val(JSON.stringify(testDataRelativeDays, null, '    '));
+      var jsonURL = decodeURIComponent(location.search.split('json=')[1]);
+      if (jsonURL !== "undefined") {
+        console.log(jsonURL);
+        $("#jsonInput").val(JSON.stringify(JSON.parse(decodeURIComponent(jsonURL)), null, '    '));
+      } else {
+        $("#jsonInput").val(JSON.stringify(testDataRelativeDays, null, '    '));
+      }
       $("#parseJson").on("click", function() {
         allData = JSON.parse($("#jsonInput").val())
         timelineRelativeDays(allData);
@@ -51,11 +57,11 @@
       $("#parseJson").click();
     }
     var testDataRelativeDays = [
-      {label:"Surgery", times:[{"starting_time": 1, "ending_time": 2, "tooltip":[["WE","GOT"],["YES","PLEASE"]]},
-          {"starting_time": 2, "ending_time": 3,"tooltip":[["TOOLTIP","LOVE"],["TOOLTIP","HATE"]]}],visible:true},
-      {label:"Diagnosis", times: [{"starting_time": 3, "ending_time":
-              4,"tooltip":[["GIVE","IT"],["THANK","YOU"]]}],visible:true},
-      {label:"Status", times: [{"starting_time": 9, "ending_time": 9,
+      {label:"Surgery", times:[{"starting_time": 0, "ending_time": 1, "tooltip":[["WE","GOT"],["YES","PLEASE"]]},
+          {"starting_time": 1, "ending_time": 2,"tooltip":[["TOOLTIP","LOVE"],["TOOLTIP","HATE"]]}],visible:true},
+      {label:"Diagnosis", times: [{"starting_time": 2, "ending_time":
+              3,"tooltip":[["GIVE","IT"],["THANK","YOU"]]}],visible:true},
+      {label:"Status", times: [{"starting_time": 8, "ending_time": 8,
           "display":"circle","tooltip":[["TOOLTIP","TEST"],["TOOLTIP2","TEST3"]]}],visible:true},
     ];
     function createDataTable(elem) {
@@ -193,21 +199,59 @@
             return x.label != track
         })
     }
-    function formatDays(dayCount) {
+    function getMaxEndingTime(data) {
+        return Math.max.apply(Math, data.map(function (o){
+            return Math.max.apply(Math, o.times.map(function(t) {
+                return t.ending_time || 0
+            }));
+        }))
+    }
+    function daysToTimeObject(dayCount) {
+        var time = {};
+        var daysPerYear = 365.242199;
+        var daysPerMonth = daysPerYear/12;
+        time["daysPerYear"] = daysPerYear;
+        time["daysPerMonth"] = daysPerMonth;
+        time["y"] = dayCount > 0? Math.floor(dayCount / daysPerYear) : Math.ceil(dayCount / daysPerYear);
+        time["m"] = dayCount > 0? Math.floor((dayCount % daysPerYear) / daysPerMonth) : Math.ceil((dayCount % daysPerYear) / daysPerMonth);
+        time["d"] = Math.floor((dayCount+1e-8 % daysPerYear) % daysPerMonth);
+        return time;
+    }
+    function formatTime(time) {
         var dayFormat = [];
-        years = dayCount > 0? Math.floor(dayCount / 365) : Math.ceil(dayCount / 365);
-        months = dayCount > 0? Math.floor((dayCount % 365) / 30) : Math.ceil(dayCount / 365);
-        days = Math.floor((dayCount % 365) % 30);
-        if (years != 0) {
-            dayFormat = dayFormat.concat(years+"y");
+        if (time.y != 0) {
+            dayFormat = dayFormat.concat(time.y+"y");
         }
-        if (months != 0) {
-            dayFormat = dayFormat.concat(months+"m");
-        } else if (years != 0) {
-            dayFormat = dayFormat.concat(months+"m");
+        if (time.m != 0) {
+            dayFormat = dayFormat.concat(time.m+"m");
         }
-        dayFormat = dayFormat.concat(days+"d");
+        if (time.d != 0) {
+            dayFormat = dayFormat.concat(time.d+"d");
+        }
+        if (time.y == 0 && time.m == 0 && time.d == 0) {
+            dayFormat = [0];
+        }
         return dayFormat.join(" ");
+    }
+    function getTickValues(data) {
+        tickValues = [];
+        maxDays = getMaxEndingTime(data);
+        maxTime = daysToTimeObject(maxDays);
+        console.log(maxTime);
+        if (maxTime.y >= 2) {
+            for (var i=0; i <= maxTime.y; i++) {
+                tickValues.push(i * maxTime.daysPerYear);
+            }
+        } else if (maxTime.y > 0 || maxTime.m  >= 2) {
+            for (var i=0; i <= maxTime.m + (maxTime.y * maxTime.daysPerYear) / maxTime.daysPerMonth; i++) {
+                tickValues.push(i * maxTime.daysPerMonth);
+            }
+        } else {
+            for (var i=0; i <= maxDays; i++) {
+                tickValues.push(i);
+            }
+        }
+        return tickValues;
     }
     function timelineRelativeDays(data) {
        visibleData = data.filter(function(x) {
@@ -217,11 +261,11 @@
         .stack()
         .margin({left:150, right:30, top:15, bottom:0})
         .tickFormat({
-          format: function(d) { return formatDays(d.valueOf()) },
-          numTicks: 7,
-          tickInterval: 31,
-          tickSize: 6,
+          format: function(d) { return formatTime(daysToTimeObject(d.valueOf())) },
+          tickValues: getTickValues(data)
         })
+        .beginning("0")
+        .ending(getMaxEndingTime(data))
         .orient('top')
         .itemHeight(6)
         .itemMargin(20);

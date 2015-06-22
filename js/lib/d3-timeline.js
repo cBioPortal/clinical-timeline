@@ -16,7 +16,9 @@
         tickFormat = { format: function(d) { var format = d3.time.format("%I %p"); return format(d) },
           tickTime: d3.time.hours,
           tickInterval: 1,
-          tickSize: 6 },
+          tickSize: 6,
+          tickValues: null
+        },
         colorCycle = d3.scale.category20(),
         colorPropertyName = null,
         display = "rect",
@@ -111,9 +113,16 @@
       var xAxis = d3.svg.axis()
         .scale(xScale)
         .orient(orient)
-        .tickFormat(tickFormat.format)
-        .ticks(tickFormat.numTicks || tickFormat.tickTime, tickFormat.tickInterval)
+        .tickFormat(tickFormat.format);
+
+      if (tickFormat.tickValues !== null) {
+        console.log(tickFormat.tickValues);
+        xAxis.tickValues(tickFormat.tickValues);
+      } else {
+        xAxis
+        .ticks(1, 30)
         .tickSize(tickFormat.tickSize);
+      }
         //.tickFormat(
         //    {format: function(d) { return d - 10; },
         //    tickTime: d3.time.hours,
