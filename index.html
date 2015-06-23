@@ -208,13 +208,13 @@
     }
     function daysToTimeObject(dayCount) {
         var time = {};
-        var daysPerYear = 365.242199;
-        var daysPerMonth = daysPerYear/12;
+        var daysPerYear = 365;
+        var daysPerMonth = 30;
         time["daysPerYear"] = daysPerYear;
         time["daysPerMonth"] = daysPerMonth;
         time["y"] = dayCount > 0? Math.floor(dayCount / daysPerYear) : Math.ceil(dayCount / daysPerYear);
         time["m"] = dayCount > 0? Math.floor((dayCount % daysPerYear) / daysPerMonth) : Math.ceil((dayCount % daysPerYear) / daysPerMonth);
-        time["d"] = Math.floor((dayCount+1e-8 % daysPerYear) % daysPerMonth);
+        time["d"] = Math.floor((dayCount % daysPerYear) % daysPerMonth);
         return time;
     }
     function formatTime(time) {
@@ -238,11 +238,11 @@
         maxDays = getMaxEndingTime(data);
         maxTime = daysToTimeObject(maxDays);
         console.log(maxTime);
-        if (maxTime.y >= 2) {
+        if (maxTime.y >= 1) {
             for (var i=0; i <= maxTime.y; i++) {
                 tickValues.push(i * maxTime.daysPerYear);
             }
-        } else if (maxTime.y > 0 || maxTime.m  >= 2) {
+        } else if (maxTime.y > 0 || maxTime.m  >= 1) {
             for (var i=0; i <= maxTime.m + (maxTime.y * maxTime.daysPerYear) / maxTime.daysPerMonth; i++) {
                 tickValues.push(i * maxTime.daysPerMonth);
             }
