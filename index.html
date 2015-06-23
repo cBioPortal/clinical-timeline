@@ -281,6 +281,14 @@
       $("[id^='timelineItem']").each(function() {
         $(this).attr("height", 6);
         $(this).attr("r", 6);
+        $(this).on("mouseover", function() {
+            $(this).attr("r", 8)
+            $(this).attr("height", 8)
+        });
+        $(this).on("mouseout", function() {
+            $(this).attr("r", 6)
+            $(this).attr("height", 6)
+        });
       });
       $(".timeline-label").each(function() {
         addTrackTooltip($(this));
