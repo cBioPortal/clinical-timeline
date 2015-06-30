@@ -45,7 +45,6 @@
     window.onload = function() {
       var jsonURL = decodeURIComponent(location.search.split('json=')[1]);
       if (jsonURL !== "undefined") {
-        console.log(jsonURL);
         $("#jsonInput").val(JSON.stringify(JSON.parse(decodeURIComponent(jsonURL)), null, '    '));
       } else {
         $("#jsonInput").val(JSON.stringify(testDataRelativeDays, null, '    '));
@@ -237,7 +236,6 @@
         tickValues = [];
         maxDays = getMaxEndingTime(data);
         maxTime = daysToTimeObject(maxDays);
-        console.log(maxTime);
         if (maxTime.y >= 1) {
             for (var i=0; i <= maxTime.y; i++) {
                 tickValues.push(i * maxTime.daysPerYear);
@@ -262,7 +260,8 @@
         .margin({left:150, right:30, top:15, bottom:0})
         .tickFormat({
           format: function(d) { return formatTime(daysToTimeObject(d.valueOf())) },
-          tickValues: getTickValues(data)
+          tickValues: getTickValues(data),
+          tickSize: 6
         })
         .beginning("0")
         .ending(getMaxEndingTime(data))
