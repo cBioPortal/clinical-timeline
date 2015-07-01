@@ -77,9 +77,8 @@
         g.each(function (d, i) {
           d.forEach(function (datum, index) {
             // Set stack attribute for time points based on overlapping time
-            var overlapGroups = groupByOverlap(datum.times);
+            var overlapGroups = groupByOverlap(datum.times, 0);
             var overlapMaxStack = 0;
-            console.log(overlapGroups);
 
             overlapGroups.forEach(function(overlapGroup, j) {
               var overlapStack = 0;
@@ -338,25 +337,25 @@
         appendLine(todayLine, showTodayFormat);
       }
 
-      function groupByOverlap(times) {
+      function groupByOverlap(times, slack) {
           var end = -Infinity,
               groups = [],
               group = [];
 
           var sortedTimes = times.sort(function(a, b) {
-              return a.starting_time - b.starting_time;
+              return parseInt(a.starting_time) - parseInt(b.starting_time);
           });
 
           for (var i = 0; i < sortedTimes.length; i++) {
-            if (sortedTimes[i].starting_time <= end) {
+            if (parseInt(sortedTimes[i].starting_time) <= parseInt(end) + parseInt(slack)) {
                 group.push(sortedTimes[i])
             } else {
               if (group.length > 0) {
                   groups.push(group)
               };
               group = [sortedTimes[i]];
-              end = sortedTimes[i].ending_time
-           }
+            }
+            end = parseInt(sortedTimes[i].ending_time);
           }
           groups.push(group);
           return groups;
