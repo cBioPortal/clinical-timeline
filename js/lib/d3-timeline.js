@@ -76,12 +76,28 @@
       if (stacked || ending === 0 || beginning === 0) {
         g.each(function (d, i) {
           d.forEach(function (datum, index) {
+            // Set stack attribute for time points based on overlapping time
+            var overlapGroups = groupByOverlap(datum.times, 0);
+            var overlapMaxStack = 0;
+
+            overlapGroups.forEach(function(overlapGroup, j) {
+              var overlapStack = 0;
+              overlapGroup.forEach(function(time, k) {
+                time.stack = maxStack + overlapStack;
+                if (overlapStack > overlapMaxStack) {
+                  overlapMaxStack = overlapStack;
+                }
+                overlapStack++;
+              });
+            });
 
             // create y mapping for stacked graph
             if (stacked && Object.keys(yAxisMapping).indexOf(index) == -1) {
               yAxisMapping[index] = maxStack;
               maxStack++;
             }
+            maxStack = maxStack + overlapMaxStack;
+
 
             // figure out beginning and ending times if they are unspecified
             datum.times.forEach(function (time, i) {
@@ -113,15 +129,13 @@
       var xAxis = d3.svg.axis()
         .scale(xScale)
         .orient(orient)
-        .tickFormat(tickFormat.format);
+        .tickFormat(tickFormat.format)
+        .tickSize(tickFormat.tickSize);
 
       if (tickFormat.tickValues !== null) {
-        console.log(tickFormat.tickValues);
         xAxis.tickValues(tickFormat.tickValues);
       } else {
-        xAxis
-        .ticks(1, 30)
-        .tickSize(tickFormat.tickSize);
+        xAxis.ticks(tickFormat.numTicks || tickFormat.tickTime, tickFormat.tickInterval);
       }
         //.tickFormat(
         //    {format: function(d) { return d - 10; },
@@ -266,7 +280,7 @@
 
           function getStackPosition(d, i) {
             if (stacked) {
-              return margin.top + (itemHeight + itemMargin) * yAxisMapping[index];
+              return margin.top + (itemHeight + itemMargin) * d.stack; // yAxisMapping[index];
             }
             return margin.top;
           }
@@ -321,6 +335,30 @@
       if (showTodayLine) {
         var todayLine = xScale(new Date());
         appendLine(todayLine, showTodayFormat);
+      }
+
+      function groupByOverlap(times, slack) {
+          var end = -Infinity,
+              groups = [],
+              group = [];
+
+          var sortedTimes = times.sort(function(a, b) {
+              return parseInt(a.starting_time) - parseInt(b.starting_time);
+          });
+
+          for (var i = 0; i < sortedTimes.length; i++) {
+            if (parseInt(sortedTimes[i].starting_time) <= parseInt(end) + parseInt(slack)) {
+                group.push(sortedTimes[i])
+            } else {
+              if (group.length > 0) {
+                  groups.push(group)
+              };
+              group = [sortedTimes[i]];
+            }
+            end = parseInt(sortedTimes[i].ending_time);
+          }
+          groups.push(group);
+          return groups;
       }
 
       function getXPos(d, i) {
