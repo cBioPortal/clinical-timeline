@@ -257,7 +257,7 @@
       })
       var chart = d3.timeline()
         .stack()
-        .margin({left:150, right:30, top:15, bottom:0})
+        .margin({left:200, right:30, top:15, bottom:0})
         .tickFormat({
           format: function(d) { return formatTime(daysToTimeObject(d.valueOf())) },
           tickValues: getTickValues(data),
