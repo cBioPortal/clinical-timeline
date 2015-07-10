@@ -6,6 +6,7 @@
   <script src="js/lib/jquery.qtip.min.js"></script>
   <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
   <script src="js/lib/d3-timeline.js"></script>
+  <script src="js/lib/underscore-min.js"></script>
   <link href="css/lib/jquery.qtip.min.css" type="text/css" rel="stylesheet"></link>
   <link href="css/lib/dataTables.tableTools.min.css" type="text/css" rel="stylesheet"></link>
   <style type="text/css">
@@ -41,8 +42,10 @@
   </style>
   <script>
     var allData;
+    var colorCycle;
 
     window.onload = function() {
+      colorCycle = d3.scale.category20();
       var jsonURL = decodeURIComponent(location.search.split('json=')[1]);
       if (jsonURL !== "undefined") {
         $("#jsonInput").val(JSON.stringify(JSON.parse(decodeURIComponent(jsonURL)), null, '    '));
@@ -63,6 +66,19 @@
       {label:"Status", times: [{"starting_time": 8, "ending_time": 8,
           "display":"circle","tooltip":[["TOOLTIP","TEST"],["TOOLTIP2","TEST3"]]}],visible:true},
     ];
+    function colorByClinicalAttribute(data, attr, colorCycle) {
+      var g = _.groupBy(allData[3].times, function(x) {
+        return _.reduce(x.tooltip, function(a,b) {
+          a[b[0]] = b[1];
+          return a;
+        }, {})[attr];
+      });
+      Object.keys(g).forEach(function(k) {
+        g[k].forEach(function(x) {
+          x["color"] = colorCycle(k)
+        });
+      });
+    }
     function createDataTable(elem) {
       var d = elem.prop("__data__");
       dataTable = {
@@ -267,7 +283,8 @@
         .ending(getMaxEndingTime(data))
         .orient('top')
         .itemHeight(6)
-        .itemMargin(20);
+        .itemMargin(20)
+        .colors(colorCycle);
 
 
       var width = 800;
