@@ -77,7 +77,7 @@
         g.each(function (d, i) {
           d.forEach(function (datum, index) {
             // Set stack attribute for time points based on overlapping time
-            var overlapGroups = groupByOverlap(datum.times, (ending/80+5));
+            var overlapGroups = groupByOverlap(datum.times, (ending/80+3));
             var overlapMaxStack = 0;
 
             overlapGroups.forEach(function(overlapGroup, j) {
@@ -343,15 +343,22 @@
           });
 
           for (var i = 0; i < sortedTimes.length; i++) {
-            if (parseInt(sortedTimes[i].starting_time) <= parseInt(end) + parseInt(slack)) {
+            if ((parseInt(sortedTimes[i].starting_time) === parseInt(sortedTimes[i].ending_time) &&
+                 (parseInt(sortedTimes[i].starting_time) <= parseInt(end) + slack)) ||
+                (parseInt(sortedTimes[i].starting_time) !== parseInt(sortedTimes[i].ending_time) &&
+                 (parseInt(sortedTimes[i].starting_time) < parseInt(end)))
+                ) {
                 group.push(sortedTimes[i])
+                if (parseInt(sortedTimes[i].ending_time) > end) {
+                  end = parseInt(sortedTimes[i].ending_time);
+                }
             } else {
               if (group.length > 0) {
                   groups.push(group)
               };
               group = [sortedTimes[i]];
+              end = parseInt(sortedTimes[i].ending_time);
             }
-            end = parseInt(sortedTimes[i].ending_time);
           }
           groups.push(group);
           return groups;
