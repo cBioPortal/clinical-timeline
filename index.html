@@ -47,8 +47,12 @@
     window.onload = function() {
       colorCycle = d3.scale.category20();
       var jsonURL = decodeURIComponent(location.search.split('json=')[1]);
+      var jsonCBioPortal = decodeURIComponent(location.search.split('cbioportal=')[1]);
       if (jsonURL !== "undefined") {
         $("#jsonInput").val(JSON.stringify(JSON.parse(decodeURIComponent(jsonURL)), null, '    '));
+      } else if (jsonCBioPortal !== "undefined") {
+        var jsonTransformed = transformToTimelineJSON(JSON.parse(decodeURIComponent(jsonCBioPortal)));
+        $("#jsonInput").val(JSON.stringify(jsonTransformed, null, '    '));
       } else {
         $("#jsonInput").val(JSON.stringify(testDataRelativeDays, null, '    '));
       }
@@ -66,6 +70,35 @@
       {label:"Status", times: [{"starting_time": 8, "ending_time": 8,
           "display":"circle","tooltip":[["TOOLTIP","TEST"],["TOOLTIP2","TEST3"]]}],visible:true},
     ];
+    function transformToTimelineJSON(clinical_timeline_data) {
+      var transformToTrack = function(clin_events) {
+        var track = {
+          "label":clin_events[0]["eventType"],
+          visible:true,
+          "times":[]
+        };
+        clin_events.forEach(function(x) {
+          var timepoint = {
+            "starting_time":x["startDate"],
+            "ending_time":x["stopDate"]!== null? x["stopDate"]:x["startDate"],
+            "display":x["stopDate"]!== null? "rect":"circle",
+            tooltip:Object.keys(x["eventData"]).map(function(k) {
+              return [k, x["eventData"][k]]
+            })
+          };
+          timepoint.tooltip.push(["START_DATE", x["startDate"]]);
+          if (x["stopDate"] !== null) {
+            timepoint.tooltip.push(["STOP_DATE", x["stopDate"]]);
+          }
+          track["times"].push(timepoint);
+        });
+        return track;
+      }
+      var g = _.groupBy(clinical_timeline_data, "eventType");
+      var tracks = [];
+      _.each(g, function(x) {tracks.push(transformToTrack(x))});
+      return tracks;
+    }
     function getClinicalAttributes(data, track) {
       return _.union.apply(_, data.filter(function(x) {return x.label === track})[0].times.map(function(x) {return x.tooltip.map(function(y) {return y[0]})}));
     }
@@ -182,7 +215,7 @@
             var trackAnchors = "";
             for (var i=0; i<invisibleTracks.length; i++) {
               trackAnchors +=
-                "<a href='#' class='show-track'>"+invisibleTracks[i].label+"</a><br />";
+                "<a href='#' onClick='return false' class='show-track'>"+invisibleTracks[i].label+"</a><br />";
             }
             $(this).html(trackAnchors);
             $('.show-track').each(function () {
@@ -209,7 +242,7 @@
             var colorByAttribute = $.parseHTML("<div class='color-by-attr-tooltip'></div>");
             var clinAtts = getClinicalAttributes(allData, track);
             for (var i=0; i < clinAtts.length; i++) {
-              var a = $.parseHTML("<a href='#'>"+clinAtts[i]+"</a>");
+              var a = $.parseHTML("<a href='#' onClick='return false'>"+clinAtts[i]+"</a>");
               $(a).on("click", function() {
                 colorByClinicalAttribute(track, $(this).prop("innerHTML"));
                 timelineRelativeDays(allData);
@@ -220,7 +253,7 @@
             $(this).html(colorByAttribute);
           }
         },
-        show: {event: "mouseover"},
+        show: {event: "click"},
         hide: {fixed: true, delay: 0, event: "mouseout"},
         style: { classes: 'qtip-light qtip-rounded qtip-wide' },
         position: {my:'left middle',at:'top middle',viewport: $(window)},
@@ -234,7 +267,7 @@
                 events: {
                   render: function(event, api) {
                     var trackTooltip = $.parseHTML("<div class='track-toolip'></div>");
-                    var a = $.parseHTML("<a href='#' class='hide-track'>Hide " + elem.prop("innerHTML")
+                    var a = $.parseHTML("<a href='#' onClick='return false' class='hide-track'>Hide " + elem.prop("innerHTML")
                         + "</a>");
                     $(a).on("click", function() {
                         toggleTrackVisibility(elem.prop("innerHTML"));
@@ -242,10 +275,10 @@
                     $(trackTooltip).append(a);
                     $(trackTooltip).append("<br />");
 
-                    var colorBy = $.parseHTML("<a href='#' class='color-by-attr'>Color by</a>");
+                    var colorBy = $.parseHTML("<a href='#' onClick='return false' class='color-by-attr'>Color by</a>");
                     $(trackTooltip).append(colorBy);
                     
-                    var clearColorsA = $.parseHTML("&nbsp;<a href='#'>Clear</a>")
+                    var clearColorsA = $.parseHTML("&nbsp;<a href='#' onClick='return false'>Clear</a>")
                     $(clearColorsA).on("click", function() {
                       clearColors(elem.prop("innerHTML"));
                       timelineRelativeDays(allData);
@@ -257,7 +290,7 @@
                   }
                 },
                 show: {event: "mouseover"},
-                hide: {fixed: true, delay: 0, event: "mouseout", inactive: 3000},
+                hide: {fixed: true, delay: 0, event: "mouseout"},
                 style: { classes: 'qtip-light qtip-rounded qtip-wide' },
                 position: {my:'top middle',at:'top middle',viewport: $(window)},
             });
