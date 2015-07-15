@@ -20,7 +20,7 @@ window.clinicalTimeline = (function(){
       .ending(getMaxEndingTime(data))
       .orient('top')
       .itemHeight(6)
-      .itemMargin(20)
+      .itemMargin(8)
       .colors(colorCycle);
 
 
@@ -43,8 +43,12 @@ window.clinicalTimeline = (function(){
           $(this).attr("height", 6);
       });
     });
-    $(".timeline-label").each(function() {
-      addTrackTooltip($(this), data);
+    $(".timeline-label").each(function(i) {
+      if ($(this).prop("__data__")[i].split && !$(this).prop("__data__")[i].parent_track) {
+        addSplittedTrackTooltip($(this), data);
+      } else {
+        addTrackTooltip($(this), data);
+      }
     });
     svg.attr("height", parseInt(svg.attr("height")) + 15);
     svg.insert("text")
@@ -58,6 +62,11 @@ window.clinicalTimeline = (function(){
       .attr("id", "addtrack");
     addNewTrackTooltip($("#addtrack"));
     d3.select(".axis").attr("transform", "translate(0,20)");
+
+    // preserve whitespace for easy indentation of labels
+    $(".timeline-label").each(function(i, x) {
+      x.setAttributeNS("http://www.w3.org/XML/1998/namespace", "xml:space", "preserve");
+    });
   }
 
   function getClinicalAttributes(data, track) {
@@ -70,13 +79,39 @@ window.clinicalTimeline = (function(){
     }));
   }
 
-  function colorByClinicalAttribute(track, attr) {
-    var g = _.groupBy(allData.filter(function(x) {return x.label === track;})[0].times, function(x) {
+  function groupByClinicalAttribute(track, attr) {
+    return _.groupBy(allData.filter(function(x) {return x.label === track;})[0].times, function(x) {
       return _.reduce(x.tooltip, function(a,b) {
         a[b[0]] = b[1];
         return a;
       }, {})[attr];
     });
+  }
+
+  function splitByClinicalAttribute(track, attr) {
+    var g = groupByClinicalAttribute(track, attr);
+    allData = allData.filter(function(x) {return x.label !== track;});
+    allData.push({"label":track+"."+attr,"times":[],"visible":true,"split":true});
+    Object.keys(g).forEach(function(k) {
+      allData.push({"label":"    "+k, "times":g[k], "visible":true,"split":true,"parent_track":track});
+    });
+  }
+
+  function unSplitTrack(track) {
+    var trackData = allData.filter(function(x) {return x.label.split(".")[0] === track;})[0];
+    var times = allData.filter(function(x) {return x.split && x.parent_track === track;}).reduce(function(a, b) {
+      return a.concat(b.times);
+    }, []);
+    trackData.times = times;
+    trackData.visible = true;
+    trackData.label = track;
+    delete trackData.split;
+    allData = allData.filter(function(x) {return !(x.split && x.parent_track === track);});
+    timeline(allData, "#clinicalTimeline");
+  }
+
+  function colorByClinicalAttribute(track, attr) {
+    var g = groupByClinicalAttribute(track, attr);
     Object.keys(g).forEach(function(k) {
       g[k].forEach(function(x) {
         x.color = colorCycle(k);
@@ -206,21 +241,33 @@ window.clinicalTimeline = (function(){
     });
   }
 
-  function addColorByTooltip(elem, track) {
+  function addClinicalAttributesTooltip(elem, track, clickHandlerType) {
+    function colorClickHandler() {
+      colorByClinicalAttribute(track, $(this).prop("innerHTML"));
+      clinicalTimeline(allData, "#clinicalTimeline");
+    }
+    function splitClickHandler() {
+      splitByClinicalAttribute(track, $(this).prop("innerHTML"));
+      clinicalTimeline(allData, "#clinicalTimeline");
+    }
     elem.qtip({
       content: {
-        text: 'color by'
+        text: ''
       },
       events: {
         render: function(event, api) {
+          if (clickHandlerType === "color") {
+            clickHandler = colorClickHandler;
+          } else if (clickHandlerType === "split") {
+            clickHandler = splitClickHandler;;
+          } else {
+            console.log("Unknown clickHandler for clinical attributes tooltip.")
+          }
           var colorByAttribute = $.parseHTML("<div class='color-by-attr-tooltip'></div>");
           var clinAtts = getClinicalAttributes(allData, track);
           for (var i=0; i < clinAtts.length; i++) {
             var a = $.parseHTML("<a href='#' onClick='return false'>"+clinAtts[i]+"</a>");
-            $(a).on("click", function() {
-              colorByClinicalAttribute(track, $(this).prop("innerHTML"));
-              clinicalTimeline(allData, "#clinicalTimeline");
-            });
+            $(a).on("click", clickHandler);
             $(colorByAttribute).append(a);
             $(colorByAttribute).append("<br />");
           }
@@ -234,10 +281,36 @@ window.clinicalTimeline = (function(){
     });
   }
 
+
+  function addSplittedTrackTooltip(elem, data) {
+    function unSplitClickHandler(trackName) {
+       return function() {
+         unSplitTrack(trackName);
+       };
+    }
+    elem.qtip({
+      content: {
+        text: 'track'
+      },
+      events: {
+        render: function(event, api) {
+          var trackTooltip = $.parseHTML("<div class='track-toolip'></div>");
+          var a = $.parseHTML("<a href='#' onClick='return false' class='hide-track'>Unsplit</a>");
+          $(a).on("click", unSplitClickHandler(elem.prop("innerHTML").split(".")[0]));
+          $(trackTooltip).append(a);
+          $(this).html(trackTooltip);
+        }
+      },
+      show: {event: "mouseover"},
+      hide: {fixed: true, delay: 0, event: "mouseout"},
+      style: { classes: 'qtip-light qtip-rounded qtip-wide' },
+      position: {my:'top middle',at:'top middle',viewport: $(window)},
+    });
+  }
   
 
   function addTrackTooltip(elem, data) {
-    function hideTrackClickHandler(trackName, data) {
+    function hideTrackClickHandler(trackName) {
        return function() {
          toggleTrackVisibility(trackName);
        };
@@ -251,10 +324,8 @@ window.clinicalTimeline = (function(){
           var trackTooltip = $.parseHTML("<div class='track-toolip'></div>");
           var a = $.parseHTML("<a href='#' onClick='return false' class='hide-track'>Hide " +
             elem.prop("innerHTML") + "</a>");
-          $(a).on("click", hideTrackClickHandler(elem.prop("innerHTML"), data));
-            
+          $(a).on("click", hideTrackClickHandler(elem.prop("innerHTML")));
           $(trackTooltip).append(a);
-          
           $(trackTooltip).append("<br />");
 
           var colorBy = $.parseHTML("<a href='#' onClick='return false' class='color-by-attr'>Color by</a>");
@@ -266,9 +337,14 @@ window.clinicalTimeline = (function(){
             clinicalTimeline(allData, "#clinicalTimeline");
           });
           $(trackTooltip).append(clearColorsA);
+          $(trackTooltip).append("<br />");
+
+          var splitBy = $.parseHTML("<a href='#' onClick='return false' class='split-by-attr'>Split by</a>");
+          $(trackTooltip).append(splitBy);
 
           $(this).html(trackTooltip);
-          addColorByTooltip($(colorBy), elem.prop("innerHTML"));
+          addClinicalAttributesTooltip($(colorBy), elem.prop("innerHTML"), "color");
+          addClinicalAttributesTooltip($(splitBy), elem.prop("innerHTML"), "split");
         }
       },
       show: {event: "mouseover"},
