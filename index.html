@@ -47,13 +47,30 @@
   </style>
   <script>
     $(document).ready(function() {
-      var jsonURL = decodeURIComponent(location.search.split('json=')[1]);
-      var jsonCBioPortal = decodeURIComponent(location.search.split('cbioportal=')[1]);
-      if (jsonURL !== "undefined") {
+      function getURLParameterByName(name) {
+          name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+          var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+              results = regex.exec(location.search);
+          return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+      }
+      var jsonURL = getURLParameterByName("json");
+      var jsonCBioPortal = getURLParameterByName("cbioportal");
+      var patientId = getURLParameterByName("patientid");
+      var patientJSON = getURLParameterByName("patientjson");
+      var waitForParse = false;
+
+      debugger;
+      if (jsonURL !== "") {
         $("#jsonInput").val(JSON.stringify(JSON.parse(decodeURIComponent(jsonURL)), null, '    '));
-      } else if (jsonCBioPortal !== "undefined") {
+      } else if (jsonCBioPortal !== "") {
         var jsonTransformed = clinicalTimelineParser(JSON.parse(decodeURIComponent(jsonCBioPortal)));
         $("#jsonInput").val(JSON.stringify(jsonTransformed, null, '    '));
+      } else if (patientId !== "" && patientJSON !== "") {
+        waitForParse = true;
+        $.getJSON(patientJSON, function(data) {
+          $("#jsonInput").val(JSON.stringify(data[patientId], null, '    '));
+          $("#parseJson").click();
+        });
       } else {
         $("#jsonInput").val(JSON.stringify(testDataClinical, null, '    '));
       }
@@ -61,7 +78,9 @@
         allData = JSON.parse($("#jsonInput").val())
         clinicalTimeline(allData, "#clinicalTimeline");
       });
-      $("#parseJson").click();
+      if (!waitForParse) {
+        $("#parseJson").click();
+      }
     });
     var testDataClinical = [
       {label:"Surgery", times:[{"starting_time": 0, "ending_time": 1, "tooltip":[["WE","GOT"],["YES","PLEASE"]]},
