@@ -150,13 +150,7 @@ window.clinicalTimeline = (function(){
                             "bSortable": false
                         }
                     ],
-                    "aaSorting": [[0,'asc']],
-                    "oLanguage": {
-                        "sInfo": "&nbsp;&nbsp;(_START_ to _END_ of _TOTAL_)&nbsp;&nbsp;",
-                        "sInfoFiltered": "",
-                        "sLengthMenu": "Show _MENU_ per page"
-                    },
-                    "iDisplayLength": -1
+                    "aaSorting": []
                 };
     return dataTable;
   }

@@ -59,7 +59,6 @@
       var patientJSON = getURLParameterByName("patientjson");
       var waitForParse = false;
 
-      debugger;
       if (jsonURL !== "") {
         $("#jsonInput").val(JSON.stringify(JSON.parse(decodeURIComponent(jsonURL)), null, '    '));
       } else if (jsonCBioPortal !== "") {
