@@ -2,6 +2,8 @@
 window.clinicalTimeline = (function(){
   var allData;
   var colorCycle = d3.scale.category20();
+  var itemHeight = 6;
+  var itemMargin = 8;
 
   function timeline(data, divId) {
     allData = data;
@@ -19,8 +21,8 @@ window.clinicalTimeline = (function(){
       .beginning("0")
       .ending(getMaxEndingTime(data))
       .orient('top')
-      .itemHeight(6)
-      .itemMargin(8)
+      .itemHeight(itemHeight)
+      .itemMargin(itemMargin)
       .colors(colorCycle);
 
 
@@ -32,15 +34,13 @@ window.clinicalTimeline = (function(){
       addDataPointToolTip($(this));
     });
     $("[id^='timelineItem']").each(function() {
-      $(this).attr("height", 6);
-      $(this).attr("r", 6);
       $(this).on("mouseover", function() {
-          $(this).attr("r", 8);
-          $(this).attr("height", 8);
+          $(this).attr("r", parseInt($(this).attr("r")) + 2);
+          $(this).attr("height", parseInt($(this).attr("height")) + 2);
       });
       $(this).on("mouseout", function() {
-          $(this).attr("r", 6);
-          $(this).attr("height", 6);
+          $(this).attr("r",  parseInt($(this).attr("r")) - 2);
+          $(this).attr("height", parseInt($(this).attr("height")) - 2);
       });
     });
     $(".timeline-label").each(function(i) {
@@ -108,6 +108,23 @@ window.clinicalTimeline = (function(){
     delete trackData.split;
     allData = allData.filter(function(x) {return !(x.split && x.parent_track === track);});
     timeline(allData, "#clinicalTimeline");
+  }
+
+  function sizeByClinicalAttribute(track, attr, minSize, maxSize) {
+    var trackIndex = _.findIndex(allData, function(x) {
+      return x.label == track;
+    });
+    var arr = allData.filter(function(x) {return x.label === track;})[0].times.map(function(x) {
+      return parseInt(x.tooltip.find(function(x) {
+        return x[0] === attr;})[1]);
+    });
+    var scale = d3.scale.linear()
+      .domain([d3.min(arr), d3.max(arr)])
+      .range([minSize, maxSize]);
+    allData.filter(function(x) {return x.label === track;})[0].times.forEach(function(x) {
+      x.size = scale(parseInt(x.tooltip.find(function(x) {
+        return x[0] === attr;})[1])) || itemHeight;
+    });
   }
 
   function colorByClinicalAttribute(track, attr) {
@@ -244,6 +261,10 @@ window.clinicalTimeline = (function(){
       splitByClinicalAttribute(track, $(this).prop("innerHTML"));
       clinicalTimeline(allData, "#clinicalTimeline");
     }
+    function sizeByClickHandler() {
+      sizeByClinicalAttribute(track, $(this).prop("innerHTML"), 2, itemHeight+2);
+      clinicalTimeline(allData, "#clinicalTimeline");
+    }
     elem.qtip({
       content: {
         text: ''
@@ -253,9 +274,11 @@ window.clinicalTimeline = (function(){
           if (clickHandlerType === "color") {
             clickHandler = colorClickHandler;
           } else if (clickHandlerType === "split") {
-            clickHandler = splitClickHandler;;
+            clickHandler = splitClickHandler;
+          } else if (clickHandlerType === "size") {
+            clickHandler = sizeByClickHandler;
           } else {
-            console.log("Unknown clickHandler for clinical attributes tooltip.")
+            console.log("Unknown clickHandler for clinical attributes tooltip.");
           }
           var colorByAttribute = $.parseHTML("<div class='color-by-attr-tooltip'></div>");
           var clinAtts = getClinicalAttributes(allData, track);
@@ -335,10 +358,15 @@ window.clinicalTimeline = (function(){
 
           var splitBy = $.parseHTML("<a href='#' onClick='return false' class='split-by-attr'>Split by</a>");
           $(trackTooltip).append(splitBy);
+          $(trackTooltip).append("<br />");
+
+          var sizeBy = $.parseHTML("<a href='#' onClick='return false' class='split-by-attr'>Size by</a>");
+          $(trackTooltip).append(sizeBy);
 
           $(this).html(trackTooltip);
           addClinicalAttributesTooltip($(colorBy), elem.prop("innerHTML"), "color");
           addClinicalAttributesTooltip($(splitBy), elem.prop("innerHTML"), "split");
+          addClinicalAttributesTooltip($(sizeBy), elem.prop("innerHTML"), "size");
         }
       },
       show: {event: "mouseover"},

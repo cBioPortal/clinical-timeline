@@ -192,7 +192,7 @@
               return getStackPosition(d, i) + itemHeight/2;
             })
             .attr("cx", getXPos)
-            .attr("r", itemHeight / 2)
+            .attr("r", getHeight)
             .attr("height", getHeight)
             .style("fill", function(d, i){
               var dColorPropName;
@@ -381,7 +381,7 @@
       }
 
       function getHeight(d, i) {
-        return itemHeight;
+        return parseInt(d.size) || itemHeight;
       }
 
 
