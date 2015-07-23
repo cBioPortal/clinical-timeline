@@ -90,11 +90,20 @@ window.clinicalTimeline = (function(){
 
   function splitByClinicalAttribute(track, attr) {
     var g = groupByClinicalAttribute(track, attr);
-    allData = allData.filter(function(x) {return x.label !== track;});
-    allData.push({"label":track+"."+attr,"times":[],"visible":true,"split":true});
-    Object.keys(g).forEach(function(k) {
-      allData.push({"label":"    "+k, "times":g[k], "visible":true,"split":true,"parent_track":track});
+    var trackIndex = _.findIndex(allData, function(x) {
+      return x.label == track;
     });
+    var indent = allData[trackIndex].split? track.match(new RegExp("^\ *"))[0] : "";
+    indent += "    ";
+
+    // remove track
+    allData = allData.filter(function(x) {return x.label !== track;});
+    // Add new track
+    allData.splice(trackIndex, 0, {"label":track+"."+attr,"times":[],"visible":true,"split":true});
+    var attrValues = Object.keys(g);
+    for (var i=0; i < attrValues.length; i++) {
+      allData.splice(trackIndex+i+1, 0, {"label":indent+attrValues[i], "times":g[attrValues[i]], "visible":true,"split":true,"parent_track":track});
+    }
   }
 
   function unSplitTrack(track) {
@@ -111,9 +120,6 @@ window.clinicalTimeline = (function(){
   }
 
   function sizeByClinicalAttribute(track, attr, minSize, maxSize) {
-    var trackIndex = _.findIndex(allData, function(x) {
-      return x.label == track;
-    });
     var arr = allData.filter(function(x) {return x.label === track;})[0].times.map(function(x) {
       return parseInt(x.tooltip.find(function(x) {
         return x[0] === attr;})[1]);
