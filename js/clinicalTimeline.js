@@ -151,14 +151,13 @@ window.clinicalTimeline = (function(){
     }
   }
 
-  function createDataTable(elem) {
-    var d = elem.prop("__data__");
+  function createDataTable(tooltip_table) {
     dataTable = {
                     "dom": 'C<"clear">lfrtip',
                     "sDom": 't',
                     "bJQueryUI": true,
                     "bDestroy": true,
-                    "aaData": d.tooltip,
+                    "aaData": tooltip_table,
                     "aoColumnDefs": [
                         {
                             "aTargets": [ 0 ],
@@ -185,8 +184,24 @@ window.clinicalTimeline = (function(){
               },
               events: {
                   render: function(event, api) {
-                      $(this).html("<table style='background-color: white;'></table>");
-                      $(this).find("table").dataTable(createDataTable(elem));
+                      var tooltipDiv = $.parseHTML("<div></div>");
+                      var d = elem.prop("__data__");
+                      var table;
+                      if ("tooltip_tables" in d) {
+                        for (var i=0; i < d.tooltip_tables.length; i++) {
+                          if (i !== 0) {
+                            $(tooltipDiv).append("<hr />");
+                          }
+                          table = $.parseHTML("<table style='text-align:left; background-color: white;'></table>");
+                          $(table).dataTable(createDataTable(d.tooltip_tables[i]));
+                          $(tooltipDiv).append(table);
+                        }
+                      } else if ("tooltip" in d) {
+                        table = $.parseHTML("<table style='text-align:left; background-color: white;'></table>");
+                        $(table).dataTable(createDataTable(d.tooltip));
+                        $(tooltipDiv).append(table);
+                      }
+                      $(this).html(tooltipDiv);
                       // Detect when point it was clicked and store it
                       api.elements.target.click(function(e) {
                           if (api.wasClicked) {
