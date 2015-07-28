@@ -71,20 +71,29 @@ window.clinicalTimeline = (function(){
 
   function getClinicalAttributes(data, track) {
     return _.union.apply(_, data.filter(function(x) {
-      return x.label === track;
-    })[0].times.map(function(x) {
-      return x.tooltip.map(function(y) {
-        return y[0];
-      });
-    }));
+        return x.label === track;
+      })[0].times.map(function(x) {
+          // return union of attributes in tooltip (in case there are multiple)
+          return _.union.apply(_, x.tooltip_tables.map(function(y) {
+            return y.map(function(z) {
+              return z[0];
+            });
+          }));
+      })
+    );
   }
 
   function groupByClinicalAttribute(track, attr) {
     return _.groupBy(allData.filter(function(x) {return x.label === track;})[0].times, function(x) {
-      return _.reduce(x.tooltip, function(a,b) {
-        a[b[0]] = b[1];
-        return a;
-      }, {})[attr];
+      // return attribute value if there is one tooltip table
+      if (x.tooltip_tables.length === 1) {
+        return _.reduce(x.tooltip_tables[0], function(a,b) {
+          a[b[0]] = b[1];
+          return a;
+        }, {})[attr];
+      } else {
+        return undefined;
+      }
     });
   }
 
