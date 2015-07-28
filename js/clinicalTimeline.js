@@ -29,7 +29,7 @@ window.clinicalTimeline = (function(){
     var width = 800;
     $(divId).html("");
     var svg = d3.select(divId).append("svg").attr("width", width)
-      .datum(visibleData).call(chart);
+      .datum(mergeAllTooltipTablesAtEqualTimepoint(visibleData)).call(chart);
     $("[id^='timelineItem']").each(function() {
       addDataPointToolTip($(this));
     });
@@ -69,6 +69,96 @@ window.clinicalTimeline = (function(){
     });
   }
 
+  /**
+   * Checks wheter a timeline track contains timepoints with varying start and
+   * end dates.
+   */
+  function isDurationTrack(trackData) {
+    isDuration = false;
+    trackData.times.forEach(function(x) {
+      if (parseInt(x.starting_time) !== parseInt(x.ending_time)) {
+        isDuration = true;
+      }
+    });
+    return isDuration;
+  }
+
+  function splitTooltipTables(trackData) {
+    var expandedTimes = [];
+
+    for (var i = 0; i < trackData.times.length; i++) {
+      var t = trackData.times[i];
+      if (t.tooltip_tables.length > 1) {
+        for (var j = 0; j < t.tooltip_tables.length; j++) {
+          expandedTimes = expandedTimes.concat({
+            "starting_time":t.starting_time,
+            "ending_time":t.ending_time,
+            "display":"circle",
+            "tooltip_tables": [t.tooltip_tables[j]]
+          });
+        }
+      } else {
+        expandedTimes = expandedTimes.concat(t);
+      }
+    }
+    trackData.times = expandedTimes;
+    console.log(allData);
+  }
+
+  /*
+   * Merge timepoints that have the same starting_time into one timepoint with
+   * multiple tooltip_tables
+   */
+  function mergeTooltipTablesAtEqualTimepoint(trackData) {
+    if (!trackData || trackData.times.length === 0) return;
+
+    var collapsedTimes = [],
+        group = [],
+        startingTime = undefined;
+
+    var sortedTimes = trackData.times.sort(function(a, b) {
+      return parseInt(a.starting_time) - parseInt(b.starting_time);
+    });
+
+    var mergeTimepoints = function(startingTime, group) {
+      return {
+        "starting_time":startingTime,
+        "ending_time":startingTime,
+        "display":"circle",
+        "tooltip_tables": _.reduce(group.map(function(x) {
+          return x.tooltip_tables;
+        }), function(a, b) {
+          return a.concat(b)
+        }, [])
+      }
+    }
+
+    for (var i = 0; i < sortedTimes.length; i++) {
+      var t = sortedTimes[i];
+      if (parseInt(t.starting_time) === startingTime) {
+        group = group.concat(t);
+      } else {
+        if (group.length > 0) {
+          collapsedTimes = collapsedTimes.concat(
+              mergeTimepoints(startingTime, group));
+        }
+        group = [t];
+        startingTime = parseInt(t.starting_time);
+      }
+    }
+    collapsedTimes = collapsedTimes.concat(
+        mergeTimepoints(startingTime, group));
+    trackData.times = collapsedTimes;
+  }
+
+  function mergeAllTooltipTablesAtEqualTimepoint(data) {
+    var singlePointTracks = data.filter(function(trackData) {
+      return !isDurationTrack(trackData);
+    });
+    singlePointTracks.forEach(mergeTooltipTablesAtEqualTimepoint);
+    return singlePointTracks;
+  }
+
   function getClinicalAttributes(data, track) {
     return _.union.apply(_, data.filter(function(x) {
         return x.label === track;
@@ -98,6 +188,10 @@ window.clinicalTimeline = (function(){
   }
 
   function splitByClinicalAttribute(track, attr) {
+    // split tooltip_tables into separate time points
+    splitTooltipTables(allData.filter(function(x) {return x.label === track;})[0]);
+    console.log(allData);
+
     var g = groupByClinicalAttribute(track, attr);
     var trackIndex = _.findIndex(allData, function(x) {
       return x.label == track;
@@ -113,6 +207,7 @@ window.clinicalTimeline = (function(){
     for (var i=0; i < attrValues.length; i++) {
       allData.splice(trackIndex+i+1, 0, {"label":indent+attrValues[i], "times":g[attrValues[i]], "visible":true,"split":true,"parent_track":track});
     }
+    console.log(allData);
   }
 
   function unSplitTrack(track) {
