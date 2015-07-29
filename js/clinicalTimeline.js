@@ -156,7 +156,7 @@ window.clinicalTimeline = (function(){
       return !isDurationTrack(trackData);
     });
     singlePointTracks.forEach(mergeTooltipTablesAtEqualTimepoint);
-    return singlePointTracks;
+    return data;
   }
 
   function getClinicalAttributes(data, track) {
