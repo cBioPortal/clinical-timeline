@@ -6,8 +6,11 @@
   <script src="js/lib/jquery.qtip.min.js"></script>
   <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
   <script src="js/lib/d3-timeline.js"></script>
-  <link href="css/lib/jquery.qtip.min.css" type="text/css" rel="stylesheet"></link>
-  <link href="css/lib/dataTables.tableTools.min.css" type="text/css" rel="stylesheet"></link>
+  <script src="js/lib/underscore-min.js"></script>
+  <script src="js/clinicalTimeline.js"></script>
+  <script src="js/parser.js"></script>
+  <link href="css/lib/jquery.qtip.min.css" type="text/css" rel="stylesheet" />
+  <link href="css/lib/dataTables.tableTools.min.css" type="text/css" rel="stylesheet" />
   <style type="text/css">
     .axis path,
     .axis line {
@@ -38,279 +41,60 @@
       width: 500px;
       height: 600px;
     }
+    #clinicalTimeline {
+      width: 100%;
+    }
   </style>
   <script>
-    var allData;
+    $(document).ready(function() {
+      function getURLParameterByName(name) {
+          name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+          var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+              results = regex.exec(location.search);
+          return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+      }
+      var jsonURL = getURLParameterByName("json");
+      var jsonCBioPortal = getURLParameterByName("cbioportal");
+      var patientId = getURLParameterByName("patientid");
+      var patientJSON = getURLParameterByName("patientjson");
+      var waitForParse = false;
 
-    window.onload = function() {
-      var jsonURL = decodeURIComponent(location.search.split('json=')[1]);
-      if (jsonURL !== "undefined") {
+      if (jsonURL !== "") {
         $("#jsonInput").val(JSON.stringify(JSON.parse(decodeURIComponent(jsonURL)), null, '    '));
+      } else if (jsonCBioPortal !== "") {
+        var jsonTransformed = clinicalTimelineParser(JSON.parse(decodeURIComponent(jsonCBioPortal)));
+        $("#jsonInput").val(JSON.stringify(jsonTransformed, null, '    '));
+      } else if (patientId !== "" && patientJSON !== "") {
+        waitForParse = true;
+        $.getJSON(patientJSON, function(data) {
+          $("#jsonInput").val(JSON.stringify(data[patientId], null, '    '));
+          $("#parseJson").click();
+        });
       } else {
-        $("#jsonInput").val(JSON.stringify(testDataRelativeDays, null, '    '));
+        $("#jsonInput").val(JSON.stringify(testDataClinical, null, '    '));
       }
       $("#parseJson").on("click", function() {
         allData = JSON.parse($("#jsonInput").val())
-        timelineRelativeDays(allData);
+        clinicalTimeline(allData, "#clinicalTimeline");
       });
-      $("#parseJson").click();
-    }
-    var testDataRelativeDays = [
-      {label:"Surgery", times:[{"starting_time": 0, "ending_time": 1, "tooltip":[["WE","GOT"],["YES","PLEASE"]]},
-          {"starting_time": 1, "ending_time": 2,"tooltip":[["TOOLTIP","LOVE"],["TOOLTIP","HATE"]]}],visible:true},
+      if (!waitForParse) {
+        $("#parseJson").click();
+      }
+    });
+    var testDataClinical = [
+      {label:"Surgery", times:[{"starting_time": 0, "ending_time": 1, "tooltip_tables":[[["WE","GOT"],["YES","PLEASE"]]]},
+          {"starting_time": 1, "ending_time": 2,"tooltip_tables":[[["TOOLTIP","LOVE"],["TOOLTIP","HATE"]]]}],visible:true},
       {label:"Diagnosis", times: [{"starting_time": 2, "ending_time":
-              3,"tooltip":[["GIVE","IT"],["THANK","YOU"]]}],visible:true},
+              3,"tooltip_tables":[[["GIVE","IT"],["THANK","YOU"]]]}],visible:true},
       {label:"Status", times: [{"starting_time": 8, "ending_time": 8,
-          "display":"circle","tooltip":[["TOOLTIP","TEST"],["TOOLTIP2","TEST3"]]}],visible:true},
+          "display":"circle","tooltip_tables":[[["TOOLTIP","TEST"],["TOOLTIP2","TEST3"]]]}],visible:true},
     ];
-    function createDataTable(elem) {
-      var d = elem.prop("__data__");
-      dataTable = {
-                      "dom": 'C<"clear">lfrtip',
-                      "sDom": 't',
-                      "bJQueryUI": true,
-                      "bDestroy": true,
-                      "aaData": d.tooltip,
-                      "aoColumnDefs": [
-                          {
-                              "aTargets": [ 0 ],
-                              "sClass": "left-align-td",
-                              "mRender": function ( data, type, full ) {
-                                  return '<b>'+data+'</b>';
-                              }
-                          },
-                          {
-                              "aTargets": [ 1 ],
-                              "sClass": "left-align-td",
-                              "bSortable": false
-                          }
-                      ],
-                      "aaSorting": [[0,'asc']],
-                      "oLanguage": {
-                          "sInfo": "&nbsp;&nbsp;(_START_ to _END_ of _TOTAL_)&nbsp;&nbsp;",
-                          "sInfoFiltered": "",
-                          "sLengthMenu": "Show _MENU_ per page"
-                      },
-                      "iDisplayLength": -1
-                  };
-      return dataTable;
-    }
-    function addDataPointToolTip(elem) {
-         elem.qtip({
-                content: {
-                    text: "table"
-                },
-                events: {
-                    render: function(event, api) {
-                        $(this).html("<table style='background-color: white;'></table>");
-                        $(this).find("table").dataTable(createDataTable(elem));
-                        // Detect when point it was clicked and store it
-                        api.elements.target.click(function(e) {
-                            if (api.wasClicked) {
-                                api.hide();
-                                api.wasClicked = false;
-                            }
-                            else {
-                                api.wasClicked = !api.wasClicked;
-                            }
-                        });
-                    },
-                    hide: function(event, api) {
-                         // Prevent hiding if the point was clicked or if the
-                         // tooltip is already showing because of the mouseover
-                         if ((api.wasClicked && event.originalEvent.type === 'mouseleave') ||
-                             (!api.wasClicked && event.originalEvent.type === 'click')) {
-                             try{ event.preventDefault(); } catch(e) {}
-                         }
-                     }
-                },
-                show: {event: "click mouseover"},
-                hide: {event: "click mouseleave"},
-                style: { classes: 'qtip-light qtip-rounded qtip-wide' },
-                position: {my:'top middle',at:'bottom middle',viewport: $(window)},
-            }); 
-    }
-    function toggleTrackVisibility(trackName) {
-       $.each(allData, function(i, x) {
-         if (x.label == trackName) {
-            x.visible = x.visible? false : true;
-         }
-       });
-       timelineRelativeDays(allData);
-    }
-    function addNewTrackTooltip(elem) {
-        elem.qtip({
-                content: {
-                    text: 'addtrack'
-                },
-                events: {
-                    render: function(event, api) {
-                        invisibleTracks = allData.filter(function (x) {
-                          return !x.visible
-                        });
-                        if (invisibleTracks.length == 0) {
-                            $(this).html("All tracks shown");
-                        }
-                        else {
-                            var trackAnchors = "";
-                            for (var i=0; i<invisibleTracks.length; i++) {
-                                trackAnchors +=
-                                    "<a href='#' class='show-track'>"+invisibleTracks[i].label+"</a><br />";
-                            }
-                            $(this).html(trackAnchors);
-                            $('.show-track').each(function () {
-                                $(this).on("click", function() {
-                                    toggleTrackVisibility($(this).prop("innerHTML"));
-                                });
-                            });
-                        }
-                    }
-                },
-                show: {event: "mouseover"},
-                hide: {fixed: true, delay: 0, event: "mouseout"},
-                style: { classes: 'qtip-light qtip-rounded qtip-wide' },
-                position: {my:'top middle',at:'top middle',viewport: $(window)},
-        })
-    }
-    function addTrackTooltip(elem) {
-         elem.qtip({
-                content: {
-                    text: 'track'
-                },
-                events: {
-                    render: function(event, api) {
-                        var a = $.parseHTML("<a href='#' class='hide-track'>Hide " + elem.prop("innerHTML")
-                            + "</a>");
-                        $(a).on("click", function() {
-                            toggleTrackVisibility(elem.prop("innerHTML"));
-                        });
-                        $(this).html(a);
-                    }
-                },
-                show: {event: "mouseover"},
-                hide: {fixed: true, delay: 0, event: "mouseout"},
-                style: { classes: 'qtip-light qtip-rounded qtip-wide' },
-                position: {my:'top middle',at:'top middle',viewport: $(window)},
-            });
-    }
-    function filterTrack(data, track) {
-        return data.filter(function(x) {
-            return x.label != track
-        })
-    }
-    function getMaxEndingTime(data) {
-        return Math.max.apply(Math, data.map(function (o){
-            return Math.max.apply(Math, o.times.map(function(t) {
-                return t.ending_time || 0
-            }));
-        }))
-    }
-    function daysToTimeObject(dayCount) {
-        var time = {};
-        var daysPerYear = 365;
-        var daysPerMonth = 30;
-        time["daysPerYear"] = daysPerYear;
-        time["daysPerMonth"] = daysPerMonth;
-        time["y"] = dayCount > 0? Math.floor(dayCount / daysPerYear) : Math.ceil(dayCount / daysPerYear);
-        time["m"] = dayCount > 0? Math.floor((dayCount % daysPerYear) / daysPerMonth) : Math.ceil((dayCount % daysPerYear) / daysPerMonth);
-        time["d"] = Math.floor((dayCount % daysPerYear) % daysPerMonth);
-        return time;
-    }
-    function formatTime(time) {
-        var dayFormat = [];
-        if (time.y != 0) {
-            dayFormat = dayFormat.concat(time.y+"y");
-        }
-        if (time.m != 0) {
-            dayFormat = dayFormat.concat(time.m+"m");
-        }
-        if (time.d != 0) {
-            dayFormat = dayFormat.concat(time.d+"d");
-        }
-        if (time.y == 0 && time.m == 0 && time.d == 0) {
-            dayFormat = [0];
-        }
-        return dayFormat.join(" ");
-    }
-    function getTickValues(data) {
-        tickValues = [];
-        maxDays = getMaxEndingTime(data);
-        maxTime = daysToTimeObject(maxDays);
-        if (maxTime.y >= 1) {
-            for (var i=0; i <= maxTime.y; i++) {
-                tickValues.push(i * maxTime.daysPerYear);
-            }
-        } else if (maxTime.y > 0 || maxTime.m  >= 1) {
-            for (var i=0; i <= maxTime.m + (maxTime.y * maxTime.daysPerYear) / maxTime.daysPerMonth; i++) {
-                tickValues.push(i * maxTime.daysPerMonth);
-            }
-        } else {
-            for (var i=0; i <= maxDays; i++) {
-                tickValues.push(i);
-            }
-        }
-        return tickValues;
-    }
-    function timelineRelativeDays(data) {
-       visibleData = data.filter(function(x) {
-          return x.visible
-      })
-      var chart = d3.timeline()
-        .stack()
-        .margin({left:150, right:30, top:15, bottom:0})
-        .tickFormat({
-          format: function(d) { return formatTime(daysToTimeObject(d.valueOf())) },
-          tickValues: getTickValues(data),
-          tickSize: 6
-        })
-        .beginning("0")
-        .ending(getMaxEndingTime(data))
-        .orient('top')
-        .itemHeight(6)
-        .itemMargin(20);
-
-
-      var width = 800;
-      $("#timelineRelativeDays").html("");
-      var svg = d3.select("#timelineRelativeDays").append("svg").attr("width", width)
-        .datum(visibleData).call(chart);
-      $("[id^='timelineItem']").each(function() {
-        addDataPointToolTip($(this));
-      });
-      $("[id^='timelineItem']").each(function() {
-        $(this).attr("height", 6);
-        $(this).attr("r", 6);
-        $(this).on("mouseover", function() {
-            $(this).attr("r", 8)
-            $(this).attr("height", 8)
-        });
-        $(this).on("mouseout", function() {
-            $(this).attr("r", 6)
-            $(this).attr("height", 6)
-        });
-      });
-      $(".timeline-label").each(function() {
-        addTrackTooltip($(this));
-      });
-      svg.attr("height", parseInt(svg.attr("height")) + 15)
-      svg.insert("text")
-        .attr("transform", "translate(0, 15)")
-        .attr("class", "timeline-label")
-        .text("Time since diagnosis");
-      svg.insert("text")
-        .attr("transform", "translate(0,"+(d3.select("svg").attr("height"))+")")
-        .attr("class", "timeline-label")
-        .text("Add track")
-        .attr("id", "addtrack");
-      addNewTrackTooltip($("#addtrack"));
-      d3.select(".axis").attr("transform", "translate(0,20)")
-    }
   </script>
 </head>
 <body>
   <div>
     <h3>clinical timeline</h3>
-    <div width="100%" id="timelineRelativeDays"></div>
+    <div id="clinicalTimeline"></div>
     <h4>data</h4>
     <button id="parseJson">Parse JSON</button><br />
     <textarea id="jsonInput">

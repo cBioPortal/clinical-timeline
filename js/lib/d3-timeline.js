@@ -77,7 +77,7 @@
         g.each(function (d, i) {
           d.forEach(function (datum, index) {
             // Set stack attribute for time points based on overlapping time
-            var overlapGroups = groupByOverlap(datum.times, 0);
+            var overlapGroups = groupByOverlap(datum.times, (ending/80+3));
             var overlapMaxStack = 0;
 
             overlapGroups.forEach(function(overlapGroup, j) {
@@ -184,20 +184,16 @@
           }
 
           g.selectAll("svg").data(data).enter()
-            .append(function(d, i) {
-                return document.createElementNS(d3.ns.prefix.svg, "display" in d? d.display:display);
-            })
+            .append(getShape)
             .attr("x", getXPos)
             .attr("y", getStackPosition)
-            .attr("width", function (d, i) {
-              return (d.ending_time - d.starting_time) * scaleFactor;
-            })
+            .attr("width", getWidth)
             .attr("cy", function(d, i) {
-                return getStackPosition(d, i) + itemHeight/2;
+              return getStackPosition(d, i) + itemHeight/2;
             })
             .attr("cx", getXPos)
-            .attr("r", itemHeight / 2)
-            .attr("height", itemHeight)
+            .attr("r", getHeight)
+            .attr("height", getHeight)
             .style("fill", function(d, i){
               var dColorPropName;
               if (d.color) return d.color;
@@ -347,22 +343,62 @@
           });
 
           for (var i = 0; i < sortedTimes.length; i++) {
-            if (parseInt(sortedTimes[i].starting_time) <= parseInt(end) + parseInt(slack)) {
+            if ((parseInt(sortedTimes[i].starting_time) === parseInt(sortedTimes[i].ending_time) &&
+                 (parseInt(sortedTimes[i].starting_time) <= parseInt(end) + slack)) ||
+                (parseInt(sortedTimes[i].starting_time) !== parseInt(sortedTimes[i].ending_time) &&
+                 (parseInt(sortedTimes[i].starting_time) < parseInt(end)))
+                ) {
                 group.push(sortedTimes[i])
+                if (parseInt(sortedTimes[i].ending_time) > end) {
+                  end = parseInt(sortedTimes[i].ending_time);
+                }
             } else {
               if (group.length > 0) {
                   groups.push(group)
               };
               group = [sortedTimes[i]];
+              end = parseInt(sortedTimes[i].ending_time);
             }
-            end = parseInt(sortedTimes[i].ending_time);
           }
           groups.push(group);
           return groups;
       }
 
+      function getShape(d, i) {
+        var shape;
+        if ("display" in d) {
+          if (d.display === "rect" || d.display === "circle") {
+            shape = d.display;
+          } else if (d.display === "square") {
+            shape = "rect";
+          } else {
+            console.warn("d3Timeline Warning: unrecognized display attribute: " + d.display);
+          }
+        } else {
+          shape = display;
+        }
+        return document.createElementNS(d3.ns.prefix.svg, shape);
+      }
+
+      function getHeight(d, i) {
+        return parseInt(d.size) || itemHeight;
+      }
+
+
+      function getWidth(d, i) {
+        if ("display" in d && d.display === "square") {
+          return itemHeight;
+        } else {
+          return ((d.ending_time - d.starting_time) * scaleFactor);
+        }
+      }
+
       function getXPos(d, i) {
-        return margin.left + (d.starting_time - beginning) * scaleFactor;
+        if ("display" in d && d.display === "square") {
+          return margin.left + (d.starting_time - beginning) * scaleFactor - itemHeight/2;
+        } else {
+          return margin.left + (d.starting_time - beginning) * scaleFactor;
+        }
       }
 
       function getXTextPos(d, i) {
