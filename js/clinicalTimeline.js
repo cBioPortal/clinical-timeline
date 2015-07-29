@@ -102,7 +102,6 @@ window.clinicalTimeline = (function(){
       }
     }
     trackData.times = expandedTimes;
-    console.log(allData);
   }
 
   /*
@@ -121,17 +120,21 @@ window.clinicalTimeline = (function(){
     });
 
     var mergeTimepoints = function(startingTime, group) {
-      return {
-        "starting_time":startingTime,
-        "ending_time":startingTime,
-        "display":"circle",
-        "tooltip_tables": _.reduce(group.map(function(x) {
-          return x.tooltip_tables;
-        }), function(a, b) {
-          return a.concat(b)
-        }, [])
+      if (group.length === 1) {
+        return group[0];
+      } else {
+        return {
+          "starting_time":startingTime,
+          "ending_time":startingTime,
+          "display":"circle",
+          "tooltip_tables": _.reduce(group.map(function(x) {
+            return x.tooltip_tables;
+          }), function(a, b) {
+            return a.concat(b);
+          }, [])
+        };
       }
-    }
+    };
 
     for (var i = 0; i < sortedTimes.length; i++) {
       var t = sortedTimes[i];
@@ -190,7 +193,6 @@ window.clinicalTimeline = (function(){
   function splitByClinicalAttribute(track, attr) {
     // split tooltip_tables into separate time points
     splitTooltipTables(allData.filter(function(x) {return x.label === track;})[0]);
-    console.log(allData);
 
     var g = groupByClinicalAttribute(track, attr);
     var trackIndex = _.findIndex(allData, function(x) {
@@ -207,7 +209,6 @@ window.clinicalTimeline = (function(){
     for (var i=0; i < attrValues.length; i++) {
       allData.splice(trackIndex+i+1, 0, {"label":indent+attrValues[i], "times":g[attrValues[i]], "visible":true,"split":true,"parent_track":track});
     }
-    console.log(allData);
   }
 
   function unSplitTrack(track) {
@@ -225,16 +226,23 @@ window.clinicalTimeline = (function(){
 
   function sizeByClinicalAttribute(track, attr, minSize, maxSize) {
     var arr = allData.filter(function(x) {return x.label === track;})[0].times.map(function(x) {
-      return parseInt(x.tooltip.find(function(x) {
-        return x[0] === attr;})[1]);
+      if (x.tooltip_tables.length === 1) {
+        return parseInt(x.tooltip_tables[0].filter(function(x) {
+          return x[0] === attr;})[0][1]);
+      } else {
+        return undefined;
+      }
     });
     var scale = d3.scale.linear()
       .domain([d3.min(arr), d3.max(arr)])
       .range([minSize, maxSize]);
     allData.filter(function(x) {return x.label === track;})[0].times.forEach(function(x) {
-      x.size = scale(parseInt(x.tooltip.find(function(x) {
-        return x[0] === attr;})[1])) || itemHeight;
+      if (x.tooltip_tables.length === 1) {
+        x.size = scale(parseInt(x.tooltip_tables[0].filter(function(x) {
+          return x[0] === attr;})[0][1])) || itemHeight;
+      }
     });
+    timeline();
   }
 
   function colorByClinicalAttribute(track, attr) {
