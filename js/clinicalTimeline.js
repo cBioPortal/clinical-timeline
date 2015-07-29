@@ -257,7 +257,6 @@ window.clinicalTimeline = (function(){
 
   function createDataTable(tooltip_table) {
     dataTable = {
-                    "dom": 'C<"clear">lfrtip',
                     "sDom": 't',
                     "bJQueryUI": true,
                     "bDestroy": true,
@@ -276,6 +275,9 @@ window.clinicalTimeline = (function(){
                             "bSortable": false
                         }
                     ],
+                    "fnDrawCallback": function ( oSettings ) {
+                        $(oSettings.nTHead).hide();
+                    },
                     "aaSorting": []
                 };
     return dataTable;
