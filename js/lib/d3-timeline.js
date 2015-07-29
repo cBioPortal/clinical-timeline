@@ -204,6 +204,8 @@
                 } else {
                   return colorCycle( datum[colorPropertyName] );
                 }
+              } else if (hasLabel) {
+                  return colorCycle(datum.label);
               }
               return colorCycle(index);
             })
