@@ -41,7 +41,7 @@
       width: 500px;
       height: 600px;
     }
-    #clinicalTimeline {
+    #timeline {
       width: 100%;
     }
   </style>
@@ -75,7 +75,11 @@
       }
       $("#parseJson").on("click", function() {
         allData = JSON.parse($("#jsonInput").val())
-        clinicalTimeline(allData, "#clinicalTimeline");
+        var timeline = clinicalTimeline
+          .width(800)
+          .data(allData)
+          .divId("#timeline");
+        timeline();
       });
       if (!waitForParse) {
         $("#parseJson").click();
@@ -94,7 +98,7 @@
 <body>
   <div>
     <h3>clinical timeline</h3>
-    <div id="clinicalTimeline"></div>
+    <div id="timeline"></div>
     <h4>data</h4>
     <button id="parseJson">Parse JSON</button><br />
     <textarea id="jsonInput">

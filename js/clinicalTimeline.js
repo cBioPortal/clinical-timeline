@@ -1,13 +1,14 @@
 // vim: ts=2 sw=2
 window.clinicalTimeline = (function(){
-  var allData;
-  var colorCycle = d3.scale.category20();
-  var itemHeight = 6;
-  var itemMargin = 8;
+  var allData,
+      colorCycle = d3.scale.category20(),
+      itemHeight = 6,
+      itemMargin = 8,
+      divId = null,
+      width = null;
 
-  function timeline(data, divId) {
-    allData = data;
-    visibleData = data.filter(function(x) {
+  function timeline() {
+    visibleData = allData.filter(function(x) {
         return x.visible;
     });
     var chart = d3.timeline()
@@ -15,18 +16,17 @@ window.clinicalTimeline = (function(){
       .margin({left:200, right:30, top:15, bottom:0})
       .tickFormat({
         format: function(d) { return formatTime(daysToTimeObject(d.valueOf())); },
-        tickValues: getTickValues(data),
+        tickValues: getTickValues(allData),
         tickSize: 6
       })
       .beginning("0")
-      .ending(getMaxEndingTime(data))
+      .ending(getMaxEndingTime(allData))
       .orient('top')
       .itemHeight(itemHeight)
       .itemMargin(itemMargin)
       .colors(colorCycle);
 
 
-    var width = 800;
     $(divId).html("");
     var svg = d3.select(divId).append("svg").attr("width", width)
       .datum(mergeAllTooltipTablesAtEqualTimepoint(visibleData)).call(chart);
@@ -45,9 +45,9 @@ window.clinicalTimeline = (function(){
     });
     $(".timeline-label").each(function(i) {
       if ($(this).prop("__data__")[i].split && !$(this).prop("__data__")[i].parent_track) {
-        addSplittedTrackTooltip($(this), data);
+        addSplittedTrackTooltip($(this), allData);
       } else {
-        addTrackTooltip($(this), data);
+        addTrackTooltip($(this), allData);
       }
     });
     svg.attr("height", parseInt(svg.attr("height")) + 15);
@@ -220,7 +220,7 @@ window.clinicalTimeline = (function(){
     trackData.label = track;
     delete trackData.split;
     allData = allData.filter(function(x) {return !(x.split && x.parent_track === track);});
-    timeline(allData, "#clinicalTimeline");
+    timeline();
   }
 
   function sizeByClinicalAttribute(track, attr, minSize, maxSize) {
@@ -339,7 +339,7 @@ window.clinicalTimeline = (function(){
         x.visible = x.visible? false : true;
       }
      });
-     timeline(allData, "#clinicalTimeline");
+     timeline();
   }
 
   function addNewTrackTooltip(elem) {
@@ -380,15 +380,15 @@ window.clinicalTimeline = (function(){
   function addClinicalAttributesTooltip(elem, track, clickHandlerType) {
     function colorClickHandler() {
       colorByClinicalAttribute(track, $(this).prop("innerHTML"));
-      clinicalTimeline(allData, "#clinicalTimeline");
+      timeline();
     }
     function splitClickHandler() {
       splitByClinicalAttribute(track, $(this).prop("innerHTML"));
-      clinicalTimeline(allData, "#clinicalTimeline");
+      timeline();
     }
     function sizeByClickHandler() {
       sizeByClinicalAttribute(track, $(this).prop("innerHTML"), 2, itemHeight+2);
-      clinicalTimeline(allData, "#clinicalTimeline");
+      timeline();
     }
     elem.qtip({
       content: {
@@ -476,7 +476,7 @@ window.clinicalTimeline = (function(){
           var clearColorsA = $.parseHTML("&nbsp;<a href='#' onClick='return false'>Clear</a>");
           $(clearColorsA).on("click", function() {
             clearColors(elem.prop("innerHTML"));
-            clinicalTimeline(allData, "#clinicalTimeline");
+            timeline();
           });
           $(trackTooltip).append(clearColorsA);
           $(trackTooltip).append("<br />");
@@ -563,6 +563,24 @@ window.clinicalTimeline = (function(){
       }
       return tickValues;
   }
+
+  timeline.width = function (w) {
+    if (!arguments.length) return width;
+    width = w;
+    return timeline;
+  };
+
+  timeline.data = function (data) {
+    if (!arguments.length) return allData;
+    allData = data;
+    return timeline;
+  };
+
+  timeline.divId = function (name) {
+    if (!arguments.length) return divId;
+    divId = name;
+    return timeline;
+  };
 
   return timeline;
 })();
