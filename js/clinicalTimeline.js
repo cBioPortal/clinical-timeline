@@ -155,10 +155,10 @@ window.clinicalTimeline = (function(){
   }
 
   function mergeAllTooltipTablesAtEqualTimepoint(data) {
-    var singlePointTracks = data.filter(function(trackData) {
-      return !isDurationTrack(trackData);
+    var collapsedTracks = data.filter(function(trackData) {
+      return trackData.collapse && !isDurationTrack(trackData);
     });
-    singlePointTracks.forEach(mergeTooltipTablesAtEqualTimepoint);
+    collapsedTracks.forEach(mergeTooltipTablesAtEqualTimepoint);
     return data;
   }
 
@@ -345,8 +345,24 @@ window.clinicalTimeline = (function(){
 
   function toggleTrackVisibility(trackName) {
     $.each(allData, function(i, x) {
-      if (x.label == trackName) {
+      if (x.label === trackName) {
         x.visible = x.visible? false : true;
+      }
+     });
+     timeline();
+  }
+
+  function toggleTrackCollapse(trackName) {
+    $.each(allData, function(i, x) {
+      if (x.label === trackName) {
+        if (x.collapse) {
+          x.collapse = false;
+          splitTooltipTables(x);
+        } else {
+          if (!isDurationTrack(x)) {
+            x.collapse = true;
+          }
+        }
       }
      });
      timeline();
@@ -467,6 +483,11 @@ window.clinicalTimeline = (function(){
          toggleTrackVisibility(trackName);
        };
     }
+    function collapseTrackClickHandler(trackName) {
+      return function() {
+        toggleTrackCollapse(trackName);
+      };
+    }
     elem.qtip({
       content: {
         text: 'track'
@@ -479,6 +500,13 @@ window.clinicalTimeline = (function(){
           $(a).on("click", hideTrackClickHandler(elem.prop("innerHTML")));
           $(trackTooltip).append(a);
           $(trackTooltip).append("<br />");
+
+          if (!isDurationTrack(allData.filter(function(x) {return x.label === elem.prop("innerHTML");})[0])) {
+            a = $.parseHTML("<a href='#' onClick='return false' class='hide-track'>Collapse/Stack</a>");
+            $(a).on("click", collapseTrackClickHandler(elem.prop("innerHTML")));
+            $(trackTooltip).append(a);
+            $(trackTooltip).append("<br />");
+          }
 
           var colorBy = $.parseHTML("<a href='#' onClick='return false' class='color-by-attr'>Color by</a>");
           $(trackTooltip).append(colorBy);
