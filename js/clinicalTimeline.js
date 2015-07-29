@@ -56,7 +56,7 @@ window.clinicalTimeline = (function(){
       .attr("class", "timeline-label")
       .text("Time since diagnosis");
     svg.insert("text")
-      .attr("transform", "translate(0,"+(d3.select("svg").attr("height"))+")")
+      .attr("transform", "translate(0,"+svg.attr("height")+")")
       .attr("class", "timeline-label")
       .text("Add track")
       .attr("id", "addtrack");
