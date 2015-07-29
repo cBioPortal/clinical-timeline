@@ -1,2 +1,5 @@
 # clinical-timeline
-Visualization clinical data in time line.
+Visualization of clinical data on a timeline
+
+## Example
+- [Clinical timeline on GH Pages](http://cbioportal.github.io/clinical-timeline/)

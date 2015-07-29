@@ -1,0 +1,104 @@
+<!doctype html>
+<html>
+<head>
+  <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+  <script src="js/lib/jquery.dataTables.min.js"></script>
+  <script src="js/lib/jquery.qtip.min.js"></script>
+  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script src="js/lib/d3-timeline.js"></script>
+  <script src="js/lib/underscore-min.js"></script>
+  <script src="js/clinicalTimeline.js"></script>
+  <script src="js/parser.js"></script>
+  <link href="css/lib/jquery.qtip.min.css" type="text/css" rel="stylesheet" />
+  <link href="css/lib/dataTables.tableTools.min.css" type="text/css" rel="stylesheet" />
+  <style type="text/css">
+    .axis path,
+    .axis line {
+      fill: none;
+      stroke: black;
+      shape-rendering: crispEdges;
+    }
+
+    .axis text {
+      font-family: sans-serif;
+      font-size: 10px;
+    }
+    .show-track, .hide-track {
+      font-family: sans-serif;
+      font-size: 12px;
+    }
+
+    .timeline-label {
+      font-family: sans-serif;
+      font-size: 12px;
+    }
+
+    body {
+      text-align: center;
+      background-color: white;
+    }
+    #jsonInput {
+      width: 500px;
+      height: 600px;
+    }
+    #clinicalTimeline {
+      width: 100%;
+    }
+  </style>
+  <script>
+    $(document).ready(function() {
+      function getURLParameterByName(name) {
+          name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+          var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+              results = regex.exec(location.search);
+          return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+      }
+      var jsonURL = getURLParameterByName("json");
+      var jsonCBioPortal = getURLParameterByName("cbioportal");
+      var patientId = getURLParameterByName("patientid");
+      var patientJSON = getURLParameterByName("patientjson");
+      var waitForParse = false;
+
+      if (jsonURL !== "") {
+        $("#jsonInput").val(JSON.stringify(JSON.parse(decodeURIComponent(jsonURL)), null, '    '));
+      } else if (jsonCBioPortal !== "") {
+        var jsonTransformed = clinicalTimelineParser(JSON.parse(decodeURIComponent(jsonCBioPortal)));
+        $("#jsonInput").val(JSON.stringify(jsonTransformed, null, '    '));
+      } else if (patientId !== "" && patientJSON !== "") {
+        waitForParse = true;
+        $.getJSON(patientJSON, function(data) {
+          $("#jsonInput").val(JSON.stringify(data[patientId], null, '    '));
+          $("#parseJson").click();
+        });
+      } else {
+        $("#jsonInput").val(JSON.stringify(testDataClinical, null, '    '));
+      }
+      $("#parseJson").on("click", function() {
+        allData = JSON.parse($("#jsonInput").val())
+        clinicalTimeline(allData, "#clinicalTimeline");
+      });
+      if (!waitForParse) {
+        $("#parseJson").click();
+      }
+    });
+    var testDataClinical = [
+      {label:"Surgery", times:[{"starting_time": 0, "ending_time": 1, "tooltip_tables":[[["WE","GOT"],["YES","PLEASE"]]]},
+          {"starting_time": 1, "ending_time": 2,"tooltip_tables":[[["TOOLTIP","LOVE"],["TOOLTIP","HATE"]]]}],visible:true},
+      {label:"Diagnosis", times: [{"starting_time": 2, "ending_time":
+              3,"tooltip_tables":[[["GIVE","IT"],["THANK","YOU"]]]}],visible:true},
+      {label:"Status", times: [{"starting_time": 8, "ending_time": 8,
+          "display":"circle","tooltip_tables":[[["TOOLTIP","TEST"],["TOOLTIP2","TEST3"]]]}],visible:true},
+    ];
+  </script>
+</head>
+<body>
+  <div>
+    <h3>clinical timeline</h3>
+    <div id="clinicalTimeline"></div>
+    <h4>data</h4>
+    <button id="parseJson">Parse JSON</button><br />
+    <textarea id="jsonInput">
+    </textarea>
+  </div>
+</body>
+</html>
