@@ -641,7 +641,6 @@ window.clinicalTimeline = (function(){
 
     var data = [];
     var track;
-    debugger;
     // append given label ordering
     for (var i = 0; i < labels.length; i++) {
       track = allData.filter(function(x) { return x.label === labels[i]; })[0];
