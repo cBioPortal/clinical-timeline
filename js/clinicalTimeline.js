@@ -639,13 +639,15 @@ window.clinicalTimeline = (function(){
       return timeline;
     }
 
-    data = [];
+    var data = [];
+    var track;
     debugger;
     // append given label ordering
     for (var i = 0; i < labels.length; i++) {
-      data = data.concat(allData.filter(function(x) {
-        return x.label === labels[i];
-      })[0]);
+      track = allData.filter(function(x) { return x.label === labels[i]; })[0];
+      if (track) {
+        data = data.concat(track);
+      }
     }
     // append missing labels
     data = data.concat(_.sortBy(allData.filter(function(x) {
