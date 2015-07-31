@@ -629,5 +629,32 @@ window.clinicalTimeline = (function(){
     return timeline;
   };
 
+  /*
+   * Order tracks by given array of label names. Tracks with label names not
+   * included in the sequence are appended to the end in alhpanumeric order.
+   */
+  timeline.orderTracks = function(labels) {
+    if (!arguments.length) {
+      allData = _.sortBy(allData, 'label');
+      return timeline;
+    }
+
+    data = [];
+    debugger;
+    // append given label ordering
+    for (var i = 0; i < labels.length; i++) {
+      data = data.concat(allData.filter(function(x) {
+        return x.label === labels[i];
+      })[0]);
+    }
+    // append missing labels
+    data = data.concat(_.sortBy(allData.filter(function(x) {
+      return labels.indexOf(x.label) === -1;
+    }), 'label'));
+
+    allData = data;
+    return timeline;
+  };
+
   return timeline;
 })();
