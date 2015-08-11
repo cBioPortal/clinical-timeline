@@ -713,6 +713,19 @@ window.clinicalTimeline = (function(){
     return timeline;
   };
 
+  /*
+   * Collapse or stack timepoints on given track
+   */
+  timeline.toggleTrackCollapse = function(track) {
+    var trackData = allData.filter(function(t) {
+      return t.label === track;
+    });
+    if (trackData.length === 1) {
+      toggleTrackCollapse(track);
+    }
+    return timeline;
+  };
+
   timeline.addPostTimelineHook = function(hook) {
     postTimelineHooks = postTimelineHooks.concat(hook);
     return timeline;
