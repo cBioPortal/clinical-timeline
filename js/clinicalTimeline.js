@@ -141,7 +141,7 @@ window.clinicalTimeline = (function(){
         return {
           "starting_time":startingTime,
           "ending_time":startingTime,
-          "display":"circle",
+          "display":"unfilled_circle",
           "tooltip_tables": _.reduce(group.map(function(x) {
             return x.tooltip_tables;
           }), function(a, b) {

@@ -190,7 +190,7 @@
             ;
           }
 
-          g.selectAll("svg").data(data).enter()
+          var timePoints = g.selectAll("svg").data(data).enter()
             .append(getShape)
             .attr("x", getXPos)
             .attr("y", getStackPosition)
@@ -203,6 +203,9 @@
             .attr("height", getHeight)
             .style("fill", function(d, i){
               var dColorPropName;
+              if ("display" in d && d.display === "unfilled_circle") {
+                return "rgb(255, 255, 255)";
+              }
               if (d.color) return d.color;
               if( colorPropertyName ){
                 dColorPropName = d[colorPropertyName];
@@ -215,6 +218,13 @@
                   return colorCycle(datum.label);
               }
               return colorCycle(index);
+            })
+            .style("stroke", function(d, i) {
+              if (d.display === "unfilled_circle") {
+                if (d.color) return d.color;
+                if (hasLabel) return colorCycle(datum.label);
+                return colorCycle(index);
+              }
             })
             .on("mousemove", function (d, i) {
               hover(d, index, datum);
@@ -357,14 +367,14 @@
                 (parseInt(sortedTimes[i].starting_time) !== parseInt(sortedTimes[i].ending_time) &&
                  (parseInt(sortedTimes[i].starting_time) < parseInt(end)))
                 ) {
-                group.push(sortedTimes[i])
+                group.push(sortedTimes[i]);
                 if (parseInt(sortedTimes[i].ending_time) > end) {
                   end = parseInt(sortedTimes[i].ending_time);
                 }
             } else {
               if (group.length > 0) {
-                  groups.push(group)
-              };
+                  groups.push(group);
+              }
               group = [sortedTimes[i]];
               end = parseInt(sortedTimes[i].ending_time);
             }
@@ -380,6 +390,8 @@
             shape = d.display;
           } else if (d.display === "square") {
             shape = "rect";
+          } else if (d.display === "unfilled_circle") {
+            shape = "circle";
           } else {
             console.warn("d3Timeline Warning: unrecognized display attribute: " + d.display);
           }
@@ -392,7 +404,6 @@
       function getHeight(d, i) {
         return parseInt(d.size) || itemHeight;
       }
-
 
       function getWidth(d, i) {
         if ("display" in d && d.display === "square") {

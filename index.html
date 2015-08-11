@@ -93,8 +93,14 @@
     var testDataClinical = [
       {label:"Surgery", times:[{"starting_time": 0, "ending_time": 1, "tooltip_tables":[[["Location","Torso"],["Source","External Hospital"]]]},
           {"starting_time": 1, "ending_time": 2,"tooltip_tables":[[["Location","Spine"],["Source","Hospital"]]]}],visible:true},
-      {label:"Diagnosis", times: [{"starting_time": 2, "ending_time":
-              2,"display":"circle","tooltip_tables":[[["Health",1],["MRI","unknown"]]]}],visible:true},
+        {label:"Diagnosis", times: [
+          {"starting_time": 2, "ending_time":
+            2,"display":"circle","tooltip_tables":[[["Health",1],["MRI","good"]]]},
+          {"starting_time": 5, "ending_time":
+            5,"display":"circle","tooltip_tables":[[["Health",2],["MRI","bad left"]]]},
+          {"starting_time": 5, "ending_time":
+            5,"display":"circle","tooltip_tables":[[["Health",3],["MRI","bad right"]]]},
+        ],visible:true},
       {label:"Status", times: [{"starting_time": 8, "ending_time": 8,
           "display":"square","tooltip_tables":[[["TOOLTIP","TEST"],["TOOLTIP2","TEST3"]]]}],visible:true},
       {label:"Test", times: [
