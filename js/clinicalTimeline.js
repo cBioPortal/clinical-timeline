@@ -6,7 +6,8 @@ window.clinicalTimeline = (function(){
       itemMargin = 8,
       divId = null,
       width = null,
-      postTimelineHooks = [];
+      postTimelineHooks = [],
+      enableTrackTooltips = true;
 
   function timeline() {
     visibleData = allData.filter(function(x) {
@@ -44,24 +45,27 @@ window.clinicalTimeline = (function(){
           $(this).attr("height", parseInt($(this).attr("height")) - 2);
       });
     });
-    $(".timeline-label").each(function(i) {
-      if ($(this).prop("__data__")[i].split && !$(this).prop("__data__")[i].parent_track) {
-        addSplittedTrackTooltip($(this), allData);
-      } else {
-        addTrackTooltip($(this), allData);
-      }
-    });
-    svg.attr("height", parseInt(svg.attr("height")) + 15);
+    if (enableTrackTooltips) {
+      $(".timeline-label").each(function(i) {
+        if ($(this).prop("__data__")[i].split && !$(this).prop("__data__")[i].parent_track) {
+          addSplittedTrackTooltip($(this), allData);
+        } else {
+          addTrackTooltip($(this), allData);
+        }
+      });
+      // Add track button
+      svg.attr("height", parseInt(svg.attr("height")) + 15);
+      svg.insert("text")
+        .attr("transform", "translate(0,"+svg.attr("height")+")")
+        .attr("class", "timeline-label")
+        .text("Add track")
+        .attr("id", "addtrack");
+      addNewTrackTooltip($("#addtrack"));
+    }
     svg.insert("text")
       .attr("transform", "translate(0, 15)")
       .attr("class", "timeline-label")
       .text("Time since diagnosis");
-    svg.insert("text")
-      .attr("transform", "translate(0,"+svg.attr("height")+")")
-      .attr("class", "timeline-label")
-      .text("Add track")
-      .attr("id", "addtrack");
-    addNewTrackTooltip($("#addtrack"));
     d3.select(".axis").attr("transform", "translate(0,20)");
 
     // preserve whitespace for easy indentation of labels
@@ -606,6 +610,15 @@ window.clinicalTimeline = (function(){
       }
       return tickValues;
   }
+
+  timeline.enableTrackTooltips = function(b) {
+    if (!arguments.length) return enableTrackTooltips;
+
+    if (b === true || b === false) {
+      enableTrackTooltips = b;
+    }
+    return timeline;
+  };
 
   timeline.width = function (w) {
     if (!arguments.length) return width;
