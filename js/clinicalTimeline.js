@@ -662,6 +662,10 @@ window.clinicalTimeline = (function(){
     return timeline;
   };
 
+  /*
+   * Split a track into multiple tracks based on the value of an
+   * attribute in the tooltip_tables.
+   */
   timeline.splitByClinicalAttribute = function(track, attr) {
     var trackData = allData.filter(function(t) {
       return t.label === track;
@@ -672,6 +676,25 @@ window.clinicalTimeline = (function(){
       });
       if (attrData.length === 1) {
         splitByClinicalAttribute(track, attr);
+      }
+    }
+    return timeline;
+  };
+
+  /*
+   * Set the size of each timepoint in a track based on the value of an
+   * attribute in the tooltip_tables.
+   */
+  timeline.sizeByClinicalAttribute = function(track, attr) {
+    var trackData = allData.filter(function(t) {
+      return t.label === track;
+    });
+    if (trackData.length === 1) {
+      var attrData = trackData[0].times[0].tooltip_tables[0].filter(function(x) {
+        return x[0] === attr;
+      });
+      if (attrData.length === 1) {
+        sizeByClinicalAttribute(track, attr, 2, itemHeight+2);
       }
     }
     return timeline;

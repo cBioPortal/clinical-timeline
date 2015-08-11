@@ -79,7 +79,10 @@
           .width(800)
           .data(allData)
           .divId("#timeline")
-          .splitByClinicalAttribute("Surgery", "Location");
+          .splitByClinicalAttribute("Surgery", "Location")
+          .splitByClinicalAttribute("Test", "Type")
+          .sizeByClinicalAttribute("    PSA", "Result")
+          .collapseAll();
         timeline();
       });
       if (!waitForParse) {
@@ -93,6 +96,26 @@
               3,"tooltip_tables":[[["GIVE","IT"],["THANK","YOU"]]]}],visible:true},
       {label:"Status", times: [{"starting_time": 8, "ending_time": 8,
           "display":"circle","tooltip_tables":[[["TOOLTIP","TEST"],["TOOLTIP2","TEST3"]]]}],visible:true},
+      {label:"Test", times: [
+        {"starting_time": 1, "ending_time": 1,
+          "display":"circle","tooltip_tables":[[["Type","PSA"],["Result",10]]]},
+        {"starting_time": 2, "ending_time": 2,
+          "display":"circle","tooltip_tables":[[["Type","PSA"],["Result",20]]]},
+        {"starting_time": 3, "ending_time": 3,
+          "display":"circle","tooltip_tables":[[["Type","PSA"],["Result",30]]]},
+        {"starting_time": 4, "ending_time": 4,
+          "display":"circle","tooltip_tables":[[["Type","PSA"],["Result",40]]]},
+        {"starting_time": 5, "ending_time": 5,
+          "display":"circle","tooltip_tables":[[["Type","PSA"],["Result",50]]]},
+        {"starting_time": 6, "ending_time": 6,
+          "display":"circle","tooltip_tables":[[["Type","PSA"],["Result",60]]]},
+        {"starting_time": 7, "ending_time": 7,
+          "display":"circle","tooltip_tables":[[["Type","PSA"],["Result",70]]]},
+        {"starting_time": 8, "ending_time": 8,
+          "display":"circle","tooltip_tables":[[["Type","PSA"],["Result",80]]]},
+        ],
+        collapse:true,
+        visible:true},
     ];
   </script>
 </head>
