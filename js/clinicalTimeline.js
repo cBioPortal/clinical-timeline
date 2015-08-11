@@ -9,6 +9,12 @@ window.clinicalTimeline = (function(){
       postTimelineHooks = [],
       enableTrackTooltips = true;
 
+  function getTrack(data, track) {
+    return data.filter(function(x) {
+      return x.label === track;
+    })[0];
+  }
+
   function timeline() {
     visibleData = allData.filter(function(x) {
         return x.visible;
@@ -172,9 +178,7 @@ window.clinicalTimeline = (function(){
   }
 
   function getClinicalAttributes(data, track) {
-    return _.union.apply(_, data.filter(function(x) {
-        return x.label === track;
-      })[0].times.map(function(x) {
+    return _.union.apply(_, getTrack(data, track).times.map(function(x) {
           // return union of attributes in tooltip (in case there are multiple)
           return _.union.apply(_, x.tooltip_tables.map(function(y) {
             return y.map(function(z) {
@@ -186,7 +190,7 @@ window.clinicalTimeline = (function(){
   }
 
   function groupByClinicalAttribute(track, attr) {
-    return _.groupBy(allData.filter(function(x) {return x.label === track;})[0].times, function(x) {
+    return _.groupBy(getTrack(allData, track).times, function(x) {
       // return attribute value if there is one tooltip table
       if (x.tooltip_tables.length === 1) {
         return _.reduce(x.tooltip_tables[0], function(a,b) {
@@ -201,7 +205,7 @@ window.clinicalTimeline = (function(){
 
   function splitByClinicalAttribute(track, attr) {
     // split tooltip_tables into separate time points
-    splitTooltipTables(allData.filter(function(x) {return x.label === track;})[0]);
+    splitTooltipTables(getTrack(allData, track));
 
     var g = groupByClinicalAttribute(track, attr);
     var trackIndex = _.findIndex(allData, function(x) {
@@ -234,7 +238,7 @@ window.clinicalTimeline = (function(){
   }
 
   function sizeByClinicalAttribute(track, attr, minSize, maxSize) {
-    var arr = allData.filter(function(x) {return x.label === track;})[0].times.map(function(x) {
+    var arr = getTrack(allData, track).times.map(function(x) {
       if (x.tooltip_tables.length === 1) {
         return parseInt(x.tooltip_tables[0].filter(function(x) {
           return x[0] === attr;})[0][1]);
@@ -245,7 +249,7 @@ window.clinicalTimeline = (function(){
     var scale = d3.scale.linear()
       .domain([d3.min(arr), d3.max(arr)])
       .range([minSize, maxSize]);
-    allData.filter(function(x) {return x.label === track;})[0].times.forEach(function(x) {
+    getTrack(allData, track).times.forEach(function(x) {
       if (x.tooltip_tables.length === 1) {
         x.size = scale(parseInt(x.tooltip_tables[0].filter(function(x) {
           return x[0] === attr;})[0][1])) || itemHeight;
@@ -264,7 +268,7 @@ window.clinicalTimeline = (function(){
   }
 
   function clearColors(track) {
-    var times = allData.filter(function(x) {return x.label === track;})[0].times;
+    var times = getTrack(allData, track).times;
     for (var i=0; i < times.length; i++) {
       if ("color" in times[i]) {
         delete times[i].color;
@@ -353,28 +357,22 @@ window.clinicalTimeline = (function(){
   };
 
   function toggleTrackVisibility(trackName) {
-    $.each(allData, function(i, x) {
-      if (x.label === trackName) {
-        x.visible = x.visible? false : true;
-      }
-     });
-     timeline();
+    var trackData = getTrack(allData, trackName);
+    trackData.visible = trackData.visible? false : true;
+    timeline();
   }
 
   function toggleTrackCollapse(trackName) {
-    $.each(allData, function(i, x) {
-      if (x.label === trackName) {
-        if (x.collapse) {
-          x.collapse = false;
-          splitTooltipTables(x);
-        } else {
-          if (!isDurationTrack(x)) {
-            x.collapse = true;
-          }
-        }
+    var TrackData = getTrack(allData, trackName);
+    if (trackData.collapse) {
+      trackData.collapse = false;
+      splitTooltipTables(trackData);
+    } else {
+      if (!isDurationTrack(trackData)) {
+        trackData.collapse = true;
       }
-     });
-     timeline();
+    }
+    timeline();
   }
 
   function addNewTrackTooltip(elem) {
@@ -510,7 +508,7 @@ window.clinicalTimeline = (function(){
           $(trackTooltip).append(a);
           $(trackTooltip).append("<br />");
 
-          if (!isDurationTrack(allData.filter(function(x) {return x.label === elem.prop("innerHTML");})[0])) {
+          if (!isDurationTrack(getTrack(allData, elem.prop("innerHTML")))) {
             a = $.parseHTML("<a href='#' onClick='return false' class='hide-track'>Collapse/Stack</a>");
             $(a).on("click", collapseTrackClickHandler(elem.prop("innerHTML")));
             $(trackTooltip).append(a);
@@ -661,7 +659,7 @@ window.clinicalTimeline = (function(){
     var track;
     // append given label ordering
     for (var i = 0; i < labels.length; i++) {
-      track = allData.filter(function(x) { return x.label === labels[i]; })[0];
+      track = getTrack(allData, labels[i]);
       if (track) {
         data = data.concat(track);
       }
@@ -680,11 +678,9 @@ window.clinicalTimeline = (function(){
    * attribute in the tooltip_tables.
    */
   timeline.splitByClinicalAttribute = function(track, attr) {
-    var trackData = allData.filter(function(t) {
-      return t.label === track;
-    });
-    if (trackData.length === 1) {
-      var attrData = trackData[0].times[0].tooltip_tables[0].filter(function(x) {
+    var trackData = getTrack(allData, track);
+    if (trackData) {
+      var attrData = trackData.times[0].tooltip_tables[0].filter(function(x) {
         return x[0] === attr;
       });
       if (attrData.length === 1) {
@@ -699,11 +695,9 @@ window.clinicalTimeline = (function(){
    * attribute in the tooltip_tables.
    */
   timeline.sizeByClinicalAttribute = function(track, attr) {
-    var trackData = allData.filter(function(t) {
-      return t.label === track;
-    });
-    if (trackData.length === 1) {
-      var attrData = trackData[0].times[0].tooltip_tables[0].filter(function(x) {
+    var trackData = getTrack(allData, track);
+    if (trackData) {
+      var attrData = trackData.times[0].tooltip_tables[0].filter(function(x) {
         return x[0] === attr;
       });
       if (attrData.length === 1) {
@@ -717,10 +711,8 @@ window.clinicalTimeline = (function(){
    * Collapse or stack timepoints on given track
    */
   timeline.toggleTrackCollapse = function(track) {
-    var trackData = allData.filter(function(t) {
-      return t.label === track;
-    });
-    if (trackData.length === 1) {
+    var trackData = getTrack(allData, track);
+    if (trackData) {
       toggleTrackCollapse(track);
     }
     return timeline;
