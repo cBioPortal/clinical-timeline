@@ -718,6 +718,22 @@ window.clinicalTimeline = (function(){
     return timeline;
   };
 
+  /*
+   * Set the display attribute for all timepoints with one tooltip_table on a
+   * given track.
+   */
+  timeline.setTimepointsDisplay = function(track, display) {
+    var trackData = getTrack(allData, track);
+    if (trackData) {
+      trackData.times.forEach(function(x) {
+        if (x.tooltip_tables.length === 1) {
+          x.display = display;
+        }
+      });
+    }
+    return timeline;
+  }
+
   timeline.addPostTimelineHook = function(hook) {
     postTimelineHooks = postTimelineHooks.concat(hook);
     return timeline;
