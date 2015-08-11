@@ -363,7 +363,7 @@ window.clinicalTimeline = (function(){
   }
 
   function toggleTrackCollapse(trackName) {
-    var TrackData = getTrack(allData, trackName);
+    var trackData = getTrack(allData, trackName);
     if (trackData.collapse) {
       trackData.collapse = false;
       splitTooltipTables(trackData);
@@ -732,7 +732,7 @@ window.clinicalTimeline = (function(){
       });
     }
     return timeline;
-  }
+  };
 
   timeline.addPostTimelineHook = function(hook) {
     postTimelineHooks = postTimelineHooks.concat(hook);
