@@ -359,7 +359,6 @@ window.clinicalTimeline = (function(){
   function toggleTrackVisibility(trackName) {
     var trackData = getTrack(allData, trackName);
     trackData.visible = trackData.visible? false : true;
-    timeline();
   }
 
   function toggleTrackCollapse(trackName) {
@@ -372,7 +371,6 @@ window.clinicalTimeline = (function(){
         trackData.collapse = true;
       }
     }
-    timeline();
   }
 
   function addNewTrackTooltip(elem) {
@@ -488,11 +486,13 @@ window.clinicalTimeline = (function(){
     function hideTrackClickHandler(trackName) {
        return function() {
          toggleTrackVisibility(trackName);
+         timeline();
        };
     }
     function collapseTrackClickHandler(trackName) {
       return function() {
         toggleTrackCollapse(trackName);
+        timeline();
       };
     }
     elem.qtip({
