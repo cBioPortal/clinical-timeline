@@ -78,7 +78,8 @@
         var timeline = clinicalTimeline
           .width(800)
           .data(allData)
-          .divId("#timeline");
+          .divId("#timeline")
+          .splitByClinicalAttribute("Surgery", "Location");
         timeline();
       });
       if (!waitForParse) {
@@ -86,8 +87,8 @@
       }
     });
     var testDataClinical = [
-      {label:"Surgery", times:[{"starting_time": 0, "ending_time": 1, "tooltip_tables":[[["WE","GOT"],["YES","PLEASE"]]]},
-          {"starting_time": 1, "ending_time": 2,"tooltip_tables":[[["TOOLTIP","LOVE"],["TOOLTIP","HATE"]]]}],visible:true},
+      {label:"Surgery", times:[{"starting_time": 0, "ending_time": 1, "tooltip_tables":[[["Location","Torso"],["Source","External Hospital"]]]},
+          {"starting_time": 1, "ending_time": 2,"tooltip_tables":[[["Location","Spine"],["Source","Hospital"]]]}],visible:true},
       {label:"Diagnosis", times: [{"starting_time": 2, "ending_time":
               3,"tooltip_tables":[[["GIVE","IT"],["THANK","YOU"]]]}],visible:true},
       {label:"Status", times: [{"starting_time": 8, "ending_time": 8,

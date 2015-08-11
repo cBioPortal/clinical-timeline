@@ -662,6 +662,21 @@ window.clinicalTimeline = (function(){
     return timeline;
   };
 
+  timeline.splitByClinicalAttribute = function(track, attr) {
+    var trackData = allData.filter(function(t) {
+      return t.label === track;
+    });
+    if (trackData.length === 1) {
+      var attrData = trackData[0].times[0].tooltip_tables[0].filter(function(x) {
+        return x[0] === attr;
+      });
+      if (attrData.length === 1) {
+        splitByClinicalAttribute(track, attr);
+      }
+    }
+    return timeline;
+  };
+
   timeline.addPostTimelineHook = function(hook) {
     postTimelineHooks = postTimelineHooks.concat(hook);
     return timeline;
