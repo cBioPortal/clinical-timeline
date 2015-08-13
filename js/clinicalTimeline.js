@@ -240,8 +240,8 @@ window.clinicalTimeline = (function(){
   function sizeByClinicalAttribute(track, attr, minSize, maxSize) {
     var arr = getTrack(allData, track).times.map(function(x) {
       if (x.tooltip_tables.length === 1) {
-        return parseInt(x.tooltip_tables[0].filter(function(x) {
-          return x[0] === attr;})[0][1]);
+        return parseFloat(x.tooltip_tables[0].filter(function(x) {
+          return x[0] === attr;})[0][1].replace(/[^\d.-]/g, ''));
       } else {
         return undefined;
       }
@@ -251,8 +251,8 @@ window.clinicalTimeline = (function(){
       .range([minSize, maxSize]);
     getTrack(allData, track).times.forEach(function(x) {
       if (x.tooltip_tables.length === 1) {
-        x.size = scale(parseInt(x.tooltip_tables[0].filter(function(x) {
-          return x[0] === attr;})[0][1])) || itemHeight;
+        x.size = scale(parseFloat(x.tooltip_tables[0].filter(function(x) {
+          return x[0] === attr;})[0][1].replace(/[^\d.-]/g, ''))) || minSize;
       }
     });
   }
