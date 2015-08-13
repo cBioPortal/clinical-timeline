@@ -11,7 +11,7 @@ window.clinicalTimeline = (function(){
 
   function getTrack(data, track) {
     return data.filter(function(x) {
-      return x.label === track;
+      return $.trim(x.label) === $.trim(track);
     })[0];
   }
 
