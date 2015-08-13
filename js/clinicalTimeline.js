@@ -255,7 +255,6 @@ window.clinicalTimeline = (function(){
           return x[0] === attr;})[0][1])) || itemHeight;
       }
     });
-    timeline();
   }
 
   function colorByClinicalAttribute(track, attr) {
@@ -418,7 +417,7 @@ window.clinicalTimeline = (function(){
       timeline();
     }
     function sizeByClickHandler() {
-      sizeByClinicalAttribute(track, $(this).prop("innerHTML"), 2, itemHeight+2);
+      sizeByClinicalAttribute(track, $(this).prop("innerHTML"), 2, itemHeight);
       timeline();
     }
     elem.qtip({
@@ -701,7 +700,7 @@ window.clinicalTimeline = (function(){
         return x[0] === attr;
       });
       if (attrData.length === 1) {
-        sizeByClinicalAttribute(track, attr, 2, itemHeight+2);
+        sizeByClinicalAttribute(track, attr, 2, itemHeight);
       }
     }
     return timeline;
