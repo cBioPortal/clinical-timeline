@@ -36,8 +36,18 @@ window.clinicalTimeline = (function(){
 
 
     $(divId).html("");
-    var svg = d3.select(divId).append("svg").attr("width", width)
-      .datum(mergeAllTooltipTablesAtEqualTimepoint(visibleData)).call(chart);
+    var svg = d3.select(divId).append("svg").attr("width", width);
+
+    // Add dropshadow filter
+    svg.append('defs').html('' +
+      '<filter id="dropshadow" x="0" y="0" width="200%" height="200%">' +
+      '  <feOffset result="offOut" in="SourceAlpha" dx="1.5" dy="1.5" />' +
+      '  <feGaussianBlur result="blurOut" in="offOut" stdDeviation="2" />' +
+      '  <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />' +
+      '</filter>');
+
+    svg.datum(mergeAllTooltipTablesAtEqualTimepoint(visibleData)).call(chart);
+
     $("[id^='timelineItem']").each(function() {
       timeline.addDataPointTooltip($(this));
     });
@@ -141,7 +151,7 @@ window.clinicalTimeline = (function(){
         return {
           "starting_time":startingTime,
           "ending_time":startingTime,
-          "display":"unfilled_circle",
+          "display":"dropshadow circle",
           "tooltip_tables": _.reduce(group.map(function(x) {
             return x.tooltip_tables;
           }), function(a, b) {
@@ -240,8 +250,8 @@ window.clinicalTimeline = (function(){
   function sizeByClinicalAttribute(track, attr, minSize, maxSize) {
     var arr = getTrack(allData, track).times.map(function(x) {
       if (x.tooltip_tables.length === 1) {
-        return parseFloat(x.tooltip_tables[0].filter(function(x) {
-          return x[0] === attr;})[0][1].replace(/[^\d.-]/g, ''));
+        return parseFloat(String(x.tooltip_tables[0].filter(function(x) {
+          return x[0] === attr;})[0][1]).replace(/[^\d.-]/g, ''));
       } else {
         return undefined;
       }
@@ -251,8 +261,8 @@ window.clinicalTimeline = (function(){
       .range([minSize, maxSize]);
     getTrack(allData, track).times.forEach(function(x) {
       if (x.tooltip_tables.length === 1) {
-        x.size = scale(parseFloat(x.tooltip_tables[0].filter(function(x) {
-          return x[0] === attr;})[0][1].replace(/[^\d.-]/g, ''))) || minSize;
+        x.size = scale(parseFloat(String(x.tooltip_tables[0].filter(function(x) {
+          return x[0] === attr;})[0][1]).replace(/[^\d.-]/g, ''))) || minSize;
       }
     });
   }

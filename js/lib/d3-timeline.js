@@ -203,7 +203,7 @@
             .attr("height", getHeight)
             .style("fill", function(d, i){
               var dColorPropName;
-              if ("display" in d && d.display === "unfilled_circle") {
+              if ("display" in d && d.display.split(" ").indexOf("unfilled") !== -1) {
                 return "rgb(255, 255, 255)";
               }
               if (d.color) return d.color;
@@ -220,10 +220,17 @@
               return colorCycle(index);
             })
             .style("stroke", function(d, i) {
-              if (d.display === "unfilled_circle") {
+              if ("display" in d && d.display.split(" ").indexOf("unfilled") !== -1) {
                 if (d.color) return d.color;
                 if (hasLabel) return colorCycle(datum.label);
                 return colorCycle(index);
+              }
+            })
+            .attr("filter", function(d, i) {
+              if ("display" in d && d.display.split(" ").indexOf("dropshadow") !== -1) {
+                return "url(#dropshadow)";
+              } else {
+                return "";
               }
             })
             .on("mousemove", function (d, i) {
@@ -390,7 +397,7 @@
             shape = d.display;
           } else if (d.display === "square") {
             shape = "rect";
-          } else if (d.display === "unfilled_circle") {
+          } else if (d.display.split(" ").indexOf("circle") !== -1) {
             shape = "circle";
           } else {
             console.warn("d3Timeline Warning: unrecognized display attribute: " + d.display);
