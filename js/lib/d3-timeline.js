@@ -26,6 +26,7 @@
         ending = 0,
         margin = {left: 30, right:30, top: 30, bottom:30},
         stacked = false,
+        stackSlack = 0,
         rotateTicks = false,
         timeIsRelative = false,
         itemHeight = 20,
@@ -80,7 +81,7 @@
             var overlapMaxStack = 0;
 
             if (!datum.collapse) {
-              var overlapGroups = groupByOverlap(datum.times, (ending/80+3));
+              var overlapGroups = groupByOverlap(datum.times, stackSlack);
 
               overlapGroups.forEach(function(overlapGroup, j) {
                 var overlapStack = 0;
@@ -588,6 +589,11 @@
 
     timeline.stack = function () {
       stacked = !stacked;
+      return timeline;
+    };
+
+    timeline.stackSlack = function () {
+      if (!arguments.length) return stackSlack;
       return timeline;
     };
 

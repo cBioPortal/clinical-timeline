@@ -7,7 +7,8 @@ window.clinicalTimeline = (function(){
       divId = null,
       width = null,
       postTimelineHooks = [],
-      enableTrackTooltips = true;
+      enableTrackTooltips = true,
+      stackSlack = null;
 
   function getTrack(data, track) {
     return data.filter(function(x) {
@@ -19,6 +20,20 @@ window.clinicalTimeline = (function(){
     visibleData = allData.filter(function(x) {
         return x.visible;
     });
+
+    var maxDays = Math.max.apply(Math, [getMaxEndingTime(allData), 1]);
+    if (stackSlack === null) {
+      if (maxDays > 300) {
+        stackSlack = 5;
+      }
+      if (maxDays > 600) {
+        stackSlack = 10;
+      }
+      if (maxDays > 900) {
+        stackSlack = 20;
+      }
+    }
+
     var chart = d3.timeline()
       .stack()
       .margin({left:200, right:30, top:15, bottom:0})
@@ -28,7 +43,8 @@ window.clinicalTimeline = (function(){
         tickSize: 6
       })
       .beginning("0")
-      .ending(Math.max.apply(Math, [getMaxEndingTime(allData), 1]))
+      .ending(maxDays)
+      .stackSlack(stackSlack)
       .orient('top')
       .itemHeight(itemHeight)
       .itemMargin(itemMargin)
@@ -630,6 +646,11 @@ window.clinicalTimeline = (function(){
   timeline.width = function (w) {
     if (!arguments.length) return width;
     width = w;
+    return timeline;
+  };
+
+  timeline.stackSlack = function () {
+    if (!arguments.length) return stackSlack;
     return timeline;
   };
 
