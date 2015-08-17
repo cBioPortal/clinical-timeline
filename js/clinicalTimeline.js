@@ -42,7 +42,7 @@ window.clinicalTimeline = (function(){
     svg.append('defs').html('' +
       '<filter id="dropshadow" x="0" y="0" width="200%" height="200%">' +
       '  <feOffset result="offOut" in="SourceAlpha" dx="1.5" dy="1.5" />' +
-      '  <feGaussianBlur result="blurOut" in="offOut" stdDeviation="2" />' +
+      '  <feGaussianBlur result="blurOut" in="offOut" stdDeviation="1" />' +
       '  <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />' +
       '</filter>');
 
