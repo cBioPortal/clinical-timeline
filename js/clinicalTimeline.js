@@ -28,7 +28,7 @@ window.clinicalTimeline = (function(){
         tickSize: 6
       })
       .beginning("0")
-      .ending(getMaxEndingTime(allData))
+      .ending(Math.max.apply(Math, [getMaxEndingTime(allData), 1]))
       .orient('top')
       .itemHeight(itemHeight)
       .itemMargin(itemMargin)
@@ -600,7 +600,7 @@ window.clinicalTimeline = (function(){
 
   function getTickValues(data) {
       tickValues = [];
-      maxDays = getMaxEndingTime(data);
+      maxDays = Math.max.apply(Math, [getMaxEndingTime(allData), 1]);
       maxTime = daysToTimeObject(maxDays);
       if (maxTime.y >= 1) {
           for (var i=0; i <= maxTime.y; i++) {
