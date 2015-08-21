@@ -329,7 +329,6 @@ window.clinicalTimeline = (function(){
       };
       return dataTable;
     }
-
     elem.qtip({
       content: {
         text: "table"
@@ -374,8 +373,8 @@ window.clinicalTimeline = (function(){
           }
         }
       },
-      show: {event: "click mouseover"},
-      hide: {event: "click mouseleave"},
+      show: {event: "mouseover"},
+      hide: {event: "mouseleave"},
       style: { classes: 'qtip-light qtip-rounded qtip-wide' },
       position: {my:'top middle',at:'bottom middle',viewport: $(window)},
    });
