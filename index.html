@@ -82,6 +82,7 @@
           .splitByClinicalAttribute("Surgery", "Location")
           .splitByClinicalAttribute("Test", "Type")
           .sizeByClinicalAttribute("    PSA", "Result")
+          .orderAllTooltipTables(["Source","Location"])
           .enableTrackTooltips(true)
           .collapseAll();
         timeline();

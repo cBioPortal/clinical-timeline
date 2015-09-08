@@ -703,6 +703,50 @@ window.clinicalTimeline = (function(){
     return timeline;
   };
 
+  timeline.orderTrackTooltipTables = function(track, labels) {
+    trackData = getTrack(allData, track);
+    if (trackData.times.length === 0) {
+      return timeline;
+    }
+    // sort rows not in given labels
+    alphaSortRows = _.uniq(
+      trackData.times.map(function(t) {
+        return t.tooltip_tables.map(function(tt) {
+          return tt.map(function(row) {
+            if (labels.indexOf(row[0]) === -1) return row[0];
+          });
+        });
+    }).reduce(function(a,b) {
+        return a.concat(b);
+      }, []).reduce(function(a,b) {
+        return a.concat(b);
+      }, [])
+    ).sort();
+    allLabelRows = labels.concat(alphaSortRows);
+    trackData.times.forEach(function(t) {
+      for (var i=0; i < t.tooltip_tables.length; i++) {
+        var tt = t.tooltip_tables[i];
+        var sortTt = [];
+
+        for (var j=0; j < allLabelRows.length; j++) {
+          row = tt.filter(function(x) {return x[0] === allLabelRows[j];})[0];
+          if (row != null) {
+            sortTt = sortTt.concat([row]);
+          }
+        }
+        t.tooltip_tables[i] = sortTt;
+      }
+    });
+    return timeline;
+  };
+
+  timeline.orderAllTooltipTables = function(labels) {
+    allData.forEach(function(track) {
+      timeline.orderTrackTooltipTables(track.label, labels);
+    });
+    return timeline;
+  };
+
   /*
    * Split a track into multiple tracks based on the value of an
    * attribute in the tooltip_tables.
