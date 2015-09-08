@@ -618,18 +618,19 @@ window.clinicalTimeline = (function(){
       maxDays = Math.max.apply(Math, [getMaxEndingTime(allData), 1]);
       maxTime = daysToTimeObject(maxDays);
       if (maxTime.y >= 1) {
-          for (var i=0; i <= maxTime.y; i++) {
+          for (var i=0; i < maxTime.y; i++) {
               tickValues.push(i * maxTime.daysPerYear);
           }
       } else if (maxTime.y > 0 || maxTime.m  >= 1) {
-          for (var i=0; i <= maxTime.m + (maxTime.y * maxTime.daysPerYear) / maxTime.daysPerMonth; i++) {
+          for (var i=0; i < maxTime.m + (maxTime.y * maxTime.daysPerYear) / maxTime.daysPerMonth; i++) {
               tickValues.push(i * maxTime.daysPerMonth);
           }
       } else {
-          for (var i=0; i <= maxDays; i++) {
+          for (var i=0; i < maxDays; i++) {
               tickValues.push(i);
           }
       }
+      tickValues.push(maxDays);
       return tickValues;
   }
 
