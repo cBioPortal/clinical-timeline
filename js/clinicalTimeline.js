@@ -161,6 +161,23 @@ window.clinicalTimeline = (function(){
       }
     });
 
+    // Add white background for labels to prevent timepoint overlap
+    d3.select(divId + " svg")
+      .insert("rect", ".timeline-label")
+      .attr("width", 130)
+      .attr("height", 20)
+      .attr("x", 0)
+      .attr("y", 0)
+      .style("fill", "rgb(255, 255, 255)");
+    d3.select(divId + " svg")
+      .insert("rect", ".timeline-label")
+      .attr("width", 200)
+      .attr("height", gBoundingBox.height - 15)
+      .attr("x", 0)
+      .attr("y", 20)
+      .style("fill", "rgb(255, 255, 255)");
+
+
     postTimelineHooks.forEach(function(hook) {
       hook.call();
     });
