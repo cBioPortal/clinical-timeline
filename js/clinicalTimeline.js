@@ -112,7 +112,7 @@ window.clinicalTimeline = (function(){
     });
 
     // Add zoom selection
-    var g = d3.select("#timeline svg g");
+    var g = d3.select(divId + " svg g");
     g.attr("class", "g_main");
     var gBoundingBox = g[0][0].getBoundingClientRect();
     var drawRect = false;
@@ -122,7 +122,7 @@ window.clinicalTimeline = (function(){
       d3.select("#zoomRect").remove();
       drawRect = true;
       originX = d3.mouse(this)[0];
-      var g = d3.select("#timeline svg g");
+      var g = d3.select(divId + " svg g");
       rect = g.insert("rect", "#overlayRect")
         .attr("width", 0)
         .attr("id", "zoomRect")
@@ -155,9 +155,9 @@ window.clinicalTimeline = (function(){
           beginning = "0";
         }
         ending = xScale.invert(parseInt(d3.select("#zoomRect").attr("x")) + parseInt(d3.select("#zoomRect").attr("width"))).valueOf() + 1;
-        d3.select("#timeline").style("visibility", "hidden");
+        d3.select(divId).style("visibility", "hidden");
         timeline();
-        d3.select("#timeline").style("visibility", "visible");
+        d3.select(divId).style("visibility", "visible");
       }
     });
 
