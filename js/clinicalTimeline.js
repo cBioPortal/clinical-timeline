@@ -36,8 +36,16 @@ window.clinicalTimeline = (function(){
         stackSlack = 20;
       }
     }
+    var minDays = Math.min.apply(Math, [getMinStartingTime(allData), 0]);
+
     if (ending === 0) {
       ending = maxDays;
+    }
+    if (beginning === "0") {
+      beginning = minDays;
+    }
+    if (beginning === 0) {
+      beginning = "0";
     }
 
     var chart = d3.timeline()
@@ -45,7 +53,7 @@ window.clinicalTimeline = (function(){
       .margin(margin)
       .tickFormat({
         format: function(d) { return formatTime(daysToTimeObject(d.valueOf())); },
-        tickValues: getTickValues(allData),
+        tickValues: getTickValues(beginning, ending),
         tickSize: 6
       })
       .beginning(beginning)
@@ -151,9 +159,6 @@ window.clinicalTimeline = (function(){
           .domain([beginning, ending])
           .range([margin.left, width - margin.right]);
         beginning = xScale.invert(d3.select("#zoomRect").attr("x")).valueOf();
-        if (beginning === 0) {
-          beginning = "0";
-        }
         ending = xScale.invert(parseInt(d3.select("#zoomRect").attr("x")) + parseInt(d3.select("#zoomRect").attr("width"))).valueOf() + 1;
         d3.select(divId).style("visibility", "hidden");
         timeline();
@@ -171,7 +176,7 @@ window.clinicalTimeline = (function(){
       .style("fill", "rgb(255, 255, 255)");
     d3.select(divId + " svg")
       .insert("rect", ".timeline-label")
-      .attr("width", 200)
+      .attr("width", 190)
       .attr("height", gBoundingBox.height - 15)
       .attr("x", 0)
       .attr("y", 20)
@@ -657,6 +662,14 @@ window.clinicalTimeline = (function(){
       }));
   }
 
+  function getMinStartingTime(data) {
+      return Math.min.apply(Math, data.map(function (o){
+          return Math.min.apply(Math, o.times.map(function(t) {
+              return t.starting_time;
+          }));
+      }));
+  }
+
   function daysToTimeObject(dayCount) {
       var time = {};
       var daysPerYear = 365;
@@ -671,39 +684,63 @@ window.clinicalTimeline = (function(){
 
   function formatTime(time) {
       var dayFormat = [];
+      var m;
+      var d;
       if (time.y !== 0) {
-          dayFormat = dayFormat.concat(time.y+"y");
+        dayFormat = dayFormat.concat(time.y+"y");
       }
       if (time.m !== 0) {
-          dayFormat = dayFormat.concat(time.m+"m");
+        if (time.y !== 0) {
+          m = Math.abs(time.m);
+        } else {
+          m = time.m;
+        }
+        dayFormat = dayFormat.concat(m+"m");
       }
       if (time.d !== 0) {
-          dayFormat = dayFormat.concat(time.d+"d");
+        if (time.y !== 0 || time.m !== 0) {
+          d = Math.abs(time.d);
+        } else {
+          d = time.d;
+        }
+        dayFormat = dayFormat.concat(d+"d");
       }
       if (time.y === 0 && time.m === 0 && time.d === 0) {
-          dayFormat = [0];
+        dayFormat = [0];
       }
       return dayFormat.join(" ");
   }
 
-  function getTickValues(data) {
+  function difference(a, b) {
+    return Math.max(a, b) - Math.min(a, b);
+  }
+
+  function getTickValues(beginning, ending) {
       tickValues = [];
-      maxDays = Math.max.apply(Math, [getMaxEndingTime(allData), 1]);
-      maxTime = daysToTimeObject(maxDays);
-      if (maxTime.y >= 1) {
-          for (var i=0; i < maxTime.y; i++) {
+      timePeriod = daysToTimeObject(difference(parseInt(beginning), parseInt(ending)));
+      maxTime = daysToTimeObject(parseInt(ending));
+      minTime = daysToTimeObject(parseInt(beginning));
+      var i;
+      if (timePeriod.y >= 2) {
+          tickValues.push(parseInt(beginning));
+          for (i=minTime.y; i < maxTime.y; i++) {
               tickValues.push(i * maxTime.daysPerYear);
           }
-      } else if (maxTime.y > 0 || maxTime.m  >= 1) {
-          for (var i=0; i < maxTime.m + (maxTime.y * maxTime.daysPerYear) / maxTime.daysPerMonth; i++) {
+      } else if (timePeriod.y > 0 || timePeriod.m  >= 1) {
+          tickValues.push(parseInt(beginning));
+          for (i=minTime.m + minTime.y * 12 + 1; i < maxTime.m + maxTime.y * 12 - 1; i++) {
               tickValues.push(i * maxTime.daysPerMonth);
           }
+      } else if (timePeriod.d > 12) {
+          for (i=parseInt(beginning); i < parseInt(ending) - 1; i+=3) {
+              tickValues.push(i);
+          }
       } else {
-          for (var i=0; i < maxDays; i++) {
+          for (i=parseInt(beginning); i < parseInt(ending); i++) {
               tickValues.push(i);
           }
       }
-      tickValues.push(maxDays);
+      tickValues.push(parseInt(ending));
       return tickValues;
   }
 
