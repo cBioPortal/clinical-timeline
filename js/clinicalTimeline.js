@@ -2,13 +2,16 @@
 window.clinicalTimeline = (function(){
   var allData,
       colorCycle = d3.scale.category20(),
+      margin = {left: 200, right:30, top: 15, bottom:0},
       itemHeight = 6,
       itemMargin = 8,
       divId = null,
       width = null,
       postTimelineHooks = [],
       enableTrackTooltips = true,
-      stackSlack = null;
+      stackSlack = null,
+      beginning = "0",
+      ending = 0;
 
   function getTrack(data, track) {
     return data.filter(function(x) {
@@ -33,17 +36,20 @@ window.clinicalTimeline = (function(){
         stackSlack = 20;
       }
     }
+    if (ending === 0) {
+      ending = maxDays;
+    }
 
     var chart = d3.timeline()
       .stack()
-      .margin({left:200, right:30, top:15, bottom:0})
+      .margin(margin)
       .tickFormat({
         format: function(d) { return formatTime(daysToTimeObject(d.valueOf())); },
         tickValues: getTickValues(allData),
         tickSize: 6
       })
-      .beginning("0")
-      .ending(maxDays)
+      .beginning(beginning)
+      .ending(ending)
       .stackSlack(stackSlack)
       .orient('top')
       .itemHeight(itemHeight)
@@ -103,6 +109,56 @@ window.clinicalTimeline = (function(){
     // preserve whitespace for easy indentation of labels
     $(".timeline-label").each(function(i, x) {
       x.setAttributeNS("http://www.w3.org/XML/1998/namespace", "xml:space", "preserve");
+    });
+
+    // Add zoom selection
+    var g = d3.select("#timeline svg g");
+    g.attr("class", "g_main");
+    var gBoundingBox = g[0][0].getBoundingClientRect();
+    var drawRect = false;
+    var overlayRect = g.insert("rect", ".axis").attr("id","overlayRect").style("visibility","hidden").attr("x", 200).attr("y", 0).attr("width", gBoundingBox.width).attr("height", gBoundingBox.height);
+    var originX;
+    overlayRect.on("mousedown", function() {
+      d3.select("#zoomRect").remove();
+      drawRect = true;
+      originX = d3.mouse(this)[0];
+      var g = d3.select("#timeline svg g");
+      rect = g.insert("rect", "#overlayRect")
+        .attr("width", 0)
+        .attr("id", "zoomRect")
+        .attr("height", gBoundingBox.height)
+        .attr("x", originX)
+        .attr("y", 20)
+        .attr("style", "fill-opacity: 0.5");
+      return false;
+    });
+    overlayRect.on("mousemove", function() {
+      if (drawRect) {
+        var mouseX = d3.mouse(this)[0];
+        if (mouseX > originX) {
+          d3.select("#zoomRect").attr("width", mouseX - originX);
+        } else {
+          d3.select("#zoomRect").attr("x", mouseX);
+          d3.select("#zoomRect").attr("width", originX - mouseX);
+        }
+      }
+      return false;
+    });
+    overlayRect.on("mouseup", function() {
+      if (drawRect) {
+        drawRect = false;
+        var xScale = d3.time.scale()
+          .domain([beginning, ending])
+          .range([margin.left, width - margin.right]);
+        beginning = xScale.invert(d3.select("#zoomRect").attr("x")).valueOf();
+        if (beginning === 0) {
+          beginning = "0";
+        }
+        ending = xScale.invert(parseInt(d3.select("#zoomRect").attr("x")) + parseInt(d3.select("#zoomRect").attr("width"))).valueOf() + 1;
+        d3.select("#timeline").style("visibility", "hidden");
+        timeline();
+        d3.select("#timeline").style("visibility", "visible");
+      }
     });
 
     postTimelineHooks.forEach(function(hook) {
