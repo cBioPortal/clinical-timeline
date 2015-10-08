@@ -124,7 +124,7 @@ window.clinicalTimeline = (function(){
     g.attr("class", "g_main");
     var gBoundingBox = g[0][0].getBoundingClientRect();
     var drawRect = false;
-    var overlayRect = g.insert("rect", ".axis").attr("id","overlayRect").style("visibility","hidden").attr("x", 200).attr("y", 0).attr("width", gBoundingBox.width).attr("height", gBoundingBox.height);
+    var overlayRect = g.insert("rect", ".axis").attr("id","overlayRect").style("visibility","hidden").style("cursor", "zoom-in").attr("x", 200).attr("y", 0).attr("width", gBoundingBox.width).attr("height", gBoundingBox.height);
     var originX;
     overlayRect.on("mousedown", function() {
       d3.select("#zoomRect").remove();
@@ -137,7 +137,7 @@ window.clinicalTimeline = (function(){
         .attr("height", gBoundingBox.height)
         .attr("x", originX)
         .attr("y", 20)
-        .attr("style", "fill-opacity: 0.5");
+        .attr("style", "fill-opacity: 0.3");
       return false;
     });
     overlayRect.on("mousemove", function() {
@@ -163,6 +163,23 @@ window.clinicalTimeline = (function(){
         d3.select(divId).style("visibility", "hidden");
         timeline();
         d3.select(divId).style("visibility", "visible");
+        if ($("#timelineZoomOut")[0] === undefined) {
+          var zoomBtn = d3.select(divId + " svg")
+            .insert("text")
+            .attr("transform", "translate("+(parseInt(svg.attr("width"))-70)+", "+parseInt(svg.attr("height"))+")")
+            .attr("class", "timeline-label")
+            .text("Zoom out")
+            .style("cursor", "zoom-out")
+            .attr("id", "timelineZoomOut");
+          zoomBtn.on("click", function() {
+            beginning = "0";
+            ending = 0;
+            d3.select(divId).style("visibility", "hidden");
+            timeline();
+            d3.select(divId).style("visibility", "visible");
+            this.remove();
+          });
+        }
       }
     });
 
