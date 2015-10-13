@@ -124,7 +124,7 @@ window.clinicalTimeline = (function(){
     g.attr("class", "g_main");
     var gBoundingBox = g[0][0].getBoundingClientRect();
     var drawRect = false;
-    var overlayRect = g.insert("rect", ".axis").attr("id","overlayRect").style("visibility","hidden").style("cursor", "zoom-in").attr("x", 200).attr("y", 0).attr("width", gBoundingBox.width).attr("height", gBoundingBox.height);
+    var overlayRect = g.insert("rect", ".axis").attr("id","overlayRect").style("visibility","hidden").style("cursor", "zoom-in").attr("x", 180).attr("y", 0).attr("width", gBoundingBox.width + 20).attr("height", gBoundingBox.height);
     var originX;
     overlayRect.on("mousedown", function() {
       d3.select("#zoomRect").remove();
@@ -150,6 +150,11 @@ window.clinicalTimeline = (function(){
           d3.select("#zoomRect").attr("width", originX - mouseX);
         }
       }
+      d3.select("#timelineZoomExplanation").style("visibility", "visible");
+      return false;
+    });
+    overlayRect.on("mouseout", function() {
+      d3.select("#timelineZoomExplanation").style("visibility", "hidden");
       return false;
     });
     overlayRect.on("mouseup", function() {
@@ -171,6 +176,7 @@ window.clinicalTimeline = (function(){
             .text("Zoom out")
             .style("cursor", "zoom-out")
             .attr("id", "timelineZoomOut");
+          d3.select("#timelineZoomExplanation").text("");
           zoomBtn.on("click", function() {
             beginning = "0";
             ending = 0;
@@ -178,10 +184,20 @@ window.clinicalTimeline = (function(){
             timeline();
             d3.select(divId).style("visibility", "visible");
             this.remove();
+            d3.select("#timelineZoomExplanation").text("Click + drag to zoom");
           });
         }
       }
     });
+    if ($("#timelineZoomOut")[0] === undefined) {
+      var zoomExplanation = d3.select(divId + " svg")
+        .insert("text")
+        .attr("transform", "translate("+(parseInt(svg.attr("width"))-120)+", "+parseInt(svg.attr("height")-5)+")")
+        .attr("class", "timeline-label")
+        .text("")
+        .attr("id", "timelineZoomExplanation")
+        .style("visibility", "hidden");
+    }
 
     // Add white background for labels to prevent timepoint overlap
     d3.select(divId + " svg")
@@ -743,12 +759,12 @@ window.clinicalTimeline = (function(){
           for (i=minTime.y; i < maxTime.y; i++) {
               tickValues.push(i * maxTime.daysPerYear);
           }
-      } else if (timePeriod.y > 0 || timePeriod.m  >= 1) {
+      } else if (timePeriod.y > 0 || timePeriod.m  >= 2) {
           tickValues.push(parseInt(beginning));
           for (i=minTime.m + minTime.y * 12 + 1; i < maxTime.m + maxTime.y * 12 - 1; i++) {
-              tickValues.push(i * maxTime.daysPerMonth);
+              tickValues.push(i * maxTime.daysPerMonth + parseInt(i/12) * 5);
           }
-      } else if (timePeriod.d > 12) {
+      } else if (timePeriod.d + timePeriod.m * timePeriod.daysPerMonth > 12) {
           for (i=parseInt(beginning); i < parseInt(ending) - 1; i+=3) {
               tickValues.push(i);
           }
