@@ -13,7 +13,8 @@
         height = null,
         rowSeperatorsColor = null,
         backgroundColor = null,
-        tickFormat = { format: function(d) { var format = d3.time.format("%I %p"); return format(d) },
+        translateX = 0,
+        tickFormat = { format: function(d) { var format = d3.time.format("%I %p"); return format(d); },
           tickTime: d3.time.hours,
           tickInterval: 1,
           tickSize: 6,
@@ -326,9 +327,13 @@
 
         var zoom = d3.behavior.zoom().x(xScale).on("zoom", move);
 
+
         gParent
           .attr("class", "scrollable")
           .call(zoom);
+
+        zoom.translate([translateX, 0]);
+        zoom.event(gParent);
       }
 
       if (rotateTicks) {
@@ -656,7 +661,13 @@
       if (!arguments.length) return timeAxisTickFormat;
       timeAxisTickFormat = format;
       return timeline;
-    }
+    };
+
+    timeline.translate = function(x) {
+      if (!arguments.length) return translateX;
+      translateX = x;
+      return timeline;
+    };
 
     return timeline;
   };

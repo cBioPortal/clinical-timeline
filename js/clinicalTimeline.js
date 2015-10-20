@@ -7,9 +7,11 @@ window.clinicalTimeline = (function(){
       itemMargin = 8,
       divId = null,
       width = null,
+      zoomFactor = 1,
       postTimelineHooks = [],
       enableTrackTooltips = true,
       stackSlack = null,
+      translateX = 0,
       beginning = "0",
       ending = 0;
 
@@ -53,9 +55,11 @@ window.clinicalTimeline = (function(){
       .margin(margin)
       .tickFormat({
         format: function(d) { return formatTime(daysToTimeObject(d.valueOf())); },
-        tickValues: getTickValues(beginning, ending),
+        tickValues: getTickValues(beginning, ending, width * zoomFactor),
         tickSize: 6
       })
+      .translate(translateX)
+      .width(width * zoomFactor)
       .beginning(beginning)
       .ending(ending)
       .stackSlack(stackSlack)
@@ -119,27 +123,20 @@ window.clinicalTimeline = (function(){
       x.setAttributeNS("http://www.w3.org/XML/1998/namespace", "xml:space", "preserve");
     });
 
-    // Add zoom selection
+    // overlay rectangle for mouse event triggers
     var g = d3.select(divId + " svg g");
     g.attr("class", "g_main");
     var gBoundingBox = g[0][0].getBoundingClientRect();
     var drawRect = false;
-    var overlayRect = g.insert("rect", ".axis").attr("id","overlayRect").style("visibility","hidden").style("cursor", "zoom-in").attr("x", 180).attr("y", 0).attr("width", gBoundingBox.width + 20).attr("height", gBoundingBox.height);
-    var originX;
-    overlayRect.on("mousedown", function() {
-      d3.select("#zoomRect").remove();
-      drawRect = true;
-      originX = d3.mouse(this)[0];
-      var g = d3.select(divId + " svg g");
-      rect = g.insert("rect", "#overlayRect")
-        .attr("width", 0)
-        .attr("id", "zoomRect")
-        .attr("height", gBoundingBox.height)
-        .attr("x", originX)
-        .attr("y", 20)
-        .attr("style", "fill-opacity: 0.3");
-      return false;
-    });
+    var overlayRect = g.insert("rect", ".axis")
+      .attr("id","overlayRect")
+      .style("visibility","hidden")
+      .style("cursor", "move")
+      .attr("x", 180)
+      .attr("y", 0)
+      .attr("width", gBoundingBox.width + 20)
+      .attr("height", gBoundingBox.height);
+    var zoomExplanation;
     overlayRect.on("mousemove", function() {
       if (drawRect) {
         var mouseX = d3.mouse(this)[0];
@@ -150,6 +147,8 @@ window.clinicalTimeline = (function(){
           d3.select("#zoomRect").attr("width", originX - mouseX);
         }
       }
+      if (zoomFactor !== 1) {
+      }
       d3.select("#timelineZoomExplanation").style("visibility", "visible");
       return false;
     });
@@ -157,46 +156,76 @@ window.clinicalTimeline = (function(){
       d3.select("#timelineZoomExplanation").style("visibility", "hidden");
       return false;
     });
-    overlayRect.on("mouseup", function() {
-      if (drawRect) {
-        drawRect = false;
-        var xScale = d3.time.scale()
-          .domain([beginning, ending])
-          .range([margin.left, width - margin.right]);
-        beginning = xScale.invert(d3.select("#zoomRect").attr("x")).valueOf();
-        ending = xScale.invert(parseInt(d3.select("#zoomRect").attr("x")) + parseInt(d3.select("#zoomRect").attr("width"))).valueOf() + 1;
-        d3.select(divId).style("visibility", "hidden");
-        timeline();
-        d3.select(divId).style("visibility", "visible");
-        if ($("#timelineZoomOut")[0] === undefined) {
+
+    // Add rectangular zoom selection
+    if (zoomFactor === 1) {
+      overlayRect.style("cursor", "zoom-in");
+      var originX;
+      overlayRect.on("mousedown", function() {
+        d3.select("#zoomRect").remove();
+        drawRect = true;
+        originX = d3.mouse(this)[0];
+        var g = d3.select(divId + " svg g");
+        rect = g.insert("rect", "#overlayRect")
+          .attr("width", 0)
+          .attr("id", "zoomRect")
+          .attr("height", gBoundingBox.height)
+          .attr("x", originX)
+          .attr("y", 20)
+          .attr("style", "fill-opacity: 0.3");
+        return false;
+      });
+      overlayRect.on("mouseup", function() {
+        if (drawRect) {
+          drawRect = false;
+          var xScale = d3.time.scale()
+             .domain([beginning, ending])
+             .range([margin.left, width - margin.right]);
+          var xDaysRect = xScale.invert(d3.select("#zoomRect").attr("x")).valueOf();
+          zoomFactor = parseInt(parseInt(width) / (parseInt(d3.select("#zoomRect").attr("width"))));
+          var xZoomScale = d3.time.scale()
+             .domain([beginning, ending])
+             .range([margin.left, width * zoomFactor - margin.right]);
+          translateX = -xZoomScale(xDaysRect);
+
+          d3.select(divId).style("visibility", "hidden");
+          timeline();
+          d3.select(divId).style("visibility", "visible");
           var zoomBtn = d3.select(divId + " svg")
             .insert("text")
-            .attr("transform", "translate("+(parseInt(svg.attr("width"))-70)+", "+parseInt(svg.attr("height"))+")")
+            .attr("transform", "translate("+(parseInt(svg.attr("width"))-70)+", "+parseInt(svg.attr("height")-5)+")")
             .attr("class", "timeline-label")
             .text("Zoom out")
             .style("cursor", "zoom-out")
             .attr("id", "timelineZoomOut");
-          d3.select("#timelineZoomExplanation").text("");
           zoomBtn.on("click", function() {
+            zoomFactor = 1;
             beginning = "0";
             ending = 0;
             d3.select(divId).style("visibility", "hidden");
             timeline();
             d3.select(divId).style("visibility", "visible");
             this.remove();
-            d3.select("#timelineZoomExplanation").text("Click + drag to zoom");
           });
         }
-      }
-    });
-    if ($("#timelineZoomOut")[0] === undefined) {
-      var zoomExplanation = d3.select(divId + " svg")
+      });
+      zoomExplanation = d3.select(divId + " svg")
         .insert("text")
         .attr("transform", "translate("+(parseInt(svg.attr("width"))-120)+", "+parseInt(svg.attr("height")-5)+")")
         .attr("class", "timeline-label")
         .text("")
         .attr("id", "timelineZoomExplanation")
+        .text("Click + drag to zoom")
         .style("visibility", "hidden");
+    } else {
+        zoomExplanation = d3.select(divId + " svg")
+          .insert("text")
+          .attr("transform", "translate("+(parseInt(svg.attr("width"))-180)+", "+parseInt(svg.attr("height")-5)+")")
+          .attr("class", "timeline-label")
+          .text("")
+          .attr("id", "timelineZoomExplanation")
+          .text("Scroll/drag to move")
+          .style("visibility", "hidden");
     }
 
     // Add white background for labels to prevent timepoint overlap
@@ -748,23 +777,24 @@ window.clinicalTimeline = (function(){
     return Math.max(a, b) - Math.min(a, b);
   }
 
-  function getTickValues(beginning, ending) {
+  function getTickValues(beginning, ending, width) {
+      pixelsPerDay = parseFloat(parseInt(width) / difference(parseInt(beginning), parseInt(ending)));
       tickValues = [];
       timePeriod = daysToTimeObject(difference(parseInt(beginning), parseInt(ending)));
       maxTime = daysToTimeObject(parseInt(ending));
       minTime = daysToTimeObject(parseInt(beginning));
       var i;
-      if (timePeriod.y >= 2) {
+      if (pixelsPerDay < 1) {
           tickValues.push(parseInt(beginning));
           for (i=minTime.y; i < maxTime.y; i++) {
               tickValues.push(i * maxTime.daysPerYear);
           }
-      } else if (timePeriod.y > 0 || timePeriod.m  >= 2) {
+      } else if (pixelsPerDay < 20) {
           tickValues.push(parseInt(beginning));
           for (i=minTime.m + minTime.y * 12 + 1; i < maxTime.m + maxTime.y * 12 - 1; i++) {
               tickValues.push(i * maxTime.daysPerMonth + parseInt(i/12) * 5);
           }
-      } else if (timePeriod.d + timePeriod.m * timePeriod.daysPerMonth > 12) {
+      } else if (pixelsPerDay < 50) {
           for (i=parseInt(beginning); i < parseInt(ending) - 1; i+=3) {
               tickValues.push(i);
           }
