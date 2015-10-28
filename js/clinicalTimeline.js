@@ -55,7 +55,7 @@ window.clinicalTimeline = (function(){
       .margin(margin)
       .tickFormat({
         format: function(d) { return formatTime(daysToTimeObject(d.valueOf())); },
-        tickValues: getTickValues(beginning, ending, width * zoomFactor),
+        tickValues: getTickValues(beginning, ending, getZoomLevel(beginning, ending, width * zoomFactor)),
         tickSize: 6
       })
       .translate(translateX)
@@ -131,7 +131,6 @@ window.clinicalTimeline = (function(){
     var overlayRect = g.insert("rect", ".axis")
       .attr("id","overlayRect")
       .style("visibility","hidden")
-      .style("cursor", "move")
       .attr("x", 180)
       .attr("y", 0)
       .attr("width", gBoundingBox.width + 20)
@@ -157,67 +156,75 @@ window.clinicalTimeline = (function(){
       return false;
     });
 
-    // Add rectangular zoom selection
     if (zoomFactor === 1) {
-      overlayRect.style("cursor", "zoom-in");
-      var originX;
-      overlayRect.on("mousedown", function() {
-        d3.select("#zoomRect").remove();
-        drawRect = true;
-        originX = d3.mouse(this)[0];
-        var g = d3.select(divId + " svg g");
-        rect = g.insert("rect", "#overlayRect")
-          .attr("width", 0)
-          .attr("id", "zoomRect")
-          .attr("height", gBoundingBox.height)
-          .attr("x", originX)
-          .attr("y", 20)
-          .attr("style", "fill-opacity: 0.3");
-        return false;
-      });
-      overlayRect.on("mouseup", function() {
-        if (drawRect) {
-          drawRect = false;
-          var xScale = d3.time.scale()
-             .domain([beginning, ending])
-             .range([margin.left, width - margin.right]);
-          var xDaysRect = xScale.invert(d3.select("#zoomRect").attr("x")).valueOf();
-          zoomFactor = parseInt(parseInt(width) / (parseInt(d3.select("#zoomRect").attr("width"))));
-          var xZoomScale = d3.time.scale()
-             .domain([beginning, ending])
-             .range([margin.left, width * zoomFactor - margin.right]);
-          translateX = -xZoomScale(xDaysRect);
+      // Add rectangular zoom selection
+      if (getZoomLevel(beginning, ending, width) !== "days") {
+        overlayRect.style("cursor", "zoom-in");
+        var originX;
+        overlayRect.on("mousedown", function() {
+          d3.select("#zoomRect").remove();
+          drawRect = true;
+          originX = d3.mouse(this)[0];
+          var g = d3.select(divId + " svg g");
+          rect = g.insert("rect", "#overlayRect")
+            .attr("width", 0)
+            .attr("id", "zoomRect")
+            .attr("height", gBoundingBox.height)
+            .attr("x", originX)
+            .attr("y", 20)
+            .attr("style", "fill-opacity: 0.3");
+          return false;
+        });
+        overlayRect.on("mouseup", function() {
+          if (drawRect) {
+            drawRect = false;
+            var xScale = d3.time.scale()
+               .domain([beginning, ending])
+               .range([margin.left, width - margin.right]);
+            var xDaysRect = xScale.invert(d3.select("#zoomRect").attr("x")).valueOf();
+            zoomFactor = parseInt(parseInt(width) / (parseInt(d3.select("#zoomRect").attr("width"))));
+            if (zoomFactor > 0) {
+              zoomFactor = Math.min(zoomFactor, getZoomFactor("days", beginning, ending, width));
+            } else {
+              zoomFactor = getZoomFactor("days", beginning, ending, width);
+            }
+            var xZoomScale = d3.time.scale()
+               .domain([beginning, ending])
+               .range([margin.left, width * zoomFactor - margin.right]);
+            translateX = -xZoomScale(xDaysRect);
 
-          d3.select(divId).style("visibility", "hidden");
-          timeline();
-          d3.select(divId).style("visibility", "visible");
-          var zoomBtn = d3.select(divId + " svg")
-            .insert("text")
-            .attr("transform", "translate("+(parseInt(svg.attr("width"))-70)+", "+parseInt(svg.attr("height")-5)+")")
-            .attr("class", "timeline-label")
-            .text("Zoom out")
-            .style("cursor", "zoom-out")
-            .attr("id", "timelineZoomOut");
-          zoomBtn.on("click", function() {
-            zoomFactor = 1;
-            beginning = "0";
-            ending = 0;
             d3.select(divId).style("visibility", "hidden");
             timeline();
             d3.select(divId).style("visibility", "visible");
-            this.remove();
-          });
-        }
-      });
-      zoomExplanation = d3.select(divId + " svg")
-        .insert("text")
-        .attr("transform", "translate("+(parseInt(svg.attr("width"))-120)+", "+parseInt(svg.attr("height")-5)+")")
-        .attr("class", "timeline-label")
-        .text("")
-        .attr("id", "timelineZoomExplanation")
-        .text("Click + drag to zoom")
-        .style("visibility", "hidden");
+            var zoomBtn = d3.select(divId + " svg")
+              .insert("text")
+              .attr("transform", "translate("+(parseInt(svg.attr("width"))-70)+", "+parseInt(svg.attr("height")-5)+")")
+              .attr("class", "timeline-label")
+              .text("Zoom out")
+              .style("cursor", "zoom-out")
+              .attr("id", "timelineZoomOut");
+            zoomBtn.on("click", function() {
+              zoomFactor = 1;
+              beginning = "0";
+              ending = 0;
+              d3.select(divId).style("visibility", "hidden");
+              timeline();
+              d3.select(divId).style("visibility", "visible");
+              this.remove();
+            });
+          }
+        });
+        zoomExplanation = d3.select(divId + " svg")
+          .insert("text")
+          .attr("transform", "translate("+(parseInt(svg.attr("width"))-120)+", "+parseInt(svg.attr("height")-5)+")")
+          .attr("class", "timeline-label")
+          .text("")
+          .attr("id", "timelineZoomExplanation")
+          .text("Click + drag to zoom")
+          .style("visibility", "hidden");
+      }
     } else {
+      // Add panning explanation and visual indicator
         zoomExplanation = d3.select(divId + " svg")
           .insert("text")
           .attr("transform", "translate("+(parseInt(svg.attr("width"))-180)+", "+parseInt(svg.attr("height")-5)+")")
@@ -225,7 +232,8 @@ window.clinicalTimeline = (function(){
           .text("")
           .attr("id", "timelineZoomExplanation")
           .text("Scroll/drag to move")
-          .style("visibility", "hidden");
+          .style("visibility", "visible");
+        overlayRect.style("cursor", "move");
     }
 
     // Add white background for labels to prevent timepoint overlap
@@ -741,6 +749,9 @@ window.clinicalTimeline = (function(){
       time.y = dayCount > 0? Math.floor(dayCount / daysPerYear) : Math.ceil(dayCount / daysPerYear);
       time.m = dayCount > 0? Math.floor((dayCount % daysPerYear) / daysPerMonth) : Math.ceil((dayCount % daysPerYear) / daysPerMonth);
       time.d = Math.floor((dayCount % daysPerYear) % daysPerMonth);
+      time.toDays = function() {
+        return time.y * time.daysPerYear + time.m * time.daysPerMonth + time.d;
+      };
       return time;
   }
 
@@ -770,31 +781,65 @@ window.clinicalTimeline = (function(){
       if (time.y === 0 && time.m === 0 && time.d === 0) {
         dayFormat = [0];
       }
-      return dayFormat.join(" ");
+      return dayFormat.join("");
+  }
+
+  /*
+   * Return zoomLevel in human comprehensible form by determining the width in pixels of a single day
+   */
+  function getZoomLevel(beginning, ending, width) {
+    pixelsPerDay = parseFloat(parseInt(width) / difference(parseInt(beginning), parseInt(ending)));
+    if (pixelsPerDay < 1) {
+      return "years";
+    } else if (pixelsPerDay < 20){
+      return "months";
+    } else if (pixelsPerDay < 50) {
+      return "3days";
+    } else {
+      return "days";
+    }
+  }
+
+  /*
+   * Return zoomFactor by specifying what kind of zoomLevel on the x axis (e.g.
+   * years, days) is desired
+   */
+  function getZoomFactor(zoomLevel, beginning, ending, width) {
+    switch(zoomLevel) {
+      case "years":
+        return 0.9 * difference(parseInt(beginning), parseInt(ending)) / parseInt(width);
+      case "months":
+        return 19 * difference(parseInt(beginning), parseInt(ending)) / parseInt(width);
+      case "3days":
+        return 49 * difference(parseInt(beginning), parseInt(ending)) / parseInt(width);
+      case "days":
+        return 51 * difference(parseInt(beginning), parseInt(ending)) / parseInt(width);
+      default:
+        throw "Undefined zoomLevel: " + zoomLevel;
+    }
   }
 
   function difference(a, b) {
     return Math.max(a, b) - Math.min(a, b);
   }
 
-  function getTickValues(beginning, ending, width) {
-      pixelsPerDay = parseFloat(parseInt(width) / difference(parseInt(beginning), parseInt(ending)));
+  function getTickValues(beginning, ending, zoomLevel) {
       tickValues = [];
       timePeriod = daysToTimeObject(difference(parseInt(beginning), parseInt(ending)));
       maxTime = daysToTimeObject(parseInt(ending));
       minTime = daysToTimeObject(parseInt(beginning));
       var i;
-      if (pixelsPerDay < 1) {
+      if (zoomLevel === "years") {
           tickValues.push(parseInt(beginning));
           for (i=minTime.y; i < maxTime.y; i++) {
               tickValues.push(i * maxTime.daysPerYear);
           }
-      } else if (pixelsPerDay < 20) {
+      } else if (zoomLevel === "months") {
           tickValues.push(parseInt(beginning));
           for (i=minTime.m + minTime.y * 12 + 1; i < maxTime.m + maxTime.y * 12 - 1; i++) {
               tickValues.push(i * maxTime.daysPerMonth + parseInt(i/12) * 5);
           }
-      } else if (pixelsPerDay < 50) {
+      } else if (zoomLevel === "3days") {
           for (i=parseInt(beginning); i < parseInt(ending) - 1; i+=3) {
               tickValues.push(i);
           }
