@@ -176,7 +176,7 @@ window.clinicalTimeline = (function(){
          .domain([beginning, ending])
          .range([margin.left, width * zoomFactor - margin.right]);
       translateX = -xZoomScale(xDaysRect);
-      $('.timeline-qtip').qtip("hide");
+      $('.'+divId.substr(1)+'-qtip').qtip("hide");
 
       d3.select(divId).style("visibility", "hidden");
       timeline();
@@ -444,7 +444,6 @@ window.clinicalTimeline = (function(){
       content: {
         text: "table"
       },
-      style: { classes: 'timeline-qtip'},
       events: {
         render: function(event, api) {
           var tooltipDiv = $.parseHTML("<div></div>");
@@ -465,6 +464,7 @@ window.clinicalTimeline = (function(){
             $(tooltipDiv).append(table);
           }
           $(this).html(tooltipDiv);
+          $(this).addClass(divId.substr(1) + "-qtip");
           // Detect when point it was clicked and store it
           api.elements.target.click(function(e) {
             if (api.wasClicked) {
