@@ -755,8 +755,10 @@ window.clinicalTimeline = (function(){
     pixelsPerDay = parseFloat(parseInt(width) / difference(parseInt(beginning), parseInt(ending)));
     if (pixelsPerDay < 1) {
       return "years";
-    } else if (pixelsPerDay < 20){
+    } else if (pixelsPerDay < 10){
       return "months";
+    } else if (pixelsPerDay < 25){
+      return "10days";
     } else if (pixelsPerDay < 50) {
       return "3days";
     } else {
@@ -774,6 +776,8 @@ window.clinicalTimeline = (function(){
         return 0.9 * difference(parseInt(beginning), parseInt(ending)) / parseInt(width);
       case "months":
         return 19 * difference(parseInt(beginning), parseInt(ending)) / parseInt(width);
+      case "10days":
+        return 34 * difference(parseInt(beginning), parseInt(ending)) / parseInt(width);
       case "3days":
         return 49 * difference(parseInt(beginning), parseInt(ending)) / parseInt(width);
       case "days":
@@ -824,6 +828,10 @@ window.clinicalTimeline = (function(){
           tickValues.push(parseInt(beginning));
           for (i=minTime.m + minTime.y * 12 + 1; i < maxTime.m + maxTime.y * 12 - 1; i++) {
               tickValues.push(i * maxTime.daysPerMonth + parseInt(i/12) * 5);
+          }
+      } else if (zoomLevel === "10days") {
+          for (i=parseInt(beginning); i < parseInt(ending) - 1; i+=10) {
+              tickValues.push(i);
           }
       } else if (zoomLevel === "3days") {
           for (i=parseInt(beginning); i < parseInt(ending) - 1; i+=3) {
