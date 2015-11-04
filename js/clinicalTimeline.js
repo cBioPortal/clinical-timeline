@@ -123,97 +123,30 @@ window.clinicalTimeline = (function(){
       x.setAttributeNS("http://www.w3.org/XML/1998/namespace", "xml:space", "preserve");
     });
 
-    // overlay rectangle for mouse event triggers
     var g = d3.select(divId + " svg g");
-    g.attr("class", "g_main");
     var gBoundingBox = g[0][0].getBoundingClientRect();
-    var drawRect = false;
-    var overlayRect = g.insert("rect", ".axis")
-      .attr("id","overlayRect")
-      .style("visibility","hidden")
-      .attr("x", 180)
-      .attr("y", 0)
-      .attr("width", gBoundingBox.width + 20)
-      .attr("height", gBoundingBox.height);
-    var zoomExplanation;
-    overlayRect.on("mousemove", function() {
-      if (drawRect) {
-        var mouseX = d3.mouse(this)[0];
-        if (mouseX > originX) {
-          d3.select("#zoomRect").attr("width", mouseX - originX);
-        } else {
-          d3.select("#zoomRect").attr("x", mouseX);
-          d3.select("#zoomRect").attr("width", originX - mouseX);
-        }
-      }
-      if (zoomFactor !== 1) {
-      }
-      d3.select("#timelineZoomExplanation").style("visibility", "visible");
-      return false;
-    });
-    overlayRect.on("mouseout", function() {
-      d3.select("#timelineZoomExplanation").style("visibility", "hidden");
-      return false;
-    });
 
     if (zoomFactor === 1) {
       // Add rectangular zoom selection
       if (getZoomLevel(beginning, ending, width) !== "days") {
-        overlayRect.style("cursor", "zoom-in");
-        var originX;
-        overlayRect.on("mousedown", function() {
-          d3.select("#zoomRect").remove();
-          drawRect = true;
-          originX = d3.mouse(this)[0];
-          var g = d3.select(divId + " svg g");
-          rect = g.insert("rect", "#overlayRect")
-            .attr("width", 0)
-            .attr("id", "zoomRect")
+        // add brush overlay
+        var xScale = d3.time.scale()
+           .domain([beginning, ending])
+           .range([margin.left - 10, width - margin.right + 10]);
+        var brush = d3.svg.brush()
+          .x(xScale)
+          .on("brush", function() {
+            var extent = d3.event.target.extent();
+          })
+          .on("brushend", brushend);
+        var overlayBrush = g.insert("g", ".axis")
+          .attr("id", "overlayBrush");
+        overlayBrush.attr("class", "brush")
+          .call(brush)
+          .selectAll('.extent,.background,.resize rect')
             .attr("height", gBoundingBox.height)
-            .attr("x", originX)
             .attr("y", 20)
-            .attr("style", "fill-opacity: 0.3");
-          return false;
-        });
-        overlayRect.on("mouseup", function() {
-          if (drawRect) {
-            drawRect = false;
-            var xScale = d3.time.scale()
-               .domain([beginning, ending])
-               .range([margin.left, width - margin.right]);
-            var xDaysRect = xScale.invert(d3.select("#zoomRect").attr("x")).valueOf();
-            zoomFactor = parseInt(parseInt(width) / (parseInt(d3.select("#zoomRect").attr("width"))));
-            if (zoomFactor > 0) {
-              zoomFactor = Math.min(zoomFactor, getZoomFactor("days", beginning, ending, width));
-            } else {
-              zoomFactor = getZoomFactor("days", beginning, ending, width);
-            }
-            var xZoomScale = d3.time.scale()
-               .domain([beginning, ending])
-               .range([margin.left, width * zoomFactor - margin.right]);
-            translateX = -xZoomScale(xDaysRect);
-
-            d3.select(divId).style("visibility", "hidden");
-            timeline();
-            d3.select(divId).style("visibility", "visible");
-            var zoomBtn = d3.select(divId + " svg")
-              .insert("text")
-              .attr("transform", "translate("+(parseInt(svg.attr("width"))-70)+", "+parseInt(svg.attr("height")-5)+")")
-              .attr("class", "timeline-label")
-              .text("Zoom out")
-              .style("cursor", "zoom-out")
-              .attr("id", "timelineZoomOut");
-            zoomBtn.on("click", function() {
-              zoomFactor = 1;
-              beginning = "0";
-              ending = 0;
-              d3.select(divId).style("visibility", "hidden");
-              timeline();
-              d3.select(divId).style("visibility", "visible");
-              this.remove();
-            });
-          }
-        });
+            .style("cursor", "zoom-in");
         zoomExplanation = d3.select(divId + " svg")
           .insert("text")
           .attr("transform", "translate("+(parseInt(svg.attr("width"))-120)+", "+parseInt(svg.attr("height")-5)+")")
@@ -222,18 +155,48 @@ window.clinicalTimeline = (function(){
           .attr("id", "timelineZoomExplanation")
           .text("Click + drag to zoom")
           .style("visibility", "hidden");
+        d3.select('.background').on("mouseover", function() {
+            d3.select("#timelineZoomExplanation").style("visibility", "visible");
+        });
+        d3.select('.background').on("mouseout", function() {
+            d3.select("#timelineZoomExplanation").style("visibility", "hidden");
+        });
+        }
       }
-    } else {
-      // Add panning explanation and visual indicator
-        zoomExplanation = d3.select(divId + " svg")
-          .insert("text")
-          .attr("transform", "translate("+(parseInt(svg.attr("width"))-180)+", "+parseInt(svg.attr("height")-5)+")")
-          .attr("class", "timeline-label")
-          .text("")
-          .attr("id", "timelineZoomExplanation")
-          .text("Scroll/drag to move")
-          .style("visibility", "visible");
-        overlayRect.style("cursor", "move");
+
+    function brushend() {
+      var xDaysRect = brush.extent()[0].valueOf();
+      zoomFactor = (parseInt(width) - parseInt(margin.left) - parseInt(margin.right)) / (parseInt(d3.select(".extent").attr("width")));
+      if (zoomFactor > 0) {
+        zoomFactor = Math.min(zoomFactor, getZoomFactor("days", beginning, ending, width));
+      } else {
+        zoomFactor = getZoomFactor("days", beginning, ending, width);
+      }
+      var xZoomScale = d3.time.scale()
+         .domain([beginning, ending])
+         .range([margin.left, width * zoomFactor - margin.right]);
+      translateX = -xZoomScale(xDaysRect);
+      $('.timeline-qtip').qtip("hide");
+
+      d3.select(divId).style("visibility", "hidden");
+      timeline();
+      d3.select(divId).style("visibility", "visible");
+      var zoomBtn = d3.select(divId + " svg")
+        .insert("text")
+        .attr("transform", "translate("+(parseInt(svg.attr("width"))-70)+", "+parseInt(svg.attr("height")-5)+")")
+        .attr("class", "timeline-label")
+        .text("Zoom out")
+        .style("cursor", "zoom-out")
+        .attr("id", "timelineZoomOut");
+      zoomBtn.on("click", function() {
+        zoomFactor = 1;
+        beginning = "0";
+        ending = 0;
+        d3.select(divId).style("visibility", "hidden");
+        timeline();
+        d3.select(divId).style("visibility", "visible");
+        this.remove();
+      });
     }
 
     // Add white background for labels to prevent timepoint overlap
@@ -481,6 +444,7 @@ window.clinicalTimeline = (function(){
       content: {
         text: "table"
       },
+      style: { classes: 'timeline-qtip'},
       events: {
         render: function(event, api) {
           var tooltipDiv = $.parseHTML("<div></div>");
@@ -817,6 +781,28 @@ window.clinicalTimeline = (function(){
       default:
         throw "Undefined zoomLevel: " + zoomLevel;
     }
+  }
+
+  function roundUpDays(dayCount, zoomLevel) {
+    var rv;
+    var time = daysToTimeObject(dayCount);
+    additive = dayCount < 0? 1: -1;
+    switch(zoomLevel) {
+      case "years":
+        rv = (time.y + additive) * time.daysPerYear;
+        break;
+      case "months":
+        rv = time.y * time.daysPerYear + (time.m + additive) * time.daysPerMonth;
+        rv += Math.abs(time.m) === 11? (time.daysPerYear - 12*time.daysPerMonth) * additive : 0;
+        break;
+      case "3days":
+        rv = time.toDays() + (time.d % 3) * additive;
+        break;
+      default:
+        rv = dayCount;
+        break;
+    }
+    return rv;
   }
 
   function difference(a, b) {
