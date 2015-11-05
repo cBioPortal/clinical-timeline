@@ -161,8 +161,19 @@ window.clinicalTimeline = (function(){
         d3.select('.background').on("mouseout", function() {
             d3.select("#timelineZoomExplanation").style("visibility", "hidden");
         });
-        }
       }
+    } else {
+      // Add panning explanation and visual indicator
+      zoomExplanation = d3.select(divId + " svg")
+        .insert("text")
+        .attr("transform", "translate("+(parseInt(svg.attr("width"))-180)+", "+parseInt(svg.attr("height")-5)+")")
+        .attr("class", "timeline-label")
+        .text("")
+        .attr("id", "timelineZoomExplanation")
+        .text("Scroll/drag to move")
+        .style("visibility", "visible");
+      d3.select(divId + " svg").style("cursor", "move");
+    }
 
     function brushend() {
       var xDaysRect = brush.extent()[0].valueOf();
