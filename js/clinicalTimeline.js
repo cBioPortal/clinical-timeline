@@ -10,6 +10,7 @@ window.clinicalTimeline = (function(){
       zoomFactor = 1,
       postTimelineHooks = [],
       enableTrackTooltips = true,
+      enableZoom = true,
       stackSlack = null,
       translateX = 0,
       beginning = "0",
@@ -123,11 +124,83 @@ window.clinicalTimeline = (function(){
       x.setAttributeNS("http://www.w3.org/XML/1998/namespace", "xml:space", "preserve");
     });
 
+    if (enableZoom) {
+      addZoomOptions();
+    }
+
+    // Add white background for labels to prevent timepoint overlap
+    var g = d3.select(divId + " svg g");
+    var gBoundingBox = g[0][0].getBoundingClientRect();
+    d3.select(divId + " svg")
+      .insert("rect", ".timeline-label")
+      .attr("width", 130)
+      .attr("height", 20)
+      .attr("x", 0)
+      .attr("y", 0)
+      .style("fill", "rgb(255, 255, 255)");
+    d3.select(divId + " svg")
+      .insert("rect", ".timeline-label")
+      .attr("width", 190)
+      .attr("height", gBoundingBox.height - 15)
+      .attr("x", 0)
+      .attr("y", 20)
+      .style("fill", "rgb(255, 255, 255)");
+
+    // change mouse to pointer for all timeline items
+    $("[id^='timelineItem']").css("cursor", "pointer");
+
+    postTimelineHooks.forEach(function(hook) {
+      hook.call();
+    });
+  }
+
+  /*
+   * Add rectangular zoom selection. Use brush to zoom. After zooming in, scroll mouse or drag to pan.
+   */
+  function addZoomOptions() {
+    var svg = d3.select(divId + " svg");
     var g = d3.select(divId + " svg g");
     var gBoundingBox = g[0][0].getBoundingClientRect();
 
     if (zoomFactor === 1) {
       // Add rectangular zoom selection
+      // zoom in after brush ends
+      var brushend = function() {
+        var xDaysRect = brush.extent()[0].valueOf();
+        zoomFactor = (parseInt(width) - parseInt(margin.left) - parseInt(margin.right)) / (parseInt(d3.select(".extent").attr("width")));
+        if (zoomFactor > 0) {
+          zoomFactor = Math.min(zoomFactor, getZoomFactor("days", beginning, ending, width));
+        } else {
+          zoomFactor = getZoomFactor("days", beginning, ending, width);
+        }
+        var xZoomScale = d3.time.scale()
+           .domain([beginning, ending])
+           .range([margin.left, width * zoomFactor - margin.right]);
+        translateX = -xZoomScale(xDaysRect);
+        $('.'+divId.substr(1)+'-qtip').qtip("hide");
+
+        d3.select(divId).style("visibility", "hidden");
+        timeline();
+        d3.select(divId).style("visibility", "visible");
+        var zoomBtn = d3.select(divId + " svg")
+          .insert("text")
+          .attr("transform", "translate("+(parseInt(svg.attr("width"))-70)+", "+parseInt(svg.attr("height")-5)+")")
+          .attr("class", "timeline-label")
+          .text("Zoom out")
+          .style("cursor", "zoom-out")
+          .attr("id", "timelineZoomOut");
+        zoomBtn.on("click", function() {
+          zoomFactor = 1;
+          beginning = "0";
+          ending = 0;
+          $('.'+divId.substr(1)+'-qtip').qtip("hide");
+          d3.select(divId).style("visibility", "hidden");
+          timeline();
+          d3.select(divId).style("visibility", "visible");
+          this.remove();
+        });
+      };
+
       if (getZoomLevel(beginning, ending, width) !== "days") {
         // add brush overlay
         var xScale = d3.time.scale()
@@ -174,62 +247,6 @@ window.clinicalTimeline = (function(){
         .style("visibility", "visible");
       d3.select(divId + " svg").style("cursor", "move");
     }
-
-    function brushend() {
-      var xDaysRect = brush.extent()[0].valueOf();
-      zoomFactor = (parseInt(width) - parseInt(margin.left) - parseInt(margin.right)) / (parseInt(d3.select(".extent").attr("width")));
-      if (zoomFactor > 0) {
-        zoomFactor = Math.min(zoomFactor, getZoomFactor("days", beginning, ending, width));
-      } else {
-        zoomFactor = getZoomFactor("days", beginning, ending, width);
-      }
-      var xZoomScale = d3.time.scale()
-         .domain([beginning, ending])
-         .range([margin.left, width * zoomFactor - margin.right]);
-      translateX = -xZoomScale(xDaysRect);
-      $('.'+divId.substr(1)+'-qtip').qtip("hide");
-
-      d3.select(divId).style("visibility", "hidden");
-      timeline();
-      d3.select(divId).style("visibility", "visible");
-      var zoomBtn = d3.select(divId + " svg")
-        .insert("text")
-        .attr("transform", "translate("+(parseInt(svg.attr("width"))-70)+", "+parseInt(svg.attr("height")-5)+")")
-        .attr("class", "timeline-label")
-        .text("Zoom out")
-        .style("cursor", "zoom-out")
-        .attr("id", "timelineZoomOut");
-      zoomBtn.on("click", function() {
-        zoomFactor = 1;
-        beginning = "0";
-        ending = 0;
-        d3.select(divId).style("visibility", "hidden");
-        timeline();
-        d3.select(divId).style("visibility", "visible");
-        this.remove();
-      });
-    }
-
-    // Add white background for labels to prevent timepoint overlap
-    d3.select(divId + " svg")
-      .insert("rect", ".timeline-label")
-      .attr("width", 130)
-      .attr("height", 20)
-      .attr("x", 0)
-      .attr("y", 0)
-      .style("fill", "rgb(255, 255, 255)");
-    d3.select(divId + " svg")
-      .insert("rect", ".timeline-label")
-      .attr("width", 190)
-      .attr("height", gBoundingBox.height - 15)
-      .attr("x", 0)
-      .attr("y", 20)
-      .style("fill", "rgb(255, 255, 255)");
-
-
-    postTimelineHooks.forEach(function(hook) {
-      hook.call();
-    });
   }
 
   /**
@@ -862,6 +879,15 @@ window.clinicalTimeline = (function(){
 
     if (b === true || b === false) {
       enableTrackTooltips = b;
+    }
+    return timeline;
+  };
+
+  timeline.enableZoom = function(b) {
+    if (!arguments.length) return enableZoom;
+
+    if (b === true || b === false) {
+      enableZoom = b;
     }
     return timeline;
   };
