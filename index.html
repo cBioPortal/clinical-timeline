@@ -96,6 +96,7 @@
           .splitByClinicalAttribute("Surgery", "Location")
           .splitByClinicalAttribute("Test", "Type")
           .sizeByClinicalAttribute("    PSA", "Result")
+          .sizeByClinicalAttribute("    Phos", "Result")
           .orderAllTooltipTables(["Source","Location"])
           .enableTrackTooltips(true)
           .enableZoom(true)
@@ -137,6 +138,12 @@
           "display":"circle","tooltip_tables":[[["Type","PSA"],["Result",70]]]},
         {"starting_time": 8, "ending_time": 8,
           "display":"circle","tooltip_tables":[[["Type","PSA"],["Result",80]]]},
+        {"starting_time": -200, "ending_time": -200,
+          "display":"circle","tooltip_tables":[[["Type","Phos"],["Result",10]]]},
+        {"starting_time": -210, "ending_time": -210,
+          "display":"circle","tooltip_tables":[[["Type","Phos"],["Result",50]]]},
+        {"starting_time": -220, "ending_time": -220,
+          "display":"circle","tooltip_tables":[[["Type","Phos"],["Result",80]]]},
         ],
         collapse:true,
         visible:true},

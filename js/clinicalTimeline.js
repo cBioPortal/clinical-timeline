@@ -381,9 +381,12 @@ window.clinicalTimeline = (function(){
 
     // remove track
     allData = allData.filter(function(x) {return x.label !== track;});
-    // Add new track
+    // Add old track with zero timeline points
     allData.splice(trackIndex, 0, {"label":track+"."+attr,"times":[],"visible":true,"split":true});
-    var attrValues = Object.keys(g);
+    // Stack tracks by minimum starting_time
+    var attrValues = _.sortBy(Object.keys(g), function(k) {
+      return _.min(_.pluck(g[k], "starting_time"));
+    });
     for (var i=0; i < attrValues.length; i++) {
       allData.splice(trackIndex+i+1, 0, {"label":indent+attrValues[i], "times":g[attrValues[i]], "visible":true,"split":true,"parent_track":track});
     }
