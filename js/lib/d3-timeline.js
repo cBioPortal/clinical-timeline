@@ -31,6 +31,7 @@
         rotateTicks = false,
         timeIsRelative = false,
         itemHeight = 20,
+        itemMinWidth = 5,
         itemMargin = 5,
         showTimeAxis = true,
         showTodayLine = false,
@@ -422,7 +423,11 @@
         if ("display" in d && d.display === "square") {
           return itemHeight;
         } else {
-          return ((d.ending_time - d.starting_time) * scaleFactor);
+          var width = ((d.ending_time - d.starting_time) * scaleFactor);
+          if (width < itemMinWidth) {
+            width = itemMinWidth;
+          }
+          return width;
         }
       }
 
@@ -506,6 +511,12 @@
     timeline.itemHeight = function (h) {
       if (!arguments.length) return itemHeight;
       itemHeight = h;
+      return timeline;
+    };
+
+    timeline.itemMinWidth = function (h) {
+      if (!arguments.length) return itemMinWidth;
+      itemMinWidth = h;
       return timeline;
     };
 
