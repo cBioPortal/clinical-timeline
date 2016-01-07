@@ -293,7 +293,7 @@ window.clinicalTimeline = (function(){
 
     var collapsedTimes = [],
         group = [],
-        startingTime = undefined;
+        startingTime;
 
     var sortedTimes = trackData.times.sort(function(a, b) {
       return parseInt(a.starting_time) - parseInt(b.starting_time);
@@ -368,32 +368,58 @@ window.clinicalTimeline = (function(){
     });
   }
 
+  function splitByClinicalAttributes(track, attrs) {
+    // Use single string arg or split sequentially by array of strings arg
+    if (typeof attrs === 'string') {
+      attrs = [attrs];
+    }
+    // split tracks sequentially by given attrs
+    var split_tracks = [track];
+    var tracks;
+    for (var i = 0; i < attrs.length; i++) {
+      attr = attrs[i];
+      tracks = [];
+      for (var j = 0; j < split_tracks.length; j++) {
+        tracks = tracks.concat(splitByClinicalAttribute(split_tracks[j], attr));
+      }
+      split_tracks = tracks;
+    }
+  }
+
   function splitByClinicalAttribute(track, attr) {
     // split tooltip_tables into separate time points
     splitTooltipTables(getTrack(allData, track));
 
     var g = groupByClinicalAttribute(track, attr);
+    // Do not split if attribute is not in all time points
+    if ("undefined" in g) {
+      return [];
+    }
+
     var trackIndex = _.findIndex(allData, function(x) {
-      return x.label == track;
+      return x.label === track;
     });
+    // determine indentation of track (how many times it has been split)
     var indent = allData[trackIndex].split? track.match(new RegExp("^\ *"))[0] : "";
     indent += "    ";
 
     // remove track
     allData = allData.filter(function(x) {return x.label !== track;});
     // Add old track with zero timeline points
-    allData.splice(trackIndex, 0, {"label":track+"."+attr,"times":[],"visible":true,"split":true});
+    allData.splice(trackIndex, 0, {"label":track,"times":[],"visible":true,"split":true});
     // Stack tracks by minimum starting_time
     var attrValues = _.sortBy(Object.keys(g), function(k) {
       return _.min(_.pluck(g[k], "starting_time"));
     });
-    for (var i=0; i < attrValues.length; i++) {
-      allData.splice(trackIndex+i+1, 0, {"label":indent+attrValues[i], "times":g[attrValues[i]], "visible":true,"split":true,"parent_track":track});
+    for (j=0; j < attrValues.length; j++) {
+      allData.splice(trackIndex+j+1, 0, {"label":indent+attrValues[j], "times":g[attrValues[j]], "visible":true,"split":true,"parent_track":track});
     }
+    // return names of new tracks
+    return attrValues.map(function(x) {return indent + x;});
   }
 
   function unSplitTrack(track) {
-    var trackData = allData.filter(function(x) {return x.label.split(".")[0] === track;})[0];
+    var trackData = allData.filter(function(x) {return $.trim(x.label) === $.trim(track) && x.split;})[0];
     var times = allData.filter(function(x) {return x.split && x.parent_track === track;}).reduce(function(a, b) {
       return a.concat(b.times);
     }, []);
@@ -581,7 +607,7 @@ window.clinicalTimeline = (function(){
       timeline();
     }
     function splitClickHandler() {
-      splitByClinicalAttribute(track, $(this).prop("innerHTML"));
+      splitByClinicalAttributes(track, $(this).prop("innerHTML"));
       timeline();
     }
     function sizeByClickHandler() {
@@ -955,17 +981,22 @@ window.clinicalTimeline = (function(){
     return timeline;
   };
 
-  timeline.orderTrackTooltipTables = function(track, labels) {
+  /*
+   * Order tooltip tables in given track by given array of row keys. Tooltip
+   * table rows with keys not included given rowkeys argument are appended to
+   * the end in alhpanumeric order.
+   */
+  timeline.orderTrackTooltipTables = function(track, rowkeys) {
     trackData = getTrack(allData, track);
     if (trackData.times.length === 0) {
       return timeline;
     }
-    // sort rows not in given labels
+    // sort rows not in given rowkeys
     alphaSortRows = _.uniq(
       trackData.times.map(function(t) {
         return t.tooltip_tables.map(function(tt) {
           return tt.map(function(row) {
-            if (labels.indexOf(row[0]) === -1) return row[0];
+            if (rowkeys.indexOf(row[0]) === -1) return row[0];
           });
         });
     }).reduce(function(a,b) {
@@ -974,7 +1005,13 @@ window.clinicalTimeline = (function(){
         return a.concat(b);
       }, [])
     ).sort();
-    allLabelRows = labels.concat(alphaSortRows);
+    // If there are any rows other than the given ones add them
+    if (alphaSortRows && alphaSortRows[0]) {
+      allLabelRows = rowkeys.concat(alphaSortRows);
+    } else {
+      allLabelRows = rowkeys;
+    }
+
     trackData.times.forEach(function(t) {
       for (var i=0; i < t.tooltip_tables.length; i++) {
         var tt = t.tooltip_tables[i];
@@ -982,7 +1019,7 @@ window.clinicalTimeline = (function(){
 
         for (var j=0; j < allLabelRows.length; j++) {
           row = tt.filter(function(x) {return x[0] === allLabelRows[j];})[0];
-          if (row != null) {
+          if (row) {
             sortTt = sortTt.concat([row]);
           }
         }
@@ -992,26 +1029,28 @@ window.clinicalTimeline = (function(){
     return timeline;
   };
 
-  timeline.orderAllTooltipTables = function(labels) {
+  /*
+   * Order all tooltip tables by given array of row keys. Tooltip table rows
+   * with keys not included given rowkeys argument are appended to the end in
+   * alhpanumeric order.
+   */
+  timeline.orderAllTooltipTables = function(rowkeys) {
     allData.forEach(function(track) {
-      timeline.orderTrackTooltipTables(track.label, labels);
+      timeline.orderTrackTooltipTables(track.label, rowkeys);
     });
     return timeline;
   };
 
   /*
    * Split a track into multiple tracks based on the value of an
-   * attribute in the tooltip_tables.
+   * attribute in the tooltip_tables. The attributes to attrs agument can be a
+   * single string or an array of strings. An array of strings splits the
+   * tracks sequentially.
    */
-  timeline.splitByClinicalAttribute = function(track, attr) {
+  timeline.splitByClinicalAttributes = function(track, attrs) {
     var trackData = getTrack(allData, track);
     if (trackData) {
-      var attrData = trackData.times[0].tooltip_tables[0].filter(function(x) {
-        return x[0] === attr;
-      });
-      if (attrData.length === 1) {
-        splitByClinicalAttribute(track, attr);
-      }
+      splitByClinicalAttributes(track, attrs);
     }
     return timeline;
   };

@@ -8,6 +8,7 @@
   <script src="js/lib/d3-timeline.js"></script>
   <script src="js/lib/underscore-min.js"></script>
   <script src="js/clinicalTimeline.js"></script>
+  <script src="js/sanity.js"></script>
   <script src="js/parser.js"></script>
   <link href="css/lib/jquery.qtip.min.css" type="text/css" rel="stylesheet" />
   <link href="css/lib/dataTables.tableTools.min.css" type="text/css" rel="stylesheet" />
@@ -93,10 +94,12 @@
           .width(800)
           .data(allData)
           .divId("#timeline")
-          .splitByClinicalAttribute("Surgery", "Location")
-          .splitByClinicalAttribute("Test", "Type")
-          .sizeByClinicalAttribute("    PSA", "Result")
-          .sizeByClinicalAttribute("    Phos", "Result")
+          .splitByClinicalAttributes("Surgery", "Location")
+          .splitByClinicalAttributes("Test", "Type")
+          .splitByClinicalAttributes("TreatmentType", ["TREATMENT_TYPE", "AGENT"])
+          .splitByClinicalAttributes("TreatmentTypeStuff", ["TREATMENT_TYPE", "STUFF"])
+          .sizeByClinicalAttribute("PSA", "Result")
+          .sizeByClinicalAttribute("Phos", "Result")
           .orderAllTooltipTables(["Source","Location"])
           .enableTrackTooltips(true)
           .enableZoom(true)
@@ -146,6 +149,20 @@
           "display":"circle","tooltip_tables":[[["Type","Phos"],["Result",80]]]},
         ],
         collapse:true,
+        visible:true},
+      {label:"TreatmentType", times: [
+        {"starting_time": -220, "ending_time": -200,
+          "tooltip_tables":[[["TREATMENT_TYPE","Radio"]]]},
+        {"starting_time": -220, "ending_time": -200,
+          "tooltip_tables":[[["TREATMENT_TYPE","Chemo"],["AGENT","ABC"]]]},
+        ],
+        visible:true},
+      {label:"TreatmentTypeStuff", times: [
+        {"starting_time": -220, "ending_time": -200,
+          "tooltip_tables":[[["TREATMENT_TYPE","Special"],["STUFF","XYZ"]]]},
+        {"starting_time": -220, "ending_time": -200,
+          "tooltip_tables":[[["TREATMENT_TYPE","Special"],["STUFF","ABC"]]]},
+        ],
         visible:true},
     ];
   </script>
