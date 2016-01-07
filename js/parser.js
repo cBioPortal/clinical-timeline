@@ -3,7 +3,7 @@ window.clinicalTimelineParser = (function() {
   function transformToTimelineJSON(clinical_timeline_data) {
     var transformToTrack = function(clin_events) {
       var track = {
-        "label":clin_events[0].eventType,
+        "label":capitalizeFirstLetterLowerCaseRest(clin_events[0].eventType),
         visible:true,
         "times":[]
       };
@@ -28,6 +28,13 @@ window.clinicalTimelineParser = (function() {
     var tracks = [];
     _.each(g, function(x) {tracks.push(transformToTrack(x));});
     return tracks;
+  }
+
+  /*
+   * http://stackoverflow.com/questions/1026069/
+   */
+  function capitalizeFirstLetterLowerCaseRest(string) {
+      return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
   }
 
   return transformToTimelineJSON;
