@@ -1,4 +1,6 @@
 # clinical-timeline
+
+[![Join the chat at https://gitter.im/cBioPortal/clinical-timeline](https://badges.gitter.im/cBioPortal/clinical-timeline.svg)](https://gitter.im/cBioPortal/clinical-timeline?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 Visualization of clinical data on a timeline
 
 ## Example stable
