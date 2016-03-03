@@ -782,24 +782,14 @@ window.clinicalTimeline = (function(){
       var dayFormat = [];
       var m;
       var d;
-      if (time.y !== 0) {
-        dayFormat = dayFormat.concat(time.y+"y");
-      }
+      
       if (time.m !== 0) {
         if (time.y !== 0) {
-          m = Math.abs(time.m);
+          m = Math.abs(time.m)+12*Math.abs(time.y);
         } else {
           m = time.m;
         }
         dayFormat = dayFormat.concat(m+"m");
-      }
-      if (time.d !== 0) {
-        if (time.y !== 0 || time.m !== 0) {
-          d = Math.abs(time.d);
-        } else {
-          d = time.d;
-        }
-        dayFormat = dayFormat.concat(d+"d");
       }
       if (time.y === 0 && time.m === 0 && time.d === 0) {
         dayFormat = [0];
@@ -881,7 +871,7 @@ window.clinicalTimeline = (function(){
       if (zoomLevel === "years") {
           tickValues.push(parseInt(beginning));
           for (i=minTime.y; i < maxTime.y; i++) {
-              tickValues.push(i * maxTime.daysPerYear);
+              tickValues.push(12 * i * maxTime.daysPerYear);
           }
       } else if (zoomLevel === "months") {
           tickValues.push(parseInt(beginning));
