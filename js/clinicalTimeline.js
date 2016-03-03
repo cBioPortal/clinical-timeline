@@ -782,27 +782,50 @@ window.clinicalTimeline = (function(){
       var dayFormat = [];
       var m;
       var d;
-      if (time.y !== 0) {
-        dayFormat = dayFormat.concat(time.y+"y");
-      }
-      if (time.m !== 0) {
-        if (time.y !== 0) {
-          m = Math.abs(time.m);
-        } else {
-          m = time.m;
-        }
-        dayFormat = dayFormat.concat(m+"m");
-      }
-      if (time.d !== 0) {
-        if (time.y !== 0 || time.m !== 0) {
-          d = Math.abs(time.d);
-        } else {
-          d = time.d;
-        }
-        dayFormat = dayFormat.concat(d+"d");
-      }
-      if (time.y === 0 && time.m === 0 && time.d === 0) {
+      var daysPerYear = 365;
+      var daysPerMonth = 30;
+
+     if (time.y === 0 && time.m === 0 && time.d === 0) {
         dayFormat = [0];
+      }
+
+      else{
+        if (getZoomLevel(beginning,ending,width)=="days" || getZoomLevel(beginning,ending,width)=="10days" || getZoomLevel(beginning,ending,width)=="3days") {
+          if (time.y !== 0 && time.m !==0) {
+            d = time.m*daysPerMonth + time.y * daysPerYear + time.d;
+          }
+          else if(time.y == 0 && time.m !==0) {
+            d = time.m*daysPerMonth + time.d;
+          } 
+          else {
+            d = time.d;
+          }
+          dayFormat = dayFormat.concat(m+"d");
+        }
+
+        else if (getZoomLevel(beginning,ending,width)=="months") {
+          if (time.y !== 0) {
+            m = time.m +12*time.y;
+          } 
+          else {
+              m = time.m;
+          }
+          dayFormat = dayFormat.concat(m+"m");
+        }
+
+        else if (getZoomLevel(beginning,ending,width)=="years") {
+            if (time.y !== 0) {
+              y = time.y;
+            } 
+            else {
+              y = 0;
+            } 
+          dayFormat = dayFormat.concat(y+"y");
+        }
+
+        else{
+          console.log("Error in formatTime()");
+        }
       }
       return dayFormat.join("");
   }
