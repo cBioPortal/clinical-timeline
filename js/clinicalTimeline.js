@@ -589,6 +589,8 @@ window.clinicalTimeline = (function(){
           $('.show-track').each(function () {
             $(this).on("click", function() {
               toggleTrackVisibility($(this).prop("innerHTML"));
+              $(this).remove();
+              timeline();
             });
           });
         }
