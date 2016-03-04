@@ -785,45 +785,33 @@ window.clinicalTimeline = (function(){
       var daysPerYear = 365;
       var daysPerMonth = 30;
 
-     if (time.y === 0 && time.m === 0 && time.d === 0) {
+      if (time.y === 0 && time.m === 0 && time.d === 0) {
         dayFormat = [0];
-      }
-
-      else{
-        if (getZoomLevel(beginning,ending,width)=="days" || getZoomLevel(beginning,ending,width)=="10days" || getZoomLevel(beginning,ending,width)=="3days") {
-          if (time.y !== 0 && time.m !==0) {
-            d = time.m*daysPerMonth + time.y * daysPerYear + time.d;
-          }
-          else if(time.y == 0 && time.m !==0) {
-            d = time.m*daysPerMonth + time.d;
-          } 
-          else {
+      } else {
+        if (getZoomLevel(beginning,ending,width) == "days" || getZoomLevel(beginning,ending,width) == "10days" || getZoomLevel(beginning,ending,width) == "3days") {
+          if (time.y !== 0 && time.m !== 0) {
+            d = time.m * daysPerMonth + time.y * daysPerYear + time.d;
+          } else if (time.y == 0 && time.m !== 0) {
+            d = time.m * daysPerMonth + time.d;
+          } else {
             d = time.d;
           }
-          dayFormat = dayFormat.concat(m+"d");
-        }
-
-        else if (getZoomLevel(beginning,ending,width)=="months") {
-          if (time.y !== 0) {
-            m = time.m +12*time.y;
-          } 
-          else {
+          dayFormat = dayFormat.concat(m + "d");
+        } else if (getZoomLevel(beginning,ending,width) == "months") {
+          if (time.y !== 0 || time.d !== 0) {
+            m = time.m + 12 * time.y + (time.d != 0 ? (time.d < 0 ? -1 : 1 ): 0);
+          } else {
               m = time.m;
           }
-          dayFormat = dayFormat.concat(m+"m");
-        }
-
-        else if (getZoomLevel(beginning,ending,width)=="years") {
-            if (time.y !== 0) {
-              y = time.y;
-            } 
-            else {
+          dayFormat = dayFormat.concat(m + "m");
+        } else if (getZoomLevel(beginning,ending,width) == "years") {
+            if (time.y !== 0 || time.m != 0 || time.d !=0) {
+              y = time.y + ((time.m != 0 || time.d !=0) ? ((time.m < 0 || time.d < 0) ? -1 : 1): 0);
+            } else {
               y = 0;
             } 
-          dayFormat = dayFormat.concat(y+"y");
-        }
-
-        else{
+          dayFormat = dayFormat.concat(y + "y");
+        } else {
           console.log("Error in formatTime()");
         }
       }
