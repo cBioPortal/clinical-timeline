@@ -784,7 +784,7 @@ window.clinicalTimeline = (function(){
       var d;
       var daysPerYear = 365;
       var daysPerMonth = 30;
-      if(m%2){
+      if(time.m%2){
         daysPerMonth = 31;
       }
 
