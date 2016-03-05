@@ -51,6 +51,10 @@ window.clinicalTimeline = (function(){
       beginning = "0";
     }
 
+    var ticketValues = getTickValues(beginning, ending, getZoomLevel(beginning, ending, width * zoomFactor));
+    beginning = tickValues[0];
+    ending = tickValues[tickValues.length-1];
+
     var chart = d3.timeline()
       .stack()
       .margin(margin)
@@ -787,7 +791,7 @@ window.clinicalTimeline = (function(){
       if (time.y === 0 && time.m === 0 && time.d === 0) {
         dayFormat = [0];
       } else {
-        if (getZoomLevel(beginning,ending,width) == "days" || getZoomLevel(beginning,ending,width) == "10days" || getZoomLevel(beginning,ending,width) == "3days") {
+        if (getZoomLevel(beginning,ending,width) === "days" || getZoomLevel(beginning,ending,width) === "10days" || getZoomLevel(beginning,ending,width) === "3days") {
           if (time.y !== 0 && time.m !== 0) {
             d = time.m * daysPerMonth + time.y * daysPerYear + time.d;
           } else if (time.y == 0 && time.m !== 0) {
@@ -912,6 +916,12 @@ window.clinicalTimeline = (function(){
               tickValues.push(i * maxTime.daysPerMonth + parseInt(i/12) * 5);
           }
 
+          beginning = tickValues[0];
+          ending = tickValues[tickValues.length-1];
+          minTime = daysToTimeObject(parseInt(beginning));
+          maxTime = daysToTimeObject(parseInt(ending));
+          timePeriod = daysToTimeObject(difference(parseInt(beginning), parseInt(ending)));
+
       } else if (zoomLevel === "10days") {
           for (i=parseInt(beginning); i < parseInt(ending) - 1; i+=10) {
               tickValues.push(i);
@@ -925,7 +935,6 @@ window.clinicalTimeline = (function(){
               tickValues.push(i);
           }
       }
-      tickValues.push(parseInt(ending));
       return tickValues;
   }
 
