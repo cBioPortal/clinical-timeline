@@ -205,7 +205,7 @@ window.clinicalTimeline = (function(){
         });
       };
 
-      if (getZoomLevel(beginning, ending, width) !== "days") {
+      if (getZoomLevel(beginning, ending, width *zoomFactor) !== "days") {
         // add brush overlay
         var xScale = d3.time.scale()
            .domain([beginning, ending])
@@ -783,36 +783,22 @@ window.clinicalTimeline = (function(){
   }
 
   function formatTime(time) {
+      console.log(getZoomLevel(beginning, ending, width * zoomFactor));
+      console.log(beginning+" "+ending+ " "+width);
       var dayFormat = [];
       var m;
       var d;
-      var daysPerYear = 365;
-      var daysPerMonth = 30;
       if (time.y === 0 && time.m === 0 && time.d === 0) {
         dayFormat = [0];
       } else {
-        if (getZoomLevel(beginning,ending,width) === "days" || getZoomLevel(beginning,ending,width) === "10days" || getZoomLevel(beginning,ending,width) === "3days") {
-          if (time.y !== 0 && time.m !== 0) {
-            d = time.m * daysPerMonth + time.y * daysPerYear + time.d;
-          } else if (time.y == 0 && time.m !== 0) {
-            d = time.m * daysPerMonth + time.d;
-          } else {
-            d = time.d;
-          }
-          dayFormat = dayFormat.concat(m + "d");
-        } else if (getZoomLevel(beginning,ending,width) == "months") {
-          if (time.y !== 0) {
-            m = time.m + 12 * time.y ;
-          } else {
-              m = time.m;
-          }
+        if (getZoomLevel(beginning, ending, width * zoomFactor) === "days" || getZoomLevel(beginning, ending, width * zoomFactor) === "10days" || getZoomLevel(beginning,ending,width) === "3days") {
+          d = time.toDays();
+          dayFormat = dayFormat.concat(d + "d");
+        } else if (getZoomLevel(beginning, ending, width * zoomFactor) === "months") {
+          m = time.m + 12 * time.y;
           dayFormat = dayFormat.concat(m + "m");
-        } else if (getZoomLevel(beginning,ending,width) == "years") {
-            if (time.y !== 0 || time.m != 0 || time.d !=0) {
-              y = time.y + ((time.m != 0 || time.d !=0) ? ((time.m < 0 || time.d < 0) ? -1 : 1): 0);
-            } else {
-              y = 0;
-            } 
+        } else if (getZoomLevel(beginning, ending, width * zoomFactor) === "years") {
+          y = time.y;
           dayFormat = dayFormat.concat(y + "y");
         } else {
           console.log("Error in formatTime()");
@@ -889,7 +875,6 @@ window.clinicalTimeline = (function(){
   function getTickValues(beginning, ending, zoomLevel) {
       tickValues = [];
       daysPerMonth = 30;
-      timePeriod = daysToTimeObject(difference(parseInt(beginning), parseInt(ending)));
       maxTime = daysToTimeObject(parseInt(ending));
       minTime = daysToTimeObject(parseInt(beginning));
       var i;
@@ -899,39 +884,29 @@ window.clinicalTimeline = (function(){
               tickValues.push(i * maxTime.daysPerYear);
           }
       } else if (zoomLevel === "months") {
-          
           if (minTime.d !== 0) {
-            beginning -= minTime.d < 0 ? 30 : -30;
+            beginning -= minTime.d < 0 ? daysPerMonth : -daysPerMonth;
             minTime = daysToTimeObject(parseInt(beginning));
-            timePeriod = daysToTimeObject(difference(parseInt(beginning), parseInt(ending)));
-          }
-
-          if (maxTime.d !== 0) {
-            ending += maxTime.d > 0 ? 30 : -30;
+            ending += maxTime.d > 0 ? daysPerMonth : -daysPerMonth;
             maxTime = daysToTimeObject(parseInt(ending));
-            timePeriod = daysToTimeObject(difference(parseInt(beginning), parseInt(ending)));
           }
-
           for (i=minTime.m + minTime.y * 12; i <= maxTime.m + maxTime.y * 12 ; i++) {
               tickValues.push(i * maxTime.daysPerMonth + parseInt(i/12) * 5);
           }
-
           beginning = tickValues[0];
           ending = tickValues[tickValues.length-1];
           minTime = daysToTimeObject(parseInt(beginning));
           maxTime = daysToTimeObject(parseInt(ending));
-          timePeriod = daysToTimeObject(difference(parseInt(beginning), parseInt(ending)));
-
       } else if (zoomLevel === "10days") {
-          for (i=parseInt(beginning); i < parseInt(ending) - 1; i+=10) {
+          for (i=parseInt(beginning); i <= parseInt(ending) - 1; i+=10) {
               tickValues.push(i);
           }
       } else if (zoomLevel === "3days") {
-          for (i=parseInt(beginning); i < parseInt(ending) - 1; i+=3) {
+          for (i=parseInt(beginning); i <= parseInt(ending) - 1; i+=3) {
               tickValues.push(i);
           }
       } else {
-          for (i=parseInt(beginning); i < parseInt(ending); i++) {
+          for (i=parseInt(beginning); i <= parseInt(ending); i++) {
               tickValues.push(i);
           }
       }
