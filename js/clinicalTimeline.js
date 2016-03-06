@@ -128,6 +128,11 @@ window.clinicalTimeline = (function(){
       addZoomOptions();
     }
 
+    //for oulining indivisual rects
+    var svgRect = svg.selectAll("rect")
+    .attr("stroke", "black")
+    .attr("stroke-width", "0.5px");
+
     // Add white background for labels to prevent timepoint overlap
     var g = d3.select(divId + " svg g");
     var gBoundingBox = g[0][0].getBoundingClientRect();
