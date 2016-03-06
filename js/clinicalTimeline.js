@@ -783,8 +783,6 @@ window.clinicalTimeline = (function(){
   }
 
   function formatTime(time) {
-      console.log(getZoomLevel(beginning, ending, width * zoomFactor));
-      console.log(beginning+" "+ending+ " "+width);
       var dayFormat = [];
       var m;
       var d;
@@ -801,7 +799,9 @@ window.clinicalTimeline = (function(){
           y = time.y;
           dayFormat = dayFormat.concat(y + "y");
         } else {
-          console.log("Error in formatTime()");
+          //defaults to days as that is the minimum possible frame
+          d = time.toDays();
+          dayFormat = dayFormat.concat(d + "d");
         }
       }
       return dayFormat.join("");
