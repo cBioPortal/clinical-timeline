@@ -702,8 +702,11 @@ window.clinicalTimeline = (function(){
           $(a).on("click", hideTrackClickHandler(elem.prop("innerHTML")));
           $(trackTooltip).append(a);
           $(trackTooltip).append("<br />");
-
-          if (!isDurationTrack(getTrack(allData, elem.prop("innerHTML")))) {
+		  
+		var trackData = getTrack(allData, elem.prop("innerHTML"));
+		var d3timeline = d3.timeline();
+		d3timeline.groupCount(trackData.times, stackSlack);
+		if ((!isDurationTrack(trackData)) && (d3timeline.groupCount() !=  trackData.times.length)) { 
             a = $.parseHTML("<a href='#' onClick='return false' class='hide-track'>Collapse/Stack</a>");
             $(a).on("click", collapseTrackClickHandler(elem.prop("innerHTML")));
             $(trackTooltip).append(a);

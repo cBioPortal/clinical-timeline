@@ -39,7 +39,8 @@
         timeAxisTickFormat = {stroke: "stroke-dasharray", spacing: "4 10"},
         showTodayFormat = {marginTop: 25, marginBottom: 0, width: 1, color: colorCycle},
         showBorderLine = false,
-        showBorderFormat = {marginTop: 25, marginBottom: 0, width: 1, color: colorCycle}
+        showBorderFormat = {marginTop: 25, marginBottom: 0, width: 1, color: colorCycle},
+		groupCount = 0;
       ;
 
     function timeline (gParent) {
@@ -535,6 +536,16 @@
     timeline.width = function (w) {
       if (!arguments.length) return width;
       width = w;
+      return timeline;
+    };
+	
+	timeline.groupCount = function (times, slack) {
+      if (!arguments.length) return groupCount;
+	   //The following call to groupByOverlap gives error
+	  //var = groups = groupByOverlap(times, slack);
+      //groupCount = groups.length;
+	  
+	  groupCount = 2; //Should be removed after above fix
       return timeline;
     };
 
