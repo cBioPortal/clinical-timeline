@@ -13,7 +13,7 @@ window.clinicalTimeline = (function(){
       enableZoom = true,
       stackSlack = null,
       translateX = 0,
-      beginning = "0",
+      beginning = 0,
       ending = 0;
 
   function getTrack(data, track) {
@@ -27,7 +27,7 @@ window.clinicalTimeline = (function(){
         return x.visible;
     });
 
-    var maxDays = Math.max.apply(Math, [getMaxEndingTime(allData), 1]);
+    maxDays = Math.max.apply(Math, [getMaxEndingTime(allData), 1]);
     
     if (stackSlack === null) {
       if (maxDays > 300) {
@@ -41,34 +41,23 @@ window.clinicalTimeline = (function(){
       }
     }
     
-    var minDays = Math.min.apply(Math, [getMinStartingTime(allData), 0]);
-
-    if (ending === 0) {
-      ending = maxDays;
-    }
-    if (beginning === "0") {
-      beginning = minDays;
-    }
-    if (beginning === 0) {
-      beginning = "0";
-    }
-
-    var tickValues = getTickValues(beginning, ending, getZoomLevel(beginning, ending, width * zoomFactor));
-    var beginningTick = tickValues[0];
-    var endingTick = tickValues[tickValues.length-1];
+    minDays = Math.min.apply(Math, [getMinStartingTime(allData), 0]);
+    var tickValues = getTickValues(minDays, maxDays, getZoomLevel(minDays, maxDays, width * zoomFactor));
+    var beginning = tickValues[0];
+    ending = tickValues[tickValues.length-1];
 
     var chart = d3.timeline()
       .stack()
       .margin(margin)
       .tickFormat({
         format: function(d) { return formatTime(daysToTimeObject(d.valueOf())); },
-        tickValues: getTickValues(beginning, ending, getZoomLevel(beginning, ending, width * zoomFactor)),
+        tickValues: getTickValues(minDays, maxDays, getZoomLevel(minDays, maxDays, width * zoomFactor)),
         tickSize: 6
       })
       .translate(translateX)
       .width(width * zoomFactor)
-      .beginning(beginningTick)
-      .ending(endingTick)
+      .beginning(beginning)
+      .ending(ending)
       .stackSlack(stackSlack)
       .orient('top')
       .itemHeight(itemHeight)
@@ -175,12 +164,12 @@ window.clinicalTimeline = (function(){
         var xDaysRect = brush.extent()[0].valueOf();
         zoomFactor = (parseInt(width) - parseInt(margin.left) - parseInt(margin.right)) / (parseInt(d3.select(".extent").attr("width")));
         if (zoomFactor > 0) {
-          zoomFactor = Math.min(zoomFactor, getZoomFactor("days", beginning, ending, width));
+          zoomFactor = Math.min(zoomFactor, getZoomFactor("days", minDays, maxDays, width));
         } else {
-          zoomFactor = getZoomFactor("days", beginning, ending, width);
+          zoomFactor = getZoomFactor("days", minDays, maxDays, width);
         }
         var xZoomScale = d3.time.scale()
-           .domain([beginning, ending])
+           .domain([minDays, maxDays])
            .range([margin.left, width * zoomFactor - margin.right]);
         translateX = -xZoomScale(xDaysRect);
         $('.'+divId.substr(1)+'-qtip').qtip("hide");
@@ -197,7 +186,7 @@ window.clinicalTimeline = (function(){
           .attr("id", "timelineZoomOut");
         zoomBtn.on("click", function() {
           zoomFactor = 1;
-          beginning = "0";
+          beginning = 0;
           ending = 0;
           $('.'+divId.substr(1)+'-qtip').qtip("hide");
           d3.select(divId).style("visibility", "hidden");
@@ -207,10 +196,10 @@ window.clinicalTimeline = (function(){
         });
       };
 
-      if (getZoomLevel(beginning, ending, width *zoomFactor) !== "days") {
+      if (getZoomLevel(minDays, maxDays, width *zoomFactor) !== "days") {
         // add brush overlay
         var xScale = d3.time.scale()
-           .domain([beginning, ending])
+           .domain([minDays, maxDays])
            .range([margin.left - 10, width - margin.right + 10]);
         var brush = d3.svg.brush()
           .x(xScale)
@@ -797,13 +786,13 @@ window.clinicalTimeline = (function(){
       if (time.y === 0 && time.m === 0 && time.d === 0) {
         dayFormat = "0";
       } else {
-        if (getZoomLevel(beginning, ending, width * zoomFactor) === "days" || getZoomLevel(beginning, ending, width * zoomFactor) === "10days" || getZoomLevel(beginning, ending, width * zoomFactor) === "3days") {
+        if (getZoomLevel(minDays, maxDays, width * zoomFactor) === "days" || getZoomLevel(minDays, maxDays, width * zoomFactor) === "10days" || getZoomLevel(minDays, maxDays, width * zoomFactor) === "3days") {
           d = time.toDays();
           dayFormat = d + "d";
-        } else if (getZoomLevel(beginning, ending, width * zoomFactor) === "months") {
+        } else if (getZoomLevel(minDays, maxDays, width * zoomFactor) === "months") {
           m = time.m + 12 * time.y;
           dayFormat = m + "m"
-        } else if (getZoomLevel(beginning, ending, width * zoomFactor) === "years") {
+        } else if (getZoomLevel(minDays, maxDays, width * zoomFactor) === "years") {
           y = time.y;
           dayFormat = y + "y";
         } else {
@@ -816,8 +805,8 @@ window.clinicalTimeline = (function(){
   /*
    * Return zoomLevel in human comprehensible form by determining the width in pixels of a single day
    */
-  function getZoomLevel(beginning, ending, width) {
-    pixelsPerDay = parseFloat(parseInt(width) / difference(parseInt(beginning), parseInt(ending)));
+  function getZoomLevel(minDays, maxDays, width) {
+    pixelsPerDay = parseFloat(parseInt(width) / difference(parseInt(minDays), parseInt(maxDays)));
     if (pixelsPerDay < 1) {
       return "years";
     } else if (pixelsPerDay < 10){
@@ -835,18 +824,18 @@ window.clinicalTimeline = (function(){
    * Return zoomFactor by specifying what kind of zoomLevel on the x axis (e.g.
    * years, days) is desired
    */
-  function getZoomFactor(zoomLevel, beginning, ending, width) {
+  function getZoomFactor(zoomLevel, minDays, maxDays, width) {
     switch(zoomLevel) {
       case "years":
-        return 0.9 * difference(parseInt(beginning), parseInt(ending)) / parseInt(width);
+        return 0.9 * difference(parseInt(minDays), parseInt(maxDays)) / parseInt(width);
       case "months":
-        return 19 * difference(parseInt(beginning), parseInt(ending)) / parseInt(width);
+        return 19 * difference(parseInt(minDays), parseInt(maxDays)) / parseInt(width);
       case "10days":
-        return 34 * difference(parseInt(beginning), parseInt(ending)) / parseInt(width);
+        return 34 * difference(parseInt(minDays), parseInt(maxDays)) / parseInt(width);
       case "3days":
-        return 49 * difference(parseInt(beginning), parseInt(ending)) / parseInt(width);
+        return 49 * difference(parseInt(minDays), parseInt(maxDays)) / parseInt(width);
       case "days":
-        return 51 * difference(parseInt(beginning), parseInt(ending)) / parseInt(width);
+        return 51 * difference(parseInt(minDays), parseInt(maxDays)) / parseInt(width);
       default:
         throw "Undefined zoomLevel: " + zoomLevel;
     }
@@ -906,10 +895,10 @@ window.clinicalTimeline = (function(){
     }
   }
 
-  function getTickValues(beginning, ending, zoomLevel) {
+  function getTickValues(minDays, maxDays, zoomLevel) {
       var tickValues = [];
-      var maxTime = daysToTimeObject(parseInt(ending));
-      var minTime = daysToTimeObject(parseInt(beginning));
+      var maxTime = daysToTimeObject(parseInt(maxDays));
+      var minTime = daysToTimeObject(parseInt(minDays));
       var i;
       if (zoomLevel === "years") {
           for (i=roundDown(minTime.toYears(), 1); i <= roundUp(maxTime.toYears(), 1); i++) {
