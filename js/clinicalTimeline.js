@@ -128,31 +128,6 @@ window.clinicalTimeline = (function(){
       addZoomOptions();
     }
 
-
-    //Line after Hover
-    var line = d3.svg.line();
-
-    var hoverLine = d3.select("#overlayBrush")
-        .append("line")
-          .attr("x1", 200).attr("x2", 200) 
-          .attr("y1", 400).attr("y2", 0)
-          .style("opacity", 1)
-          .attr("stroke", "black")
-          .attr("stroke-width", "0.5px"); 
-
-
-    d3.select('.brush').on("mouseover", function() { 
-        }).on("mousemove", function() {
-          console.log('mousemove', d3.mouse(this));
-          var mouse_x = d3.mouse(this)[0];
-          var mouse_y = d3.mouse(this)[1];
-          hoverLine.attr("x1", mouse_x).attr("x2", mouse_x)
-          hoverLine.style("opacity", 1);
-          
-         })  .on("mouseout", function() {
-          //hoverLine.style("opacity", 0.1);
-    });
-
     // Add white background for labels to prevent timepoint overlap
     var g = d3.select(divId + " svg g");
     var gBoundingBox = g[0][0].getBoundingClientRect();
