@@ -55,7 +55,7 @@ window.clinicalTimeline = (function(){
       .stack()
       .margin(margin)
       .tickFormat({
-        format: function(d) { return formatTime(daysToTimeObject(d.valueOf())); },
+        format: function(d) {return formatTime(daysToTimeObject(d.valueOf())); },
         tickValues: getTickValues(beginning, ending, getZoomLevel(beginning, ending, width * zoomFactor)),
         tickSize: 6
       })
@@ -132,7 +132,8 @@ window.clinicalTimeline = (function(){
     //Line after Hover
     var line = d3.svg.line();
 
-    var hoverLine = d3.select("#overlayBrush")
+    var hoverLineOuter = d3.select("#overlayBrush").append("g");
+    var hoverLine = hoverLineOuter
         .append("line")
           .attr("x1", 200).attr("x2", 200) 
           .attr("y1", 400).attr("y2", 0)
@@ -140,18 +141,27 @@ window.clinicalTimeline = (function(){
           .attr("stroke", "black")
           .attr("stroke-width", "1px");
 
+    var hoverDate = hoverLineOuter.append('text')
+   .attr("class", "hover-text")
+   .attr("font-size", "13px")
+   .attr('y', 35);
 
     d3.select('.brush').on("mouseover", function() { 
               hoverLine.style("opacity", 1);
+              hoverDate.style("opacity", 1);
         }).on("mousemove", function() {
           console.log('mousemove', d3.mouse(this));
           var mouse_x = d3.mouse(this)[0];
           var mouse_y = d3.mouse(this)[1];
+          //var graph_x = x.invert(mouse_x);
           hoverLine.attr("x1", mouse_x).attr("x2", mouse_x)
           hoverLine.style("opacity", 1);
+          hoverDate.text(function () { return formatTime(daysToTimeObject(mouse_x))});
+          hoverDate.attr('x', mouse_x);
           
          })  .on("mouseout", function() {
           hoverLine.style("opacity", 0);
+          hoverDate.style("opacity", 0);
     });
          
 
