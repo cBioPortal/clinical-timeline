@@ -13,8 +13,14 @@ window.clinicalTimeline = (function(){
       enableZoom = true,
       stackSlack = null,
       translateX = 0,
+      // first tick
       beginning = 0,
-      ending = 0;
+      // last tick
+      ending = 0,
+      // first day
+      minDays = 0,
+      // last day
+      maxDays = 0;
 
   function getTrack(data, track) {
     return data.filter(function(x) {
@@ -42,16 +48,24 @@ window.clinicalTimeline = (function(){
     }
     
     minDays = Math.min.apply(Math, [getMinStartingTime(allData), 0]);
-    var tickValues = getTickValues(minDays, maxDays, getZoomLevel(minDays, maxDays, width * zoomFactor));
-    var beginning = tickValues[0];
+
+    var zoomLevel = getZoomLevel(minDays, maxDays, width * zoomFactor);
+    var tickValues = getTickValues(minDays, maxDays, zoomLevel);
+    // TODO: hack to handle problem when start is day 0 in d3-timeline
+    if (tickValues[0] !== 0) {
+      beginning = tickValues[0];
+    } else {
+      beginning = "0";
+    }
+
     ending = tickValues[tickValues.length-1];
 
     var chart = d3.timeline()
       .stack()
       .margin(margin)
       .tickFormat({
-        format: function(d) { return formatTime(daysToTimeObject(d.valueOf())); },
-        tickValues: getTickValues(minDays, maxDays, getZoomLevel(minDays, maxDays, width * zoomFactor)),
+        format: function(d) { return formatTime(daysToTimeObject(d.valueOf()), zoomLevel); },
+        tickValues: getTickValues(minDays, maxDays, zoomLevel),
         tickSize: 6
       })
       .translate(translateX)
@@ -168,10 +182,17 @@ window.clinicalTimeline = (function(){
         } else {
           zoomFactor = getZoomFactor("days", minDays, maxDays, width);
         }
-        var xZoomScale = d3.time.scale()
-           .domain([minDays, maxDays])
-           .range([margin.left, width * zoomFactor - margin.right]);
-        translateX = -xZoomScale(xDaysRect);
+        // TODO: Translation post zooming is not entirely correct
+        if (xDaysRect > minDays) {
+          var zoomLevel = getZoomLevel(minDays, maxDays, width * zoomFactor);
+          var tickValues = getTickValues(minDays, maxDays, zoomLevel);
+          var xZoomScale = d3.time.scale()
+             .domain([tickValues[0], tickValues[tickValues.length-1]])
+             .range([margin.left, width * zoomFactor - margin.right]);
+          translateX = -xZoomScale(xDaysRect);
+        } else {
+          translateX = 0;
+        }
         $('.'+divId.substr(1)+'-qtip').qtip("hide");
 
         d3.select(divId).style("visibility", "hidden");
@@ -196,7 +217,7 @@ window.clinicalTimeline = (function(){
         });
       };
 
-      if (getZoomLevel(minDays, maxDays, width *zoomFactor) !== "days") {
+      if (getZoomLevel(minDays, maxDays, width * zoomFactor) !== "days") {
         // add brush overlay
         var xScale = d3.time.scale()
            .domain([minDays, maxDays])
@@ -779,23 +800,29 @@ window.clinicalTimeline = (function(){
       return time;
   }
 
-  function formatTime(time) {
+  function formatTime(time, zoomLevel) {
       var dayFormat = [];
       var m;
       var d;
       if (time.y === 0 && time.m === 0 && time.d === 0) {
         dayFormat = "0";
       } else {
-        if (getZoomLevel(minDays, maxDays, width * zoomFactor) === "days" || getZoomLevel(minDays, maxDays, width * zoomFactor) === "10days" || getZoomLevel(minDays, maxDays, width * zoomFactor) === "3days") {
-          d = time.toDays();
-          dayFormat = d + "d";
-        } else if (getZoomLevel(minDays, maxDays, width * zoomFactor) === "months") {
-          m = time.m + 12 * time.y;
-          dayFormat = m + "m"
-        } else if (getZoomLevel(minDays, maxDays, width * zoomFactor) === "years") {
-          y = time.y;
-          dayFormat = y + "y";
-        } else {
+        switch(zoomLevel) {
+          case "days":
+          case "10days":
+          case "3days":
+            d = time.toDays();
+            dayFormat = d + "d";
+            break;
+          case "months":
+            m = time.m + 12 * time.y;
+            dayFormat = m + "m";
+            break;
+          case "years":
+            y = time.y;
+            dayFormat = y + "y";
+            break;
+          default:
             console.log("Undefined zoomLevel");
         }
       }
