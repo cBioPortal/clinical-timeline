@@ -220,7 +220,7 @@ window.clinicalTimeline = (function(){
       if (getZoomLevel(minDays, maxDays, width * zoomFactor) !== "days") {
         // add brush overlay
         var xScale = d3.time.scale()
-           .domain([minDays, maxDays])
+           .domain([beginning, ending])
            .range([margin.left - 10, width - margin.right + 10]);
         var brush = d3.svg.brush()
           .x(xScale)
