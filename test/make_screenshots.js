@@ -30,3 +30,4 @@ takeScreenshot = function(url, screenshot, delay) {
 }
 
 takeScreenshot(args[1], args[2], parseInt(args[3]));
+

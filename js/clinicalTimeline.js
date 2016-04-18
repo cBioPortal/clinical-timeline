@@ -48,6 +48,7 @@ window.clinicalTimeline = (function(){
     }
     
     minDays = Math.min.apply(Math, [getMinStartingTime(allData), 0]);
+
     var zoomLevel = getZoomLevel(minDays, maxDays, width * zoomFactor);
     var tickValues = getTickValues(minDays, maxDays, zoomLevel);
     // TODO: hack to handle problem when start is day 0 in d3-timeline
@@ -56,6 +57,7 @@ window.clinicalTimeline = (function(){
     } else {
       beginning = "0";
     }
+
     ending = tickValues[tickValues.length-1];
 
     var chart = d3.timeline()
@@ -802,7 +804,6 @@ window.clinicalTimeline = (function(){
       var dayFormat = [];
       var m;
       var d;
-
       if (time.y === 0 && time.m === 0 && time.d === 0) {
         dayFormat = "0";
       } else {
