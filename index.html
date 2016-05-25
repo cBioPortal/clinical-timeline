@@ -20,10 +20,25 @@
       shape-rendering: crispEdges;
     }
 
+    #timeline .overview-axis path,
+    #timeline .overview-axis line{
+      fill: none;
+      stroke: #bbb;
+      shape-rendering: crispEdges;
+    }
+
+    #timeline .overview-axis .tick text{
+      color: #ddd;
+    }
+
+    #timeline .overview-axis-mirror .tick text{
+      font-size: 0px !important;
+    }
+
     #timelineZoomOut {
       fill: blue;
     }
-    .axis text {
+    .axis .tick text {
       font-family: sans-serif;
       font-size: 10px;
     }
@@ -58,6 +73,9 @@
       stroke: #fff;
       fill-opacity: .125;
       shape-rendering: crispEdges;
+    }
+    #timeline .overview {
+      margin: 10px 0 0 160px;
     }
   </style>
   <script>
