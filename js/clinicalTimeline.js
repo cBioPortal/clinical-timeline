@@ -20,7 +20,11 @@ window.clinicalTimeline = (function(){
       // first day
       minDays = 0,
       // last day
-      maxDays = 0;
+      maxDays = 0,
+      overviewAxisWidth = 0,
+      overviewX = 0,
+      chart=null;
+
 
   function getTrack(data, track) {
     return data.filter(function(x) {
@@ -53,8 +57,9 @@ window.clinicalTimeline = (function(){
     
     beginning = tickValues[0];
     ending = tickValues[tickValues.length-1];
+    overviewAxisWidth = width - 200;
 
-    var chart = d3.timeline()
+    chart = d3.timeline()
       .stack()
       .margin(margin)
       .tickFormat({
@@ -73,9 +78,14 @@ window.clinicalTimeline = (function(){
       .itemMargin(itemMargin)
       .colors(colorCycle);
 
+    handleOverviewAxis();
 
     $(divId).html("");
-    var svg = d3.select(divId).append("svg").attr("width", width);
+    var svg = d3.select(divId).append("svg").attr("width", width).attr("class", "timeline");
+    svg.append("rect")
+      .attr("width", "100%")
+      .attr("height", "100%")
+      .attr("fill", "white");
 
     // Add dropshadow filter
     svg.append('defs').html('' +
@@ -144,7 +154,7 @@ window.clinicalTimeline = (function(){
       .style("fill", "rgb(255, 255, 255)");
     d3.select(divId + " svg")
       .insert("rect", ".timeline-label")
-      .attr("width", 190)
+      .attr("width", 130)
       .attr("height", gBoundingBox.height - 15)
       .attr("x", 0)
       .attr("y", 20)
@@ -156,12 +166,15 @@ window.clinicalTimeline = (function(){
     postTimelineHooks.forEach(function(hook) {
       hook.call();
     });
+
+    handleOverviewAxis();
   }
 
   /*
    * Add rectangular zoom selection. Use brush to zoom. After zooming in, scroll mouse or drag to pan.
    */
   function addZoomOptions() {
+    $(".dropdown-toggle").prop("disabled", true);
     var svg = d3.select(divId + " svg");
     var g = d3.select(divId + " svg g");
     var gBoundingBox = g[0][0].getBoundingClientRect();
@@ -170,6 +183,14 @@ window.clinicalTimeline = (function(){
       // Add rectangular zoom selection
       // zoom in after brush ends
       var brushend = function() {
+
+        //handle positioning of the overview rectangle post zoom in.
+        var overViewScale = d3.time.scale()
+          .domain([beginning, ending])
+          .range([0 , overviewAxisWidth]);
+
+        overviewX = overViewScale(brush.extent()[0].valueOf());
+
         var xDaysRect = brush.extent()[0].valueOf();
         zoomFactor = (parseInt(width) - parseInt(margin.left) - parseInt(margin.right)) / (parseInt(d3.select(".extent").attr("width")));
         if (zoomFactor > 0) {
@@ -178,6 +199,7 @@ window.clinicalTimeline = (function(){
           zoomFactor = getZoomFactor("days", minDays, maxDays, width);
         }
         // TODO: Translation post zooming is not entirely correct
+
         if (xDaysRect > minDays) {
           var zoomLevel = getZoomLevel(minDays, maxDays, width * zoomFactor);
           var tickValues = getTickValues(minDays, maxDays, zoomLevel);
@@ -189,7 +211,6 @@ window.clinicalTimeline = (function(){
           translateX = 0;
         }
         $('.'+divId.substr(1)+'-qtip').qtip("hide");
-
         d3.select(divId).style("visibility", "hidden");
         timeline();
         d3.select(divId).style("visibility", "visible");
@@ -208,6 +229,9 @@ window.clinicalTimeline = (function(){
           d3.select(divId).style("visibility", "hidden");
           timeline();
           d3.select(divId).style("visibility", "visible");
+          chart.scrolledX(null);
+          overviewX = 0;
+          d3.select(".overview-rectangle").attr("x", overviewX).attr("width", width);
           this.remove();
         });
       };
@@ -259,6 +283,131 @@ window.clinicalTimeline = (function(){
       d3.select(divId + " svg").style("cursor", "move");
     }
   }
+
+  /**
+   * Hanles the drawing and panning of the overviewAxis
+   */
+  function handleOverviewAxis() {
+    var overviewAxisTicks = getTickValues(minDays, maxDays, "months");
+    var minDayTick = overviewAxisTicks[0];
+    var maxDayTick =  overviewAxisTicks[overviewAxisTicks.length-1];
+    var zoomedWidth = chart.width();
+
+    var overviewSVG = d3.select(divId).append("svg")
+      .attr("height", 75)
+      .attr("width", overviewAxisWidth)
+      .attr("class", "overview");
+
+    //scale for drawing the the overviewAxis and ticks in the specified width
+    var xScaleOverview = d3.time.scale()
+      .domain([minDayTick, maxDayTick])
+      .range([0 , overviewAxisWidth]);
+
+    //scale to map the amount dragged on the zoomedWidth of original timeline to the overviewAxis width
+    //helps position the overview-rectangle correctly if original timeline dragged
+    var xScaleOverviewZoomed = d3.time.scale()
+      .domain([0, -zoomedWidth])
+      .range([0 , overviewAxisWidth]);
+
+    //scale to map the amount dragged on the overview-rectangle to the orignal timeline's zoomedWidth
+    //helps position the original-timeline correctly if the overview rectagle is dragged
+    var xScaleRectangle = d3.time.scale()
+      .domain([0, overviewAxisWidth])
+      .range([0 , -zoomedWidth]);
+
+    //Draws the ticks at bottom of time-stamp labels in the overviewAxis
+    var overviewAxis = d3.svg.axis().scale(xScaleOverview).orient("bottom")
+      .tickFormat(function(d) { 
+        return formatTime(daysToTimeObject(d.valueOf()), "months");
+      })
+      .ticks(overviewAxisTicks.length)
+      .tickSize(3)
+      .tickPadding(4);
+
+      //Draws the ticks at top of time-stamp labels in the overviewAxis
+     var overviewAxisMirror = d3.svg.axis().scale(xScaleOverview).orient("top")
+      .tickFormat(function(d) { 
+        return formatTime(daysToTimeObject(d.valueOf()), "months");
+      })
+      .ticks(overviewAxisTicks.length)
+      .tickSize(3)
+      .tickPadding(0);
+
+    var rectangleOverviewWidth = width/zoomFactor;
+
+    overviewSVG.append("g")
+      .attr("class", "x axis overview-axis")
+      .attr("transform", "translate(0,25)")
+      .call(overviewAxis);
+
+    overviewSVG.append("g")
+      .attr("class", "x axis overview-axis overview-axis-mirror")
+      .attr("transform", "translate(0,44)")
+      .call(overviewAxisMirror);
+
+    var dragChart = d3.behavior.drag()
+      .on("drag", function(d,i) {
+        //handle overview rectangle if the original-timeline is dragged
+        if(chart.scrolledX()){
+          var zoomedBeginTick = xScaleOverviewZoomed(chart.scrolledX()); 
+          d3.select(".overview-rectangle").attr("x", zoomedBeginTick);
+          overviewX = zoomedBeginTick;
+        }
+      });
+
+    var dragRectangle = d3.behavior.drag()
+      .on("drag", function(d,i) {
+        //handle the timeline if the overview rectangle is dragged
+        var x  = parseInt(d3.select(".overview-rectangle").attr("x"))+d3.event.dx;
+        if(x > 0 && x < overviewAxisWidth - rectangleOverviewWidth){
+          d3.select(divId+" svg g").attr("transform","translate("+xScaleRectangle(x)+",0)");
+          d3.select(".overview-rectangle").attr("x", x); 
+          overviewX = x;
+        }
+      });
+
+    overviewSVG.append("rect")
+      .attr("height", 3)
+      .attr("width", overviewAxisWidth)
+      .attr("x", 0)
+      .attr("y", 22)
+      .attr("fill", "#ccc");
+
+    overviewSVG.append("rect")
+      .attr("height", 3)
+      .attr("width", overviewAxisWidth)
+      .attr("x", 0)
+      .attr("y", 44)
+      .attr("fill", "#ccc");
+
+    overviewSVG.append("rect")
+      .attr("height", 18)
+      .attr("width", 3)
+      .attr("x", 0)
+      .attr("y", 26)
+      .attr("fill", "#ccc");
+
+    overviewSVG.append("rect")
+      .attr("height", 18)
+      .attr("width", 3)
+      .attr("x", overviewAxisWidth-3)
+      .attr("y", 26)
+      .attr("fill", "#ccc");
+
+    var rectangle = overviewSVG.append("rect")
+      .attr("height", 16)
+      .attr("width", rectangleOverviewWidth)
+      .attr("x", overviewX)
+      .attr("y", 27)
+      .attr("fill", "rgba(25,116,255, 0.4)")
+      .attr("class", "overview-rectangle")
+      .style("cursor", "move")
+      .call(dragRectangle);      
+
+    d3.select(divId+" svg").call(dragChart);
+    d3.selectAll(".data-control").style("visibility", "visible");
+  }
+
 
   /**
    * Checks wheter a timeline track contains timepoints with varying start and

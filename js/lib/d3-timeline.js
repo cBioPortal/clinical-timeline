@@ -39,7 +39,8 @@
         timeAxisTickFormat = {stroke: "stroke-dasharray", spacing: "4 10"},
         showTodayFormat = {marginTop: 25, marginBottom: 0, width: 1, color: colorCycle},
         showBorderLine = false,
-        showBorderFormat = {marginTop: 25, marginBottom: 0, width: 1, color: colorCycle}
+        showBorderFormat = {marginTop: 25, marginBottom: 0, width: 1, color: colorCycle},
+        scrolledX = null
       ;
 
     function timeline (gParent) {
@@ -324,15 +325,15 @@
           zoom.translate([x, 0]);
           g.attr("transform", "translate(" + x + ",0)");
           scroll(x*scaleFactor, xScale);
+          scrolledX = x;
         };
 
         var zoom = d3.behavior.zoom().x(xScale).on("zoom", move);
 
-
         gParent
           .attr("class", "scrollable")
           .call(zoom);
-
+        
         zoom.translate([translateX, 0]);
         zoom.event(gParent);
       }
@@ -677,6 +678,12 @@
     timeline.translate = function(x) {
       if (!arguments.length) return translateX;
       translateX = x;
+      return timeline;
+    };
+
+    timeline.scrolledX = function(x) {
+      if (!arguments.length) return scrolledX;
+      scrolledX = x;
       return timeline;
     };
 
