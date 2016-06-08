@@ -10,7 +10,12 @@
   <script src="js/clinicalTimeline.js"></script>
   <script src="js/sanity.js"></script>
   <script src="js/parser.js"></script>
+  <script src="https://cdn.rawgit.com/MrRio/jsPDF/master/dist/jspdf.min.js"></script>
+  <script src="https://html2canvas.hertzen.com/build/html2canvas.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
   <link href="css/lib/jquery.qtip.min.css" type="text/css" rel="stylesheet" />
+  <script src="js/exportTimeline.js"></script>
   <link href="css/lib/dataTables.tableTools.min.css" type="text/css" rel="stylesheet" />
   <style type="text/css">
     .axis path,
@@ -59,6 +64,7 @@
     #jsonInput {
       width: 500px;
       height: 600px;
+      margin: 10px auto;
     }
     #timeline {
       width: 100%;
@@ -68,14 +74,33 @@
       -moz-user-select: none;
       -ms-user-select: none;
       user-select: none;
+      margin-top: 10px;
     }
     .brush .extent {
       stroke: #fff;
       fill-opacity: .125;
       shape-rendering: crispEdges;
     }
+    .btn-group-view{
+      margin-left: 600px;
+    }
+    .btn-group > .btn, .dropdown-toggle{
+      padding: 6px 15px;
+      font-size: 12px;
+      border-radius: 6px;
+    }
+    .dropdown{
+      width: 100px;
+      display: inline-block;
+    }
+    .dropdown-menu{
+      font-size: 12px;
+    }
     #timeline .overview {
-      margin: 10px 0 0 160px;
+      margin: 0 auto;
+      display: block;
+      position: relative;
+      left: 80px;
     }
   </style>
   <script>
@@ -109,22 +134,8 @@
           $("#jsonInput").val(JSON.stringify(testDataClinical, null, '    '));
         }
         $("#parseJson").on("click", function() {
-          allData = JSON.parse($("#jsonInput").val())
-          var timeline = clinicalTimeline
-            .width(800)
-            .data(allData)
-            .divId("#timeline")
-            .splitByClinicalAttributes("Surgery", "Location")
-            .splitByClinicalAttributes("Test", "Type")
-            .splitByClinicalAttributes("TreatmentType", ["TREATMENT_TYPE", "AGENT"])
-            .splitByClinicalAttributes("TreatmentTypeStuff", ["TREATMENT_TYPE", "STUFF"])
-            .sizeByClinicalAttribute("PSA", "Result")
-            .sizeByClinicalAttribute("Phos", "Result")
-            .orderAllTooltipTables(["Source","Location"])
-            .enableTrackTooltips(true)
-            .enableZoom(true)
-            .collapseAll();
-          timeline();
+          //initialise with advanced view
+          initViews(true);
         });
         if (!waitForParse) {
           $("#parseJson").click();
@@ -133,16 +144,69 @@
           alert("Error loading JSON file.");
         });
     });
+
+    function initViews(enableAdvanced) {
+      allData = JSON.parse($("#jsonInput").val())
+      var timeline = clinicalTimeline
+        .width(800)
+        .data(allData)
+        .divId("#timeline")
+        .splitByClinicalAttributes("Surgery", "Location")
+        .splitByClinicalAttributes("Test", "Type")
+        .splitByClinicalAttributes("TreatmentType", ["TREATMENT_TYPE", "AGENT"])
+        .splitByClinicalAttributes("TreatmentTypeStuff", ["TREATMENT_TYPE", "STUFF"])
+        .sizeByClinicalAttribute("PSA", "Result")
+        .sizeByClinicalAttribute("Phos", "Result")
+        .orderAllTooltipTables(["Source","Location"])
+        .enableTrackTooltips(true)
+        .enableZoom(enableAdvanced) //zoom functionality avaiable only in the advance view
+        .advancedView(enableAdvanced)
+        .collapseAll();
+      timeline();
+      //initiliase simple-advanced buttons
+      if (enableAdvanced) {
+        $("#advBtn").prop("disabled", true); //disable repeated clicking of advButton
+        $("#advBtn").addClass("active");
+        $("#simpleBtn").prop("disabled", false); //enable simpleBtn
+        $("#simpleBtn").removeClass("active");
+        $(".dropdown-toggle").prop("disabled", true);
+        $("#jsonInput").prop("visibility", true);
+      } else {
+        $("#advBtn").prop("disabled", false); //enable advBtn
+        $("#advBtn").removeClass("active");
+        $("#simpleBtn").prop("disabled", true); //disable repeated clicking of simpleBtn
+        $("#simpleBtn").addClass("active");
+        $(".dropdown-toggle").prop("disabled", false);
+        $("#jsonInput").prop("visibility", false);
+      }
+    }
   </script>
 </head>
 <body>
   <div>
     <h3>clinical timeline</h3>
-    <div id="timeline"></div>
-    <h4>data</h4>
-    <button id="parseJson">Parse JSON</button><br />
-    <textarea id="jsonInput">
+    <div class="dropdown">
+      <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown">Export As
+      <span class="caret"></span></button>
+      <ul class="dropdown-menu">
+        <li><a href="javascript:clinicalTimeline.export.generateSVG()">SVG Image</a></li>
+        <li><a href="javascript:clinicalTimeline.export.generatePNG(true)">PNG Image</a></li>
+        <li><a href="javascript:clinicalTimeline.export.generatePDF()">PDF Document</a></li>
+      </ul>
+    </div>
+    <div class="btn-group btn-group-view" role="group" aria-label="Basic example">
+      <button type="button" class="btn btn-default" id="simpleBtn" onclick="initViews(false)">Simple</button>
+      <button type="button" class="btn btn-default" id="advBtn" onclick="initViews(true)">Advanced</button>
+    </div>
+    <div id="timeline">
+    </div>
+    <h4 class="data-control">data</h4>
+    <button id="parseJson" class="btn btn-primary data-control">Parse JSON</button><br />
+    <textarea id="jsonInput" class="form-control data-control">
     </textarea>
+    <!-- canvas and div used for redrawing the timeline SVG required for exporting -->
+    <canvas id="canvas" width="800" height="268" style="display:none"></canvas>
+    <div id="png-container" style="display:none"></div>
   </div>
 </body>
 </html>
