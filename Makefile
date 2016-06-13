@@ -1,4 +1,4 @@
-dist/clinical-timeline.js: js/lib/d3-timeline.js js/clinicalTimeline.js js/parser.js js/sanity.js
+dist/clinical-timeline.js: js/lib/d3-timeline.js js/clinicalTimeline.js js/parser.js js/sanity.js js/exportTimeline.js
 	mkdir -p $(@D)
 	echo "/* cBioPortal Clinical Timeline $(shell git describe --dirty --tags) | Maintained @ github.com/cbioportal/clinical-timeline */" > $@
 	cat $^ >> $@
