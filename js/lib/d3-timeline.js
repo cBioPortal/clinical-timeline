@@ -156,7 +156,7 @@
 
       if (showTimeAxis) {
         g.append("g")
-          .attr("class", "axis")
+          .attr("class", "axis x-axis")
           .attr("transform", "translate(" + 0 +","+(margin.top + (itemHeight + itemMargin) * maxStack)+")")
           .call(xAxis);
       }
@@ -250,7 +250,7 @@
               click(d, index, datum);
             })
             .attr("class", function (d, i) {
-              return datum.class ? "timelineSeries_"+datum.class : "timelineSeries_"+index;
+              return datum.class ? "timelineDataPoint timelineSeries_"+datum.class : "timelineDataPoint timelineSeries_"+index;
             })
             .attr("id", function(d, i) {
               // use deprecated id field
