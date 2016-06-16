@@ -102,6 +102,11 @@
       position: relative;
       left: 80px;
     }
+    #tooltip-controller{
+      position: relative;
+      left: 300px;
+      font-size: 12px;
+    }
   </style>
   <script>
     $(document).ready(function() {
@@ -171,6 +176,7 @@
         $("#simpleBtn").removeClass("active");
         $(".dropdown-toggle").prop("disabled", true);
         $("#jsonInput").prop("visibility", true);
+        $("#tooltip-controller").css("visibility", "hidden");
       } else {
         $("#advBtn").prop("disabled", false); //enable advBtn
         $("#advBtn").removeClass("active");
@@ -178,6 +184,7 @@
         $("#simpleBtn").addClass("active");
         $(".dropdown-toggle").prop("disabled", false);
         $("#jsonInput").prop("visibility", false);
+        $("#tooltip-controller").css("visibility", "visible");
       }
     }
   </script>
@@ -200,6 +207,7 @@
     </div>
     <div id="timeline">
     </div>
+    <span id="tooltip-controller"><a href="javascript:clinicalTimeline.toggleTooltipOnVerticalLine()">Hide tooltips on vertical-line</a></span>
     <h4 class="data-control">data</h4>
     <button id="parseJson" class="btn btn-primary data-control">Parse JSON</button><br />
     <textarea id="jsonInput" class="form-control data-control">
