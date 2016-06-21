@@ -170,6 +170,7 @@ window.clinicalTimeline = (function(){
 
     handleVerticalLine();
     handleOverviewAxis();
+
   }
 
   /*
@@ -431,6 +432,7 @@ window.clinicalTimeline = (function(){
       d3.select("overview-rectangle").remove();
       advancedView = true;
       timeline();
+      clinicalTimeline.trimTimeline(maxDays, minDays, getZoomLevel, width, getTickValues, margin, formatTime, daysToTimeObject);
       advancedView = false;
       d3.select(".overview").remove();
       d3.selectAll(".data-control").style("visibility", "hidden");
