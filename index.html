@@ -117,10 +117,14 @@
         var jsonCBioPortal = getURLParameterByName("cbioportal");
         var patientId = getURLParameterByName("patientid");
         var patientJSON = getURLParameterByName("patientjson");
+        var viewType = getURLParameterByName("view");
         var waitForParse = false;
         var testDataClinical = data;
 
         if (jsonURL !== "") {
+          if (jsonURL.indexOf("?view=") > -1) {
+            jsonURL = jsonURL.substring(0, jsonURL.indexOf("?view="))
+          }
           $("#jsonInput").val(JSON.stringify(JSON.parse(decodeURIComponent(jsonURL)), null, '    '));
         } else if (jsonCBioPortal !== "") {
           var jsonTransformed = clinicalTimelineParser(JSON.parse(decodeURIComponent(jsonCBioPortal)));
@@ -135,8 +139,18 @@
           $("#jsonInput").val(JSON.stringify(testDataClinical, null, '    '));
         }
         $("#parseJson").on("click", function() {
-          //initialise with advanced view
-          initViews(true);
+           if (viewType === "simple") {
+            initViews(false);
+            if (location.href.indexOf("?view=") === -1) {  
+              window.history.pushState('simpleView', '', location.href+="?view=simple");
+            }
+          } else {
+            //viewType isn't specified in the URl, show advanced view
+            initViews(true);
+            if (location.href.indexOf("?view=") === -1) {  
+              window.history.pushState('advancedView', '', location.href+="?view=advanced");
+            }
+          }
         });
         if (!waitForParse) {
           $("#parseJson").click();
@@ -164,6 +178,7 @@
         .advancedView(enableAdvanced)
         .collapseAll();
       timeline();
+
       //initiliase simple-advanced buttons
       if (enableAdvanced) {
         $("#advBtn").prop("disabled", true); //disable repeated clicking of advButton
@@ -172,6 +187,9 @@
         $("#simpleBtn").removeClass("active");
         $(".dropdown-toggle").prop("disabled", true);
         $("#jsonInput").prop("visibility", true);
+        if (location.href.indexOf("?view=simple") > -1) {  
+          window.history.pushState('advancedView', '', location.href.replace("?view=simple", "?view=advanced"));
+        }
       } else {
         $("#advBtn").prop("disabled", false); //enable advBtn
         $("#advBtn").removeClass("active");
@@ -179,6 +197,9 @@
         $("#simpleBtn").addClass("active");
         $(".dropdown-toggle").prop("disabled", false);
         $("#jsonInput").prop("visibility", false);
+        if (location.href.indexOf("?view=advanced") > -1) {  
+         window.history.pushState('simpleView', '', location.href.replace("?view=advanced", "?view=simple"));
+        }
       }
     }
   </script>
