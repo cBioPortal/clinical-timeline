@@ -3,15 +3,16 @@ window.clinicalTimeline.trimTimeline = function (maxDays, minDays, getZoomLevel,
 
   $(".x-axis").css("visibility", "hidden");
   
-  var tolerance = (maxDays - minDays) * 0.2; //cut the timeline after how much of inactivity
+  var tolerance = (maxDays - minDays) * 0.3; //cut the timeline after how much of inactivity
   var timelineElements = []
   var breakTimelineForKink = []
   var toDelete = []
   var tickCoordiantesKink = []
+  var extraKink;
+  var svg = d3.select(".timeline")
 
   var zoomLevel = getZoomLevel(minDays, maxDays, width);
   var tickValues = getTickValues(minDays, maxDays, zoomLevel);
-  var svg = d3.select(".timeline")
 
   //drawing the kink svg
   var kinkLineData = [ { "x": 70,  "y": 0 }, { "x": 75, "y": 5 },
@@ -23,6 +24,18 @@ window.clinicalTimeline.trimTimeline = function (maxDays, minDays, getZoomLevel,
                   .x(function(d) { return d.x; })
                   .y(function(d) { return d.y; })
                   .interpolate("linear");
+
+  function getExraKink (zoomLevel) {
+    switch(zoomLevel) {
+          case "days": return 1;
+          case "3days": return 3;
+          case "10days": return 10;
+          case "months": return 30;
+          case "years": return 365;
+          default:
+            console.log("Undefined zoomLevel");
+        }
+  }
 
   d3.selectAll(".timeline g rect, .timeline g circle").each(function(d, i){
     if (d.starting_time) {
@@ -38,29 +51,34 @@ window.clinicalTimeline.trimTimeline = function (maxDays, minDays, getZoomLevel,
 
     if (second - first > tolerance) {
       //delete ticks where there is no activity.
-      for (var i = first + 30 ; i < second - 30; i++) {
+      for (var i = first + getExraKink(zoomLevel) ; i < second - getExraKink(zoomLevel); i++) {
         toDelete.push(i)
       }
     } 
   });
 
   //calculate the ticks to be shown after trimmming 
-  var ticksToShowKink = tickValues.filter(function(x) { return toDelete.indexOf(x) < 0 })
-
-  ticksToShowKink.forEach(function (item, index) {
-    //calculate the position to place the kinks
-  
-    if (index < ticksToShowKink.length -1) {
-      var first = ticksToShowKink[index];
-      var second = ticksToShowKink[index + 1];
-
-      if (second - first > tolerance) {
-        breakTimelineForKink.push(index + 1)
-      } 
-    }
-
-    
+  var tickValuesInt = tickValues.map( function (x) {
+      return Math.round(x);
   });
+  var ticksToShowKink = tickValuesInt.filter(function(x) { return toDelete.indexOf(x) < 0 })
+
+  if (tickValues.length > 5) {
+      ticksToShowKink.forEach(function (item, index) {
+      //calculate the position to place the kinks
+
+      if (index < ticksToShowKink.length -1) {
+        var first = ticksToShowKink[index];
+        var second = ticksToShowKink[index + 1];
+
+        if (second - first > tolerance) {
+          breakTimelineForKink.push(index + 1)
+        } 
+      }
+    });
+  }
+
+  
 
   var xScale = d3.time.scale()
       .domain([margin.left,  width - margin.right])
@@ -73,7 +91,7 @@ window.clinicalTimeline.trimTimeline = function (maxDays, minDays, getZoomLevel,
       shiftAtBreak += 30;
     }
     //calculate the position of the tick to be shown after trimming
-    tickCoordiantesKink.push(margin.left + shiftAtBreak + (i * ((width - margin.right - margin.left) / (ticksToShowKink.length))))
+    tickCoordiantesKink.push(margin.left + shiftAtBreak + (i * ((width - 3 * margin.right - margin.left) / (ticksToShowKink.length - 1 ))))
   }
 
   var xAxis = d3.svg.axis()
@@ -120,7 +138,7 @@ window.clinicalTimeline.trimTimeline = function (maxDays, minDays, getZoomLevel,
     //based on binary search
 
     var low = 0;
-    var high = ticksToShowKink.length;
+    var high = ticksToShowKink.length - 1;
 
     while(low < high){
       var mid = Math.round((low + high)/2);
@@ -130,6 +148,7 @@ window.clinicalTimeline.trimTimeline = function (maxDays, minDays, getZoomLevel,
         low = mid;
       }
     }
+
     return low;
   }
 
@@ -137,7 +156,11 @@ window.clinicalTimeline.trimTimeline = function (maxDays, minDays, getZoomLevel,
     //returns updated x positions for the data elements according to th trimmed timeline    
     var first = getLowerBoundIndex(x.starting_time);
     var second = first + 1;
-    
+
+    if (second > ticksToShowKink.length - 1) {
+      return tickCoordiantesKink[first];
+    }
+
     return tickCoordiantesKink[first] + (x.starting_time - ticksToShowKink[first]) * (tickCoordiantesKink[second] - tickCoordiantesKink[first]) / (ticksToShowKink[second] - ticksToShowKink[first]);
   }
 
@@ -146,11 +169,11 @@ window.clinicalTimeline.trimTimeline = function (maxDays, minDays, getZoomLevel,
     return getXPosAdjustedForKink(x);
   });
 
-  var widthMultiplier= ((maxDays - minDays)/((maxDays - minDays) - toDelete.length))
+  var widthMultiplier = ((maxDays - minDays)/((maxDays - minDays) - toDelete.length));
 
   d3.selectAll(".timelineDataPoint").attr("x", function(x) {
     //update x position for rectangular elements in the trimmed timeline
-    return getXPosAdjustedForKink(x) - d3.select(this).attr("width")/2;
+    return getXPosAdjustedForKink(x);
   })
   .attr("width", function (x) {
     //update width for rectangular elements in the trimmed timeline
