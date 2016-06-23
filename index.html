@@ -161,7 +161,12 @@
     });
 
     function initViews(enableAdvanced) {
-      allData = JSON.parse($("#jsonInput").val())
+      if (localStorage.timelineData) {
+        allData = JSON.parse(localStorage.timelineData);
+      } else {
+        allData = JSON.parse($("#jsonInput").val());
+      }
+      
       var timeline = clinicalTimeline
         .width(800)
         .data(allData)
@@ -180,6 +185,8 @@
         .collapseAll();
       timeline();
 
+      localStorage.timelineData = $("#jsonInput").val();
+
       //initiliase simple-advanced buttons
       if (enableAdvanced) {
         $("#advBtn").prop("disabled", true); //disable repeated clicking of advButton
@@ -187,7 +194,7 @@
         $("#simpleBtn").prop("disabled", false); //enable simpleBtn
         $("#simpleBtn").removeClass("active");
         $(".dropdown-toggle").prop("disabled", true);
-        $("#jsonInput").prop("visibility", true);
+        $("#jsonInput").prop("visibility", true);        
         if (location.href.indexOf("?view=simple") > -1) {  
           window.location.href =  window.location.href.replace("?view=simple", "?view=advanced");
         }
