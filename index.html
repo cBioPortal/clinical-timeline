@@ -142,13 +142,13 @@
            if (viewType === "simple") {
             initViews(false);
             if (location.href.indexOf("?view=") === -1) {  
-              window.location.href = window.location.href+="?view=simple";
+              window.history.replaceState('simpleView', '', location.href+="?view=simple");
             }
           } else {
             //viewType isn't specified in the URl, show advanced view
             initViews(true);
             if (location.href.indexOf("?view=") === -1) {  
-             window.location.href = location.href+="?view=advanced";
+             window.history.replaceState('advancedView', '', location.href+="?view=advanced");
             }
           }
         });
@@ -161,11 +161,7 @@
     });
 
     function initViews(enableAdvanced) {
-      if (localStorage.timelineData) {
-        allData = JSON.parse(localStorage.timelineData);
-      } else {
-        allData = JSON.parse($("#jsonInput").val());
-      }
+      allData = JSON.parse($("#jsonInput").val());
       
       var timeline = clinicalTimeline
         .width(800)
@@ -185,8 +181,6 @@
         .collapseAll();
       timeline();
 
-      localStorage.timelineData = $("#jsonInput").val();
-
       //initiliase simple-advanced buttons
       if (enableAdvanced) {
         $("#advBtn").prop("disabled", true); //disable repeated clicking of advButton
@@ -196,7 +190,7 @@
         $(".dropdown-toggle").prop("disabled", true);
         $("#jsonInput").prop("visibility", true);        
         if (location.href.indexOf("?view=simple") > -1) {  
-          window.location.href =  window.location.href.replace("?view=simple", "?view=advanced");
+          window.history.replaceState('advancedView', '', location.href.replace("?view=simple", "?view=advanced"));
         }
       } else {
         $("#advBtn").prop("disabled", false); //enable advBtn
@@ -206,7 +200,7 @@
         $(".dropdown-toggle").prop("disabled", false);
         $("#jsonInput").prop("visibility", false);
         if (location.href.indexOf("?view=advanced") > -1) {  
-         window.location.href =  window.location.href.replace("?view=advanced", "?view=simple");
+          window.history.replaceState('simpleView', '', location.href.replace("?view=advanced", "?view=simple"));
         }
       }
     }
