@@ -142,13 +142,13 @@
            if (viewType === "simple") {
             initViews(false);
             if (location.href.indexOf("?view=") === -1) {  
-              window.history.pushState('simpleView', '', location.href+="?view=simple");
+              window.location.href = window.location.href+="?view=simple";
             }
           } else {
             //viewType isn't specified in the URl, show advanced view
             initViews(true);
             if (location.href.indexOf("?view=") === -1) {  
-              window.history.pushState('advancedView', '', location.href+="?view=advanced");
+             window.location.href = location.href+="?view=advanced";
             }
           }
         });
@@ -176,6 +176,7 @@
         .enableTrackTooltips(true)
         .enableZoom(enableAdvanced) //zoom functionality avaiable only in the advance view
         .advancedView(enableAdvanced)
+        .enableTrimmedTimeline(true)
         .collapseAll();
       timeline();
 
@@ -188,7 +189,7 @@
         $(".dropdown-toggle").prop("disabled", true);
         $("#jsonInput").prop("visibility", true);
         if (location.href.indexOf("?view=simple") > -1) {  
-          window.history.pushState('advancedView', '', location.href.replace("?view=simple", "?view=advanced"));
+          window.location.href =  window.location.href.replace("?view=simple", "?view=advanced");
         }
       } else {
         $("#advBtn").prop("disabled", false); //enable advBtn
@@ -198,7 +199,7 @@
         $(".dropdown-toggle").prop("disabled", false);
         $("#jsonInput").prop("visibility", false);
         if (location.href.indexOf("?view=advanced") > -1) {  
-         window.history.pushState('simpleView', '', location.href.replace("?view=advanced", "?view=simple"));
+         window.location.href =  window.location.href.replace("?view=advanced", "?view=simple");
         }
       }
     }

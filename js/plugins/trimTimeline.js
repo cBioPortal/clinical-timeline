@@ -1,9 +1,9 @@
-window.clinicalTimeline.trimTimeline = function (maxDays, minDays, getZoomLevel, width, getTickValues, margin, formatTime, daysToTimeObject) {
+window.clinicalTimeline.trimTimeline = function (maxDays, minDays, getZoomLevel, width, getTickValues, margin, formatTime, daysToTimeObject, divId) {
   //cuts the timeline to areas of interest
 
-  $(".x-axis").css("visibility", "hidden");
+  $(divId+" > svg > g > g.axis").css("visibility", "hidden");
   
-  var tolerance = (maxDays - minDays) * 0.3; //cut the timeline after how much of inactivity
+  var tolerance = width * 0.1; //cut the timeline after how much of inactivity
   var timelineElements = []
   var breakTimelineForKink = []
   var toDelete = []
@@ -15,10 +15,10 @@ window.clinicalTimeline.trimTimeline = function (maxDays, minDays, getZoomLevel,
   var tickValues = getTickValues(minDays, maxDays, zoomLevel);
 
   //drawing the kink svg
-  var kinkLineData = [ { "x": 70,  "y": 0 }, { "x": 75, "y": 5 },
-                       { "x": 80,  "y": -5}, { "x": 85, "y": 5},
-                       { "x": 90,  "y": -5}, { "x": 95, "y": 5},
-                       { "x": 100,  "y": -5},  { "x": 105,  "y": 0}];
+  var kinkLineData = [ { "x": 75,  "y": 0 }, { "x": 80, "y": 5 },
+                       { "x": 85,  "y": -5}, { "x": 90, "y": 5},
+                       { "x": 95,  "y": -5}, { "x": 100, "y": 5},
+                       { "x": 105,  "y": -5},  { "x": 110,  "y": 0}];
   
   var kinkLine = d3.svg.line()
                   .x(function(d) { return d.x; })
@@ -90,8 +90,11 @@ window.clinicalTimeline.trimTimeline = function (maxDays, minDays, getZoomLevel,
     if (breakTimelineForKink.indexOf(i) > -1) {
       shiftAtBreak += 30;
     }
+
+    var breakAdjust = breakTimelineForKink.length * 30;
+
     //calculate the position of the tick to be shown after trimming
-    tickCoordiantesKink.push(margin.left + shiftAtBreak + (i * ((width - 3 * margin.right - margin.left) / (ticksToShowKink.length - 1 ))))
+    tickCoordiantesKink.push(margin.left + shiftAtBreak + (i * ((width - margin.right - margin.left - breakAdjust) / (ticksToShowKink.length - 1 ))))
   }
 
   var xAxis = d3.svg.axis()
@@ -112,14 +115,12 @@ window.clinicalTimeline.trimTimeline = function (maxDays, minDays, getZoomLevel,
   for (var i = 0; i < ticksToShowKink.length; i++) {
     //add kinks at the places where timeline is cut
     if (breakTimelineForKink.indexOf(i) > -1) {
-      shiftAtBreak += 30;
-      var kinkPosition= (shiftAtBreak + (i * ((width - margin.right - margin.left) / (ticksToShowKink.length)))); 
-
+      var kinkPosition = (tickCoordiantesKink[i-1] + tickCoordiantesKink[i])/2;
       kink.append("rect")
         .attr("height", 10)
         .attr("width", 35)
         .attr("class","kink-bg")
-        .attr("x", 70 + kinkPosition)
+        .attr("x", kinkPosition - 17.5)
         .attr("y", 15)
         .attr("fill", "white");
 
@@ -129,14 +130,15 @@ window.clinicalTimeline.trimTimeline = function (maxDays, minDays, getZoomLevel,
         .attr("stroke-width", 1)
         .attr("fill", "none")
         .attr("class","kink-line")
-        .attr("transform", "translate("+ kinkPosition +",20)");
+        .attr("transform", "translate("+ (kinkPosition - 92.5) +",20)");
     }
   }
 
+  /**
+   * returns the lower index of the indices between which the element, ele lies in an array
+   * based on binary search
+   */
   function getLowerBoundIndex(ele) {
-    //returns the lower index of the indices between which the element, ele lies in an array
-    //based on binary search
-
     var low = 0;
     var high = ticksToShowKink.length - 1;
 
@@ -148,30 +150,30 @@ window.clinicalTimeline.trimTimeline = function (maxDays, minDays, getZoomLevel,
         low = mid;
       }
     }
-
     return low;
   }
 
-  function getXPosAdjustedForKink(x) {
-    //returns updated x positions for the data elements according to th trimmed timeline    
+  /**
+   * returns updated x positions for the data elements according to th trimmed timeline 
+   */
+  function getXPosAdjustedForKink(x) {   
     var first = getLowerBoundIndex(x.starting_time);
     var second = first + 1;
 
     if (second > ticksToShowKink.length - 1) {
       return tickCoordiantesKink[first];
     }
-
     return tickCoordiantesKink[first] + (x.starting_time - ticksToShowKink[first]) * (tickCoordiantesKink[second] - tickCoordiantesKink[first]) / (ticksToShowKink[second] - ticksToShowKink[first]);
   }
 
-  d3.selectAll(".timelineDataPoint").attr("cx", function(x) {
+  d3.selectAll("[id^=timelineItem]").attr("cx", function(x) {
     //update x position for circle elements in the trimmed timeline
     return getXPosAdjustedForKink(x);
   });
 
   var widthMultiplier = ((maxDays - minDays)/((maxDays - minDays) - toDelete.length));
 
-  d3.selectAll(".timelineDataPoint").attr("x", function(x) {
+  d3.selectAll("[id^=timelineItem]").attr("x", function(x) {
     //update x position for rectangular elements in the trimmed timeline
     return getXPosAdjustedForKink(x);
   })

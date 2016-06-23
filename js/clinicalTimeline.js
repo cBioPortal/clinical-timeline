@@ -23,7 +23,8 @@ window.clinicalTimeline = (function(){
       maxDays = 0,
       overviewAxisWidth = 0,
       overviewX = 0,
-      advancedView=false,
+      advancedView=false
+      enableTrimmedTimeline=false,
       chart=null;
 
 
@@ -431,7 +432,9 @@ window.clinicalTimeline = (function(){
       d3.select("overview-rectangle").remove();
       advancedView = true;
       timeline();
-      clinicalTimeline.trimTimeline(maxDays, minDays, getZoomLevel, width, getTickValues, margin, formatTime, daysToTimeObject);
+      if (enableTrimmedTimeline) {
+        clinicalTimeline.trimTimeline(maxDays, minDays, getZoomLevel, width, getTickValues, margin, formatTime, daysToTimeObject, divId);
+      }
       advancedView = false;
       d3.select(".overview").remove();
       d3.selectAll(".data-control").style("visibility", "hidden");
@@ -1138,6 +1141,15 @@ window.clinicalTimeline = (function(){
 
     if (b === true || b === false) {
       enableZoom = b;
+    }
+    return timeline;
+  };
+
+  timeline.enableTrimmedTimeline = function(b) {
+    if (!arguments.length) return enableTrimmedTimeline;
+
+    if (b === true || b === false) {
+      enableTrimmedTimeline = b;
     }
     return timeline;
   };
