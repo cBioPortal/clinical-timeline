@@ -3,7 +3,7 @@ window.clinicalTimeline.trimTimeline = function (maxDays, minDays, getZoomLevel,
 
   $(divId+" > svg > g > g.axis").css("visibility", "hidden");
   
-  var tolerance = width * 0.1; //cut the timeline after how much of inactivity
+  var tolerance = (maxDays - minDays) * 0.2; //cut the timeline after how much of inactivity
   var timelineElements = []
   var breakTimelineForKink = []
   var toDelete = []
@@ -77,8 +77,6 @@ window.clinicalTimeline.trimTimeline = function (maxDays, minDays, getZoomLevel,
       }
     });
   }
-
-  
 
   var xScale = d3.time.scale()
       .domain([margin.left,  width - margin.right])
@@ -156,30 +154,35 @@ window.clinicalTimeline.trimTimeline = function (maxDays, minDays, getZoomLevel,
   /**
    * returns updated x positions for the data elements according to th trimmed timeline 
    */
-  function getXPosAdjustedForKink(x) {   
-    var first = getLowerBoundIndex(x.starting_time);
+  function getXPosAdjustedForKink(x, pos) {   
+    var first = getLowerBoundIndex(pos);
     var second = first + 1;
 
     if (second > ticksToShowKink.length - 1) {
       return tickCoordiantesKink[first];
     }
-    return tickCoordiantesKink[first] + (x.starting_time - ticksToShowKink[first]) * (tickCoordiantesKink[second] - tickCoordiantesKink[first]) / (ticksToShowKink[second] - ticksToShowKink[first]);
+    return tickCoordiantesKink[first] + (pos - ticksToShowKink[first]) * (tickCoordiantesKink[second] - tickCoordiantesKink[first]) / (ticksToShowKink[second] - ticksToShowKink[first]);
   }
 
   d3.selectAll("[id^=timelineItem]").attr("cx", function(x) {
-    //update x position for circle elements in the trimmed timeline
-    return getXPosAdjustedForKink(x);
+    //update x position for circular elements in the trimmed timeline
+    return getXPosAdjustedForKink(x, x.starting_time);
   });
-
-  var widthMultiplier = ((maxDays - minDays)/((maxDays - minDays) - toDelete.length));
 
   d3.selectAll("[id^=timelineItem]").attr("x", function(x) {
     //update x position for rectangular elements in the trimmed timeline
-    return getXPosAdjustedForKink(x);
-  })
-  .attr("width", function (x) {
-    //update width for rectangular elements in the trimmed timeline
-    return d3.select(this).attr("width") * widthMultiplier;
+    return getXPosAdjustedForKink(x, x.starting_time);
   });
 
+  var widthMultiplier = (tickCoordiantesKink[1] - tickCoordiantesKink[0])/ (d3.transform(d3.select($(".axis .tick")[1]).attr("transform")).translate[0] - d3.transform(d3.select($(".axis .tick")[0]).attr("transform")).translate[0])
+  
+  d3.selectAll("[id^=timelineItem]").attr("width", function (x) {
+    //update width for rectangular elements in the trimmed timeline
+      return d3.select(this).attr("width") * widthMultiplier;  
+  });
+
+  d3.selectAll("[id^=timelineItem]").attr("r", function (x) {
+    //TODO : update radius for circular elements in the trimmed timeline keeping height same
+      return d3.select(this).attr("r");  
+  });
 }
