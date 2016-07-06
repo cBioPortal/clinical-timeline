@@ -10,12 +10,13 @@
   <script src="js/clinicalTimeline.js"></script>
   <script src="js/sanity.js"></script>
   <script src="js/parser.js"></script>
-  <script src="https://cdn.rawgit.com/MrRio/jsPDF/master/dist/jspdf.min.js"></script>
-  <script src="https://html2canvas.hertzen.com/build/html2canvas.js"></script>
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+  <script src="http://cdn.rawgit.com/MrRio/jsPDF/master/dist/jspdf.min.js"></script>
+  <script src="http://html2canvas.hertzen.com/build/html2canvas.js"></script>
+  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
   <link href="css/lib/jquery.qtip.min.css" type="text/css" rel="stylesheet" />
-  <script src="js/exportTimeline.js"></script>
+  <script src="js/plugins/exportTimeline.js"></script>
+  <script src="js/plugins/trimTimeline.js"></script>
   <link href="css/lib/dataTables.tableTools.min.css" type="text/css" rel="stylesheet" />
   <style type="text/css">
     .axis path,
@@ -106,6 +107,16 @@
       position: relative;
       left: 300px;
       font-size: 12px;
+      display: none;
+    }
+    .radio{
+      display: inline-block;
+      margin-right: 20px;
+    }
+    #vertical-trim-toggle{
+      position: fixed;
+      top: 375px;
+      left: 230px;
     }
   </style>
   <script>
@@ -121,10 +132,14 @@
         var jsonCBioPortal = getURLParameterByName("cbioportal");
         var patientId = getURLParameterByName("patientid");
         var patientJSON = getURLParameterByName("patientjson");
+        var viewType = getURLParameterByName("view");
         var waitForParse = false;
         var testDataClinical = data;
 
         if (jsonURL !== "") {
+          if (jsonURL.indexOf("?view=") > -1) {
+            jsonURL = jsonURL.substring(0, jsonURL.indexOf("?view="))
+          }
           $("#jsonInput").val(JSON.stringify(JSON.parse(decodeURIComponent(jsonURL)), null, '    '));
         } else if (jsonCBioPortal !== "") {
           var jsonTransformed = clinicalTimelineParser(JSON.parse(decodeURIComponent(jsonCBioPortal)));
@@ -139,8 +154,18 @@
           $("#jsonInput").val(JSON.stringify(testDataClinical, null, '    '));
         }
         $("#parseJson").on("click", function() {
-          //initialise with advanced view
-          initViews(true);
+           if (viewType === "simple") {
+            initViews(false);
+            if (location.href.indexOf("?view=") === -1) {  
+              window.history.replaceState('simpleView', '', location.href+="?view=simple");
+            }
+          } else {
+            //viewType isn't specified in the URl, show advanced view
+            initViews(true);
+            if (location.href.indexOf("?view=") === -1) {  
+             window.history.replaceState('advancedView', '', location.href+="?view=advanced");
+            }
+          }
         });
         if (!waitForParse) {
           $("#parseJson").click();
@@ -151,7 +176,8 @@
     });
 
     function initViews(enableAdvanced) {
-      allData = JSON.parse($("#jsonInput").val())
+      allData = JSON.parse($("#jsonInput").val());
+      
       var timeline = clinicalTimeline
         .width(800)
         .data(allData)
@@ -166,8 +192,13 @@
         .enableTrackTooltips(true)
         .enableZoom(enableAdvanced) //zoom functionality avaiable only in the advance view
         .advancedView(enableAdvanced)
+        .enableTrimmedTimeline(true)
+        .enableVerticalLine(false)
         .collapseAll();
       timeline();
+
+      $("#trim").prop("checked", true)
+
       //initiliase simple-advanced buttons
       if (enableAdvanced) {
         $("#advBtn").prop("disabled", true); //disable repeated clicking of advButton
@@ -177,6 +208,10 @@
         $(".dropdown-toggle").prop("disabled", true);
         $("#jsonInput").prop("visibility", true);
         $("#tooltip-controller").css("visibility", "hidden");
+        $(".radio").css("visibility", "hidden");
+        if (location.href.indexOf("?view=simple") > -1) {  
+          window.history.replaceState('advancedView', '', location.href.replace("?view=simple", "?view=advanced"));
+        }
       } else {
         $("#advBtn").prop("disabled", false); //enable advBtn
         $("#advBtn").removeClass("active");
@@ -185,6 +220,10 @@
         $(".dropdown-toggle").prop("disabled", false);
         $("#jsonInput").prop("visibility", false);
         $("#tooltip-controller").css("visibility", "visible");
+        $(".radio").css("visibility", "visible");
+        if (location.href.indexOf("?view=advanced") > -1) {  
+          window.history.replaceState('simpleView', '', location.href.replace("?view=advanced", "?view=simple"));
+        }
       }
     }
   </script>
@@ -208,6 +247,14 @@
     <div id="timeline">
     </div>
     <span id="tooltip-controller"><a href="javascript:clinicalTimeline.toggleTooltipOnVerticalLine()">Hide tooltips on vertical-line</a></span>
+    <div id="vertical-trim-toggle">
+      <span class="radio">
+        <label><input type="radio" id="trim" name="optradio" value="trim" onclick="javascript:clinicalTimeline.toggleVerticalLineAndTrim(this)" checked>Trim Timeline</label>
+      </span>
+      <span class="radio">
+        <label><input type="radio" id="vertical" name="optradio" value="vertical" onclick="javascript:clinicalTimeline.toggleVerticalLineAndTrim(this)">Vertical Line</label>
+      </span>
+    </div>
     <h4 class="data-control">data</h4>
     <button id="parseJson" class="btn btn-primary data-control">Parse JSON</button><br />
     <textarea id="jsonInput" class="form-control data-control">
