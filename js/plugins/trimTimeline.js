@@ -1,4 +1,4 @@
-window.clinicalTimeline.trimTimeline = function (maxDays, minDays, getZoomLevel, width, getTickValues, margin, formatTime, daysToTimeObject, divId) {
+var trimClinicalTimeline = function (maxDays, minDays, getZoomLevel, width, getTickValues, margin, formatTime, daysToTimeObject, divId) {
   //cuts the timeline to areas of interest
 
   $(divId+" > svg > g > g.axis").css("visibility", "hidden");
@@ -187,3 +187,7 @@ window.clinicalTimeline.trimTimeline = function (maxDays, minDays, getZoomLevel,
       return d3.select(this).attr("r");  
   });
 }
+
+/* start-test-code-not-included-in-build */
+module.exports = trimClinicalTimeline;
+/* end-test-code-not-included-in-build */

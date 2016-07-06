@@ -5,18 +5,31 @@
   <script src="js/lib/jquery.dataTables.min.js"></script>
   <script src="js/lib/jquery.qtip.min.js"></script>
   <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-  <script src="js/lib/d3-timeline.js"></script>
   <script src="js/lib/underscore-min.js"></script>
+  <script>
+  /* To make node specific functions work in browser, include fake require
+  * function and module object. */
+  var require = function(module) {
+    if (typeof window[module] === "undefined") {
+      return {};
+    } else {
+      return window[module];
+    }
+  };
+  var module = {};
+  </script>
+  <script src="http://cdn.rawgit.com/MrRio/jsPDF/master/dist/jspdf.min.js"></script>
+  <script src="http://html2canvas.hertzen.com/build/html2canvas.js"></script>
+  <script src="js/lib/d3-timeline.js"></script>
+  <script src="js/plugins/timelineConstants.js"></script>
+  <script src="js/plugins/exportTimeline.js"></script>
+  <script src="js/plugins/trimTimeline.js"></script>
   <script src="js/clinicalTimeline.js"></script>
   <script src="js/sanity.js"></script>
   <script src="js/parser.js"></script>
-  <script src="http://cdn.rawgit.com/MrRio/jsPDF/master/dist/jspdf.min.js"></script>
-  <script src="http://html2canvas.hertzen.com/build/html2canvas.js"></script>
   <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
   <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
   <link href="css/lib/jquery.qtip.min.css" type="text/css" rel="stylesheet" />
-  <script src="js/plugins/exportTimeline.js"></script>
-  <script src="js/plugins/trimTimeline.js"></script>
   <link href="css/lib/dataTables.tableTools.min.css" type="text/css" rel="stylesheet" />
   <style type="text/css">
     .axis path,
@@ -206,7 +219,7 @@
         $("#simpleBtn").prop("disabled", false); //enable simpleBtn
         $("#simpleBtn").removeClass("active");
         $(".dropdown-toggle").prop("disabled", true);
-        $("#jsonInput").prop("visibility", true);
+        $("#jsonInput").css("display", "block");
         $("#tooltip-controller").css("visibility", "hidden");
         $(".radio").css("visibility", "hidden");
         if (location.href.indexOf("?view=simple") > -1) {  
@@ -218,7 +231,7 @@
         $("#simpleBtn").prop("disabled", true); //disable repeated clicking of simpleBtn
         $("#simpleBtn").addClass("active");
         $(".dropdown-toggle").prop("disabled", false);
-        $("#jsonInput").prop("visibility", false);
+        $("#jsonInput").css("display", "none");
         $("#tooltip-controller").css("visibility", "visible");
         $(".radio").css("visibility", "visible");
         if (location.href.indexOf("?view=advanced") > -1) {  
@@ -235,9 +248,9 @@
       <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown">Export As
       <span class="caret"></span></button>
       <ul class="dropdown-menu">
-        <li><a href="javascript:clinicalTimeline.export.generateSVG()">SVG Image</a></li>
-        <li><a href="javascript:clinicalTimeline.export.generatePNG(true)">PNG Image</a></li>
-        <li><a href="javascript:clinicalTimeline.export.generatePDF()">PDF Document</a></li>
+        <li><a href="javascript:clinicalTimelineExporter.generateSVG()">SVG Image</a></li>
+        <li><a href="javascript:clinicalTimelineExporter.generatePNG(true)">PNG Image</a></li>
+        <li><a href="javascript:clinicalTimelineExporter.generatePDF()">PDF Document</a></li>
       </ul>
     </div>
     <div class="btn-group btn-group-view" role="group" aria-label="Basic example">

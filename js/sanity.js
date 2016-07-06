@@ -2,7 +2,7 @@
 /*
  * Check sanity of JSON data representing timeline
  */
-window.clinicalTimelineSanityChecker = (function() {
+var clinicalTimelineSanityChecker = (function() {
   function validateData(data) {
     for (var i=0; i < data.length; i++) {
       validateTrack(data[i]);
@@ -52,3 +52,8 @@ window.clinicalTimelineSanityChecker = (function() {
 
   return validateData;
 })();
+/* start-test-code-not-included-in-build */
+if (typeof module === "object" && module.exports) {
+  module.exports = clinicalTimelineSanityChecker;
+}
+/* end-test-code-not-included-in-build */
