@@ -1,6 +1,1 @@
-[{"label": "Diagnosis","times": [{"starting_time": 5,"ending_time": 10,"tooltip_tables": [
-[["TREATMENT_TYPE","Radio"]]]},{"starting_time": 250,"ending_time": 300,"tooltip_tables": [
-[["TREATMENT_TYPE","Chemo"],["AGENT","ABC"]]]}],"visible": true},{"label": "Status",
-"times": [{"starting_time": 115,"ending_time": 120,"tooltip_tables": [[["TREATMENT_TYPE",
-"Radio"]]]},{"starting_time": 1950,"ending_time": 2000,"tooltip_tables": [[[
-"TREATMENT_TYPE","Chemo"],["AGENT","ABC"]]]}],"visible": true}]
+[{"label": "Diagnosis","times": [{"starting_time": 5,"ending_time": 10,"tooltip_tables": [[["TREATMENT_TYPE","Radio"]]]},{"starting_time": 250,"ending_time": 300,"tooltip_tables": [[["TREATMENT_TYPE","Chemo"],["AGENT","ABC"]]]}],"visible": true},{"label": "Status","times": [{"starting_time": 115,"ending_time": 120,"tooltip_tables": [[["TREATMENT_TYPE","Radio"]]]},{"starting_time": 1950,"ending_time": 2000,"tooltip_tables": [[["TREATMENT_TYPE","Chemo"],["AGENT","ABC"]]]}],"visible": true}]
