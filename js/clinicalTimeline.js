@@ -33,7 +33,8 @@ var clinicalTimeline = (function(){
   timelineBool.advancedView=false,
   timelineBool.enableVerticalLine = false,
   timelineBool.tooltipOnVerticalLine = true,
-  timelineBool.enableTrimmedTimeline=false;
+  timelineBool.enableTrimmedTimeline=false,
+  timelineBool.enableHelperLines=false;
 
   function getTrack(data, track) {
     return data.filter(function(x) {
@@ -146,21 +147,12 @@ var clinicalTimeline = (function(){
     }
 
     // Add white background for labels to prevent timepoint overlap
-    var g = d3.select(divId + " svg g");
-    var gBoundingBox = g[0][0].getBoundingClientRect();
     d3.select(divId + " svg")
       .insert("rect", ".timeline-label")
       .attr("width", 130)
-      .attr("height", 20)
+      .attr("height", svg.attr("height"))
       .attr("x", 0)
       .attr("y", 0)
-      .style("fill", "rgb(255, 255, 255)");
-    d3.select(divId + " svg")
-      .insert("rect", ".timeline-label")
-      .attr("width", 130)
-      .attr("height", gBoundingBox.height - 15)
-      .attr("x", 0)
-      .attr("y", 20)
       .style("fill", "rgb(255, 255, 255)");
 
     // change mouse to pointer for all timeline items
@@ -173,6 +165,7 @@ var clinicalTimeline = (function(){
 
     clinicalTimelineOverviewAxis(overviewSVG, getTickValues, minDays, maxDays, overviewAxisWidth, formatTime, daysToTimeObject, getZoomLevel, width,  margin);
     clinicalTimelineVerticalLine(timelineBool.enableVerticalLine, beginning, ending, timelineBool.advancedView, timelineBool.tooltipOnVerticalLine);
+    initHelperLines(timelineBool.enableHelperLines, zoomFactor, timelineBool.advancedView, divId, formatTime, daysToTimeObject);
 
     if(timelineBool.advancedView){
       initAdvancedView(overviewSVG)
@@ -366,7 +359,7 @@ var clinicalTimeline = (function(){
     d3.select(divId).style("visibility", "hidden");
     d3.select(divId).style("visibility", "visible");
     scrolledX = null;
-    overviewX = 0;
+    overviewX = margin.overviewAxis.left;
     d3.select("overview-rectangle").remove();
     if (timelineBool.enableTrimmedTimeline) {
       trimClinicalTimeline(maxDays, minDays, getZoomLevel, width, getTickValues, margin, formatTime, daysToTimeObject, divId);
@@ -1094,6 +1087,10 @@ var clinicalTimeline = (function(){
 
   timeline.advancedView = function(b) {
     return getOrSetBool("advancedView", b);
+  };
+
+  timeline.enableHelperLines = function(b) {
+    return getOrSetBool("enableHelperLines", b);
   };
 
   timeline.width = function (w) {
