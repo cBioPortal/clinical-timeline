@@ -84,8 +84,6 @@ var clinicalTimeline = (function(){
       .itemMargin(itemMargin)
       .colors(colorCycle);
 
-    handleOverviewAxis();
-
     $(divId).html("");
     var svg = d3.select(divId).append("svg").attr("width", width).attr("class", "timeline");
     svg.append("rect")
@@ -169,12 +167,22 @@ var clinicalTimeline = (function(){
     // change mouse to pointer for all timeline items
     $("[id^='timelineItem']").css("cursor", "pointer");
 
+    var overviewSVG = d3.select(divId).append("svg")
+      .attr("height", 75)
+      .attr("width", overviewAxisWidth)
+      .attr("class", "overview");
+
+    handleOverviewAxis(overviewSVG);
+    handleVerticalLine(enableVerticalLine);
+    if(advancedView){
+      initAdvancedView(overviewSVG)
+    } else {
+      initSimpleView(overviewSVG);
+    }
+
     postTimelineHooks.forEach(function(hook) {
       hook.call();
     });
-
-    handleVerticalLine(enableVerticalLine);
-    handleOverviewAxis();
 
   }
 
@@ -295,15 +303,10 @@ var clinicalTimeline = (function(){
   /**
    * Hanles the drawing and panning of the overviewAxis
    */
-  function handleOverviewAxis() {
+  function handleOverviewAxis(overviewSVG) {
     var overviewAxisTicks = getTickValues(minDays, maxDays, "months");
     var minDayTick = overviewAxisTicks[0];
     var maxDayTick =  overviewAxisTicks[overviewAxisTicks.length-1];
-
-    var overviewSVG = d3.select(divId).append("svg")
-      .attr("height", 75)
-      .attr("width", overviewAxisWidth)
-      .attr("class", "overview");
 
     //scale for drawing the the overviewAxis and ticks in the specified width
     var xScaleOverview = d3.time.scale()
@@ -365,12 +368,6 @@ var clinicalTimeline = (function(){
       .attr("x", overviewAxisWidth-3)
       .attr("y", 26)
       .attr("fill", "#ccc");
-      
-    if(advancedView){
-      initAdvancedView(overviewSVG)
-    } else {
-      initSimpleView(overviewSVG);
-    }
   }
 
   function initAdvancedView(overviewSVG) {
@@ -1023,8 +1020,8 @@ var clinicalTimeline = (function(){
 
   function daysToTimeObject(dayCount) {
       var time = {};
-      var daysPerYear = timelineConstants.DAYS_PER_YEAR;
-      var daysPerMonth = timelineConstants.DAYS_PER_MONTH;
+      var daysPerYear = clinicalTimelineUtil.timelineConstants.DAYS_PER_YEAR;
+      var daysPerMonth = clinicalTimelineUtil.timelineConstants.DAYS_PER_MONTH;
       time.daysPerYear = daysPerYear;
       time.daysPerMonth = daysPerMonth;
       time.y = dayCount > 0? Math.floor(dayCount / daysPerYear) : Math.ceil(dayCount / daysPerYear);
@@ -1046,7 +1043,7 @@ var clinicalTimeline = (function(){
       var dayFormat = [];
       var d, m, y;
 
-      if (timelineConstants.ALLOWED_ZOOM_LEVELS.indexOf(zoomLevel) > -1){
+      if (clinicalTimelineUtil.timelineConstants.ALLOWED_ZOOM_LEVELS.indexOf(zoomLevel) > -1){
         if (time.y === 0 && time.m === 0 && time.d === 0) {
           dayFormat = "0";
         } else {

@@ -1,69 +1,31 @@
 #!/usr/bin/env bash
-# halt on error
-set -e
-
 # dir of bash script http://stackoverflow.com/questions/59895
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-#read data1 - normal data set (months)
-data1file=${DIR}'/data/data1.json'
-data1=$(cat "$data1file")
-
-#read data2 - for beginning at 0 (days)
-data2file=${DIR}'/data/data2.json'
-data2=$(cat "$data2file")
-
-#read data3 (years)
-data3file=${DIR}'/data/data3.json'
-data3=$(cat "$data3file")
-
 # patient view screenshot
-phantomjs --ignore-ssl-errors=true ${DIR}/make_screenshots.js \
-	${DIR}'/../index.html?json='"$data1" \
-	${DIR}'/screenshots/index_html_data1_advanced.png' \
-	50
+screenshot_error_count=0
+for testdata in $(echo ${DIR}/data/data*.json); do
+    for view in advanced simple; do
+        screenshot_png="${DIR}/screenshots/index_html_$(basename $testdata .json)_${view}.png"
 
-phantomjs --ignore-ssl-errors=true ${DIR}/make_screenshots.js \
-	${DIR}'/../index.html?json='"$data2" \
-	${DIR}'/screenshots/index_html_data2_advanced.png' \
-	50
+        phantomjs --ignore-ssl-errors=true ${DIR}/make_screenshots.js \
+            "${DIR}/../index.html?test=$(basename $testdata .json)?view=${view}" \
+            $screenshot_png \
+            50
+        
+        # make sure screenshot is still the same as the one in the repo, if not upload
+        # the image
+        git diff --quiet -- $screenshot_png
+        if [[ $? -ne 0 ]]; then
+            screenshot_error_count=$(($screenshot_error_count + 1))
+            echo "screenshot differs see:" && curl -F "clbin=@${screenshot_png}" https://clbin.com
+        fi
+    done
+done
 
-phantomjs --ignore-ssl-errors=true ${DIR}/make_screenshots.js \
-	${DIR}'/../index.html?json='"$data3" \
-	${DIR}'/screenshots/index_html_data3_advanced.png' \
-	50
-
-phantomjs --ignore-ssl-errors=true ${DIR}/make_screenshots.js \
-	${DIR}'/../index.html?json='"$data1"'?view=simple' \
-	${DIR}'/screenshots/index_html_data1_simple.png' \
-	50
-
-phantomjs --ignore-ssl-errors=true ${DIR}/make_screenshots.js \
-	${DIR}'/../index.html?json='"$data2"'?view=simple' \
-	${DIR}'/screenshots/index_html_data2_simple.png' \
-	50
-
-phantomjs --ignore-ssl-errors=true ${DIR}/make_screenshots.js \
-	${DIR}'/../index.html?json='"$data3"'?view=simple' \
-	${DIR}'/screenshots/index_html_data3_simple.png' \
-	50
-
-# make sure screenshot is still the same as the one in the repo, if not upload
-# the image
-git diff --quiet -- ${DIR}/screenshots/index_html_data1_advanced.png || \
-    (echo "screenshot differs see:" && curl -F "clbin=@${DIR}/screenshots/index_html_data1_advanced.png" https://clbin.com && exit 1)
-
-git diff --quiet -- ${DIR}/screenshots/index_html_data2_advanced.png || \
-    (echo "screenshot differs see:" && curl -F "clbin=@${DIR}/screenshots/index_html_data2_advanced.png" https://clbin.com && exit 1)
-
-git diff --quiet -- ${DIR}/screenshots/index_html_data3_advanced.png || \
-    (echo "screenshot differs see:" && curl -F "clbin=@${DIR}/screenshots/index_html_data3_advanced.png" https://clbin.com && exit 1)
-
-git diff --quiet -- ${DIR}/screenshots/index_html_data1_simple.png || \
-    (echo "screenshot differs see:" && curl -F "clbin=@${DIR}/screenshots/index_html_data1_simple.png" https://clbin.com && exit 1)
-
-git diff --quiet -- ${DIR}/screenshots/index_html_data2_simple.png || \
-    (echo "screenshot differs see:" && curl -F "clbin=@${DIR}/screenshots/index_html_data2_simple.png" https://clbin.com && exit 1)
-
-git diff --quiet -- ${DIR}/screenshots/index_html_data3_simple.png || \
-    (echo "screenshot differs see:" && curl -F "clbin=@${DIR}/screenshots/index_html_data3_simple.png" https://clbin.com && exit 1)
+if [[ $screenshot_error_count -gt 0 ]]; then
+    echo "${screenshot_error_count} SCREENSHOT TESTS FAILED"
+    exit 1
+else
+    exit 0
+fi
