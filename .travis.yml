@@ -1,5 +1,10 @@
 language: node_js
 node_js:
-  - "5"
+  - "0.10"
+install:
+  - sudo apt-get install npm
+  - npm config set registry http://registry.npmjs.org/
+  - npm install
 script:
   - bash -x test/screenshot_script.sh
+  - npm test

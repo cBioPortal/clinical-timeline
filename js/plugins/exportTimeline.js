@@ -1,4 +1,4 @@
-window.clinicalTimeline.export = function() {
+var clinicalTimelineExporter = function() {
   //adds exporting functionality to the timeline
   return {
     generateSVG :  function () {
@@ -72,3 +72,7 @@ window.clinicalTimeline.export = function() {
     }
   }
 }();
+
+/* start-test-code-not-included-in-build */
+module.exports = clinicalTimelineExporter;
+/* end-test-code-not-included-in-build */

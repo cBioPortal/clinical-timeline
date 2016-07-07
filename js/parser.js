@@ -1,5 +1,5 @@
 // vim: ts=2 sw=2
-window.clinicalTimelineParser = (function() {
+var clinicalTimelineParser = (function() {
   function transformToTimelineJSON(clinical_timeline_data) {
     var transformToTrack = function(clin_events) {
       var track = {
@@ -39,3 +39,8 @@ window.clinicalTimelineParser = (function() {
 
   return transformToTimelineJSON;
 })();
+/* start-test-code-not-included-in-build */
+if (typeof module === "object" && module.exports) {
+  module.exports = clinicalTimelineParser;
+}
+/* end-test-code-not-included-in-build */

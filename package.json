@@ -1,0 +1,45 @@
+{
+  "name": "clinical-timeline",
+  "version": "0.0.6",
+  "description": "Clinical timeline in D3",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha --reporter=dot test/unit-tests/*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cbioportal/clinical-timeline.git"
+  },
+  "keywords": [
+    "d3",
+    "clinical",
+    "timeline"
+  ],
+  "author": "Ino de Bruijn <ino@ino.pm>",
+  "contributors": [{
+    "name": "Rohan Goel",
+    "email": "rohangoel0296@gmail.com"
+  },
+  {
+    "name": "Jianjiong Gao",
+    "emai": "jianjiong.gao@gmail.com"
+  }],
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/cbioportal/clinical-timeline/issues"
+  },
+  "homepage": "https://github.com/cbioportal/clinical-timeline#readme",
+  "dependencies": {
+    "d3": "^3.5.17"
+  },
+  "devDependencies": {
+    "uglify-js": "^2.6.1",
+    "mocha": "^2.5.3",
+    "chai": "^3.5.0",
+    "browserify": "^13.0.1",
+    "jquery": "^1.11.1"
+  }
+}

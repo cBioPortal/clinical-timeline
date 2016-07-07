@@ -690,3 +690,9 @@
     return timeline;
   };
 })();
+
+/* start-test-code-not-included-in-build */
+if (typeof module === "object" && module.exports) {
+  module.exports = d3.timeline;
+ }
+/* end-test-code-not-included-in-build */
