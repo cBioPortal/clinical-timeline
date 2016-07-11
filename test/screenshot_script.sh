@@ -17,6 +17,11 @@ data2=$(cat "$data2file")
 data3file=${DIR}'/data/data3.json'
 data3=$(cat "$data3file")
 
+
+echo curl -F "clbin=@${DIR}/screenshots/index_html_data1_simple.png" https://clbin.com
+echo curl -F "clbin=@${DIR}/screenshots/index_html_data2_simple.png" https://clbin.com
+echo curl -F "clbin=@${DIR}/screenshots/index_html_data3_simple.png" https://clbin.com
+
 # patient view screenshot
 phantomjs --ignore-ssl-errors=true ${DIR}/make_screenshots.js \
 	${DIR}'/../index.html?json='"$data1" \

@@ -439,6 +439,9 @@ var clinicalTimeline = (function(){
       timeline();
       if (enableTrimmedTimeline) {
         trimClinicalTimeline(maxDays, minDays, getZoomLevel, width, getTickValues, margin, formatTime, daysToTimeObject, divId);
+        postTimelineHooks.forEach(function(hook) {
+          hook.call();
+        });
       }
       advancedView = false;
       d3.select(".overview").remove();
