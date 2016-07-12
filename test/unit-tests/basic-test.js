@@ -1,6 +1,6 @@
 var expect = require('chai').expect;
 
-global.timelineConstants = require('../../js/plugins/timelineConstants.js');
+global.clinicalTimelineUtil = require('../../js/plugins/util.js');
 var oldConsoleLog = null;
 /**
  * Disable the logger to prevent any console.log from clinicalTimeline

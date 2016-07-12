@@ -21,7 +21,7 @@
   <script src="http://cdn.rawgit.com/MrRio/jsPDF/master/dist/jspdf.min.js"></script>
   <script src="http://html2canvas.hertzen.com/build/html2canvas.js"></script>
   <script src="js/lib/d3-timeline.js"></script>
-  <script src="js/plugins/timelineConstants.js"></script>
+  <script src="js/plugins/util.js"></script>
   <script src="js/plugins/exportTimeline.js"></script>
   <script src="js/plugins/trimTimeline.js"></script>
   <script src="js/clinicalTimeline.js"></script>
@@ -140,52 +140,58 @@
               results = regex.exec(location.search);
           return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
       }
-      $.getJSON("test/data/data1.json", function(data) {
-        var jsonURL = getURLParameterByName("json");
-        var jsonCBioPortal = getURLParameterByName("cbioportal");
-        var patientId = getURLParameterByName("patientid");
-        var patientJSON = getURLParameterByName("patientjson");
-        var viewType = getURLParameterByName("view");
-        var waitForParse = false;
-        var testDataClinical = data;
-
-        if (jsonURL !== "") {
-          if (jsonURL.indexOf("?view=") > -1) {
-            jsonURL = jsonURL.substring(0, jsonURL.indexOf("?view="))
-          }
-          $("#jsonInput").val(JSON.stringify(JSON.parse(decodeURIComponent(jsonURL)), null, '    '));
-        } else if (jsonCBioPortal !== "") {
-          var jsonTransformed = clinicalTimelineParser(JSON.parse(decodeURIComponent(jsonCBioPortal)));
-          $("#jsonInput").val(JSON.stringify(jsonTransformed, null, '    '));
-        } else if (patientId !== "" && patientJSON !== "") {
-          waitForParse = true;
-          $.getJSON(patientJSON, function(data) {
-            $("#jsonInput").val(JSON.stringify(data[patientId], null, '    '));
+      var jsonURL = getURLParameterByName("json");
+      var jsonCBioPortal = getURLParameterByName("cbioportal");
+      var patientId = getURLParameterByName("patientid");
+      var patientJSON = getURLParameterByName("patientjson");
+      var viewType = getURLParameterByName("view");
+      var testData = getURLParameterByName("test");
+      var dataFed = "data1";
+      var waitForParse = false;
+      
+      if (jsonURL !== "") {
+        if (jsonURL.indexOf("?view=") > -1) {
+          jsonURL = jsonURL.substring(0, jsonURL.indexOf("?view="))
+        }
+        $("#jsonInput").val(JSON.stringify(JSON.parse(decodeURIComponent(jsonURL)), null, '    '));
+      } else if (jsonCBioPortal !== "") {
+        var jsonTransformed = clinicalTimelineParser(JSON.parse(decodeURIComponent(jsonCBioPortal)));
+        $("#jsonInput").val(JSON.stringify(jsonTransformed, null, '    '));
+      } else if (patientId !== "" && patientJSON !== "") {
+        waitForParse = true;
+        $.getJSON(patientJSON, function(data) {
+          $("#jsonInput").val(JSON.stringify(data[patientId], null, '    '));
+          if (!waitForParse) {
             $("#parseJson").click();
-          });
-        } else {
-          $("#jsonInput").val(JSON.stringify(testDataClinical, null, '    '));
-        }
-        $("#parseJson").on("click", function() {
-           if (viewType === "simple") {
-            initViews(false);
-            if (location.href.indexOf("?view=") === -1) {  
-              window.history.replaceState('simpleView', '', location.href+="?view=simple");
-            }
-          } else {
-            //viewType isn't specified in the URl, show advanced view
-            initViews(true);
-            if (location.href.indexOf("?view=") === -1) {  
-             window.history.replaceState('advancedView', '', location.href+="?view=advanced");
-            }
           }
         });
-        if (!waitForParse) {
-          $("#parseJson").click();
+      } else {
+        if (testData !== "") {
+          dataFed = testData.substring(0, testData.indexOf("?view="));
         }
-      }).error(function() {
-          alert("Error loading JSON file.");
+        $.getJSON("test/data/"+dataFed+".json", function(data) {
+          $("#jsonInput").val(JSON.stringify(data, null, '    '));
+          if (!waitForParse) {
+            $("#parseJson").click();
+          }
+        }).error(function() {
+          alert("Error Loading JSON Data");
         });
+      }
+      $("#parseJson").on("click", function() {
+         if (viewType === "simple") {
+          initViews(false);
+          if (location.href.indexOf("?view=") === -1) {  
+            window.history.replaceState('simpleView', '', location.href+="?view=simple");
+          }
+        } else {
+          //viewType isn't specified in the URl, show advanced view
+          initViews(true);
+          if (location.href.indexOf("?view=") === -1) {  
+           window.history.replaceState('advancedView', '', location.href+="?view=advanced");
+          }
+        }
+      });
     });
 
     function initViews(enableAdvanced) {
