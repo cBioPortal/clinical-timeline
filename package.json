@@ -19,14 +19,16 @@
     "timeline"
   ],
   "author": "Ino de Bruijn <ino@ino.pm>",
-  "contributors": [{
-    "name": "Rohan Goel",
-    "email": "rohangoel0296@gmail.com"
-  },
-  {
-    "name": "Jianjiong Gao",
-    "emai": "jianjiong.gao@gmail.com"
-  }],
+  "contributors": [
+    {
+      "name": "Rohan Goel",
+      "email": "rohangoel0296@gmail.com"
+    },
+    {
+      "name": "Jianjiong Gao",
+      "emai": "jianjiong.gao@gmail.com"
+    }
+  ],
   "license": "AGPL-3.0",
   "bugs": {
     "url": "https://github.com/cbioportal/clinical-timeline/issues"
@@ -36,10 +38,19 @@
     "d3": "^3.5.17"
   },
   "devDependencies": {
-    "uglify-js": "^2.6.1",
-    "mocha": "^2.5.3",
-    "chai": "^3.5.0",
+    "blanket": "^1.2.3",
     "browserify": "^13.0.1",
-    "jquery": "^1.11.1"
-  }
+    "chai": "^3.5.0",
+    "coveralls": "^2.11.9",
+    "jquery": "^1.11.1",
+    "mocha": "^2.5.3",
+    "mocha-lcov-reporter": "^1.2.0",
+    "uglify-js": "^2.6.1"
+  },
+	"config": {
+		"blanket": {
+			"pattern": "js",
+			"data-cover-never": ["node_modules","lib", "test"]
+		}
+	}
 }
