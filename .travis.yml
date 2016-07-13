@@ -1,10 +1,13 @@
 language: node_js
 node_js:
-  - "0.10"
+  - "6"
 install:
   - sudo apt-get install npm
   - npm config set registry http://registry.npmjs.org/
-  - npm install
+  - npm install --dev
 script:
   - bash -x test/screenshot_script.sh
   - npm test
+  # upload blanket test coverage to coveralls
+  # see https://github.com/nickmerwin/node-coveralls
+  - NODE_ENV=test YOURPACKAGE_COVERAGE=1 ./node_modules/.bin/mocha --require blanket --reporter mocha-lcov-reporter test/unit-tests/ | ./node_modules/coveralls/bin/coveralls.js
