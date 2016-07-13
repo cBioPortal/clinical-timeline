@@ -6,53 +6,17 @@ engines:
     enabled: true
     config:
       languages:
-      - ruby
-      - javascript
-      - python
-      - php
+        javascript:
+          mass_threshold: 40  #default
   eslint:
     enabled: true
   fixme:
     enabled: true
 ratings:
   paths:
-  - "**.css"
-  - "**.inc"
   - "**.js"
-  - "**.jsx"
-  - "**.module"
-  - "**.php"
-  - "**.py"
-  - "**.rb"
-exclude_paths:
-- test/
----
-engines:
-  csslint:
-    enabled: true
-  duplication:
-    enabled: true
-    config:
-      languages:
-      - ruby
-      - javascript
-      - python
-      - php
-  eslint:
-    enabled: true
-  fixme:
-    enabled: true
-ratings:
-  paths:
-  - "**.css"
-  - "**.inc"
-  - "**.js"
-  - "**.jsx"
-  - "**.module"
-  - "**.php"
-  - "**.py"
-  - "**.rb"
 exclude_paths:
 - dist/
-- node_modules/
 - test/
+- css/lib/*
+- js/lib/*

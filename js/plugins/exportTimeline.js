@@ -1,5 +1,8 @@
+/*
+ * Adds exporting functionality to the timeline
+ * namely PNG, PDF and SVG
+ */
 var clinicalTimelineExporter = function() {
-  //adds exporting functionality to the timeline
   return {
     generateSVG :  function () {
       //exports the timeline as SVG

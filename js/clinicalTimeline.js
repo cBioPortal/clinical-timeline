@@ -4,33 +4,34 @@ d3 = require('d3');
 /* end-test-code-not-included-in-build */
 var clinicalTimeline = (function(){
   var allData,
-      colorCycle = d3.scale.category20(),
-      margin = {left: 200, right:30, top: 15, bottom:0},
-      itemHeight = 6,
-      itemMargin = 8,
-      divId = null,
-      width = null,
-      zoomFactor = 1,
-      postTimelineHooks = [],
-      enableTrackTooltips = true,
-      enableZoom = true,
-      stackSlack = null,
-      translateX = 0,
-      // first tick
-      beginning = 0,
-      // last tick
-      ending = 0,
-      // first day
-      minDays = 0,
-      // last day
-      maxDays = 0,
-      overviewAxisWidth = 0,
-      overviewX = 0,
-      advancedView=false,
-      chart=null,
-      enableVerticalLine = false,
-      tooltipOnVerticalLine = true,
-      enableTrimmedTimeline=false;
+    colorCycle = d3.scale.category20(),
+    margin = {left: 200, right:30, top: 15, bottom:0},
+    itemHeight = 6,
+    itemMargin = 8,
+    divId = null,
+    width = null,
+    zoomFactor = 1,
+    postTimelineHooks = [],
+    stackSlack = null,
+    translateX = 0,
+    // first tick
+    beginning = 0,
+    // last tick
+    ending = 0,
+    // first day
+    minDays = 0,
+    // last day
+    maxDays = 0,
+    overviewAxisWidth = 0,
+    overviewX = 0,
+    chart=null,
+    timelineBool = {};
+  timelineBool.enableTrackTooltips = true,
+  timelineBool.enableZoom = true,
+  timelineBool.advancedView=false,
+  timelineBool.enableVerticalLine = false,
+  timelineBool.tooltipOnVerticalLine = true,
+  timelineBool.enableTrimmedTimeline=false;
 
   function getTrack(data, track) {
     return data.filter(function(x) {
@@ -43,7 +44,7 @@ var clinicalTimeline = (function(){
         return x.visible;
     });
 
-    maxDays = Math.max.apply(Math, [getMaxEndingTime(allData), 1]);
+    maxDays = Math.max(getMaxEndingTime(allData), 1);
     
     if (stackSlack === null) {
       if (maxDays > 300) {
@@ -57,9 +58,9 @@ var clinicalTimeline = (function(){
       }
     }
     
-    minDays = Math.min.apply(Math, [getMinStartingTime(allData), 0]);
-    var zoomLevel = getZoomLevel(minDays, maxDays, width * zoomFactor);
-    var tickValues = getTickValues(minDays, maxDays, zoomLevel);
+    minDays = Math.min(getMinStartingTime(allData), 0);
+    var zoomLevel = getZoomLevel(minDays, maxDays, width * zoomFactor),
+      tickValues = getTickValues(minDays, maxDays, zoomLevel);
     
     beginning = tickValues[0];
     ending = tickValues[tickValues.length-1];
@@ -105,16 +106,12 @@ var clinicalTimeline = (function(){
       timeline.addDataPointTooltip($(this));
     });
     $("[id^='timelineItem']").each(function() {
-      $(this).on("mouseover", function() {
-          $(this).attr("r", parseInt($(this).attr("r")) + 2);
-          $(this).attr("height", parseInt($(this).attr("height")) + 2);
-      });
-      $(this).on("mouseout", function() {
-          $(this).attr("r",  parseInt($(this).attr("r")) - 2);
-          $(this).attr("height", parseInt($(this).attr("height")) - 2);
-      });
+      $(this).on({
+          mouseover: function() { modifyTimelineElementsSize(this, 2) },
+          mouseout : function() { modifyTimelineElementsSize(this, -2) } 
+        });
     });
-    if (enableTrackTooltips) {
+    if (timelineBool.enableTrackTooltips) {
       $(".timeline-label").each(function(i) {
         if ($(this).prop("__data__")[i].split && !$(this).prop("__data__")[i].parent_track) {
           addSplittedTrackTooltip($(this), allData);
@@ -142,7 +139,7 @@ var clinicalTimeline = (function(){
       x.setAttributeNS("http://www.w3.org/XML/1998/namespace", "xml:space", "preserve");
     });
 
-    if (enableZoom) {
+    if (timelineBool.enableZoom) {
       addZoomOptions();
     }
 
@@ -172,13 +169,14 @@ var clinicalTimeline = (function(){
       .attr("width", overviewAxisWidth)
       .attr("class", "overview");
 
-    handleOverviewAxis(overviewSVG);
-    handleVerticalLine(enableVerticalLine);
-    if(advancedView){
+    if(timelineBool.advancedView){
       initAdvancedView(overviewSVG)
     } else {
       initSimpleView(overviewSVG);
     }
+
+    clinicalTimelineOverviewAxis(overviewSVG, getTickValues, minDays, maxDays, overviewAxisWidth, formatTime, daysToTimeObject);
+    clinicalTimelineVerticalLine(timelineBool.enableVerticalLine, beginning, ending, timelineBool.advancedView, timelineBool.tooltipOnVerticalLine);
 
     postTimelineHooks.forEach(function(hook) {
       hook.call();
@@ -186,14 +184,19 @@ var clinicalTimeline = (function(){
 
   }
 
+  function modifyTimelineElementsSize(element, change) {
+    $(element).attr("r", parseInt($(element).attr("r")) + change);
+    $(element).attr("height", parseInt($(element).attr("height")) + change);
+  }
+
   /*
    * Add rectangular zoom selection. Use brush to zoom. After zooming in, scroll mouse or drag to pan.
    */
   function addZoomOptions() {
     $(".dropdown-toggle").prop("disabled", true);
-    var svg = d3.select(divId + " svg");
-    var g = d3.select(divId + " svg g");
-    var gBoundingBox = g[0][0].getBoundingClientRect();
+    var svg = d3.select(divId + " svg"),
+      g = d3.select(divId + " svg g"),
+      gBoundingBox = g[0][0].getBoundingClientRect();
 
     if (zoomFactor === 1) {
       // Add rectangular zoom selection
@@ -217,9 +220,9 @@ var clinicalTimeline = (function(){
         // TODO: Translation post zooming is not entirely correct
 
         if (xDaysRect > minDays) {
-          var zoomLevel = getZoomLevel(minDays, maxDays, width * zoomFactor);
-          var tickValues = getTickValues(minDays, maxDays, zoomLevel);
-          var xZoomScale = d3.time.scale()
+          var zoomLevel = getZoomLevel(minDays, maxDays, width * zoomFactor),
+            tickValues = getTickValues(minDays, maxDays, zoomLevel),
+            xZoomScale = d3.time.scale()
              .domain([tickValues[0], tickValues[tickValues.length-1]])
              .range([margin.left, width * zoomFactor - margin.right]);
           translateX = -xZoomScale(xDaysRect);
@@ -271,104 +274,31 @@ var clinicalTimeline = (function(){
             .attr("height", gBoundingBox.height)
             .attr("y", 20)
             .style("cursor", "zoom-in");
-        zoomExplanation = d3.select(divId + " svg")
-          .insert("text")
-          .attr("transform", "translate("+(parseInt(svg.attr("width"))-120)+", "+parseInt(svg.attr("height")-5)+")")
-          .attr("class", "timeline-label")
-          .text("")
-          .attr("id", "timelineZoomExplanation")
-          .text("Click + drag to zoom")
-          .style("visibility", "hidden");
+        zoomExplanation(divId, svg, "Click + drag to zoom", "hidden", 120);
         d3.select('.background').on("mouseover", function() {
             d3.select("#timelineZoomExplanation").style("visibility", "visible");
-        });
-        d3.select('.background').on("mouseout", function() {
+        }).on("mouseout", function() {
             d3.select("#timelineZoomExplanation").style("visibility", "hidden");
         });
       }
     } else {
       // Add panning explanation and visual indicator
-      zoomExplanation = d3.select(divId + " svg")
-        .insert("text")
-        .attr("transform", "translate("+(parseInt(svg.attr("width"))-180)+", "+parseInt(svg.attr("height")-5)+")")
-        .attr("class", "timeline-label")
-        .text("")
-        .attr("id", "timelineZoomExplanation")
-        .text("Scroll/drag to move")
-        .style("visibility", "visible");
+      zoomExplanation(divId, svg, "Scroll/drag to move", "visible", 180);
       d3.select(divId + " svg").style("cursor", "move");
     }
   }
 
-  /**
-   * Hanles the drawing and panning of the overviewAxis
-   */
-  function handleOverviewAxis(overviewSVG) {
-    var overviewAxisTicks = getTickValues(minDays, maxDays, "months");
-    var minDayTick = overviewAxisTicks[0];
-    var maxDayTick =  overviewAxisTicks[overviewAxisTicks.length-1];
-
-    //scale for drawing the the overviewAxis and ticks in the specified width
-    var xScaleOverview = d3.time.scale()
-      .domain([minDayTick, maxDayTick])
-      .range([0 , overviewAxisWidth]);
-
-    //Draws the ticks at bottom of time-stamp labels in the overviewAxis
-    var overviewAxis = d3.svg.axis().scale(xScaleOverview).orient("bottom")
-      .tickFormat(function(d) { 
-        return formatTime(daysToTimeObject(d.valueOf()), "months");
-      })
-      .ticks(overviewAxisTicks.length)
-      .tickSize(3)
-      .tickPadding(4);
-
-      //Draws the ticks at top of time-stamp labels in the overviewAxis
-     var overviewAxisMirror = d3.svg.axis().scale(xScaleOverview).orient("top")
-      .tickFormat(function(d) { 
-        return formatTime(daysToTimeObject(d.valueOf()), "months");
-      })
-      .ticks(overviewAxisTicks.length)
-      .tickSize(3)
-      .tickPadding(0);
-
-    overviewSVG.append("g")
-      .attr("class", "x axis overview-axis")
-      .attr("transform", "translate(0,25)")
-      .call(overviewAxis);
-
-    overviewSVG.append("g")
-      .attr("class", "x axis overview-axis overview-axis-mirror")
-      .attr("transform", "translate(0,44)")
-      .call(overviewAxisMirror);
-
-    overviewSVG.append("rect")
-      .attr("height", 3)
-      .attr("width", overviewAxisWidth)
-      .attr("x", 0)
-      .attr("y", 22)
-      .attr("fill", "#ccc");
-
-    overviewSVG.append("rect")
-      .attr("height", 3)
-      .attr("width", overviewAxisWidth)
-      .attr("x", 0)
-      .attr("y", 44)
-      .attr("fill", "#ccc");
-
-    overviewSVG.append("rect")
-      .attr("height", 18)
-      .attr("width", 3)
-      .attr("x", 0)
-      .attr("y", 26)
-      .attr("fill", "#ccc");
-
-    overviewSVG.append("rect")
-      .attr("height", 18)
-      .attr("width", 3)
-      .attr("x", overviewAxisWidth-3)
-      .attr("y", 26)
-      .attr("fill", "#ccc");
+  function zoomExplanation(divId, svg, text, visibility, pos) {
+    d3.select(divId + " svg")
+      .insert("text")
+      .attr("transform", "translate("+(parseInt(svg.attr("width"))-pos)+", "+parseInt(svg.attr("height")-5)+")")
+      .attr("class", "timeline-label")
+      .text("")
+      .attr("id", "timelineZoomExplanation")
+      .text(text)
+      .style("visibility", visibility);
   }
+
 
   function initAdvancedView(overviewSVG) {
     var zoomedWidth = chart.width();
@@ -423,85 +353,20 @@ var clinicalTimeline = (function(){
 
   function initSimpleView(overviewSVG) {
     overviewSVG.attr("display", "none");
-      zoomFactor = 1;
-      beginning = 0;
-      ending = 0;
-      $('.'+divId.substr(1)+'-qtip').qtip("hide");
-      d3.select(divId).style("visibility", "hidden");
-      d3.select(divId).style("visibility", "visible");
-      scrolledX = null;
-      overviewX = 0;
-      d3.select("overview-rectangle").remove();
-      advancedView = true;
-      timeline();
-      if (enableTrimmedTimeline) {
-        trimClinicalTimeline(maxDays, minDays, getZoomLevel, width, getTickValues, margin, formatTime, daysToTimeObject, divId);
-      }
-      advancedView = false;
-      d3.select(".overview").remove();
-      d3.selectAll(".data-control").style("visibility", "hidden");
-  }
-
-  function handleVerticalLine(enableVerticalLine) {
-    if (enableVerticalLine) {
-      var hoverLineGroup = d3.select(".timeline").append("g")
-        .attr("class", "hover-line");
-    
-      var hoverLine = hoverLineGroup
-        .append("line")
-        .attr("x1", 0)
-        .attr("x2", 0) 
-        .attr("y1", 20)
-        .attr("y2", 268)
-        .style("stroke", "#ccc");
-
-      var svgHeight = d3.select("#timeline svg")[0][0].getBoundingClientRect().height;
-
-      var hoverText = hoverLineGroup.append("text")
-        .attr("class", "hover-text")
-        .attr("y", svgHeight - 10) //place text 10 pixels above the bottom of the svg
-        .attr("font-size", 12)
-        .attr("fill", "#888");
-
-      var hoverBegin = 200, hoverEnd = 770; //dont allow hover beyond this point
-
-      //scale to map the amount scrolled according to the svg coordinates to the days i.e
-      //clinical-timeline coordianted
-       var hoverScale = d3.time.scale()
-          .domain([hoverBegin, hoverEnd])
-          .range([beginning , ending]);
-
-      hoverLineGroup.style("opacity", 0);
-
-      d3.select(".timeline").on("mousemove", function() {
-        var hoverX = d3.mouse(this)[0];
-        if (hoverX > hoverBegin && hoverX < hoverEnd && !advancedView) {
-          hoverText.text(parseInt(hoverScale(hoverX)) + "d");
-          hoverText.attr("x", hoverX + 4);
-          hoverLine.attr("x1", hoverX).attr("x2", hoverX)
-          hoverLineGroup.style("opacity", 1);
-          
-          if(tooltipOnVerticalLine){         
-            $(".timeline g rect,.timeline g circle").each(function(index) {
-              var element = $(".timeline g rect, .timeline g circle")[index];
-              var elementX = parseInt(element.getBBox().x);
-              var elementWidth = parseInt(element.getBBox().width);
-              var tolerance = 2;
-              if(hoverX > (elementX + elementWidth/2 - tolerance) && hoverX < (elementX + elementWidth/2 + tolerance)){
-                $(element).qtip("disable", false);
-                $(element).qtip("show");
-              } else {
-                $(element).qtip("hide");
-                $(element).qtip("disable", true);
-              }
-            });
-          }
-
-        }  
-      }).on("mouseout", function() {
-          hoverLineGroup.style("opacity", 0);
-      }); 
+    zoomFactor = 1;
+    beginning = 0;
+    ending = 0;
+    $('.'+divId.substr(1)+'-qtip').qtip("hide");
+    d3.select(divId).style("visibility", "hidden");
+    d3.select(divId).style("visibility", "visible");
+    scrolledX = null;
+    overviewX = 0;
+    d3.select("overview-rectangle").remove();
+    if (timelineBool.enableTrimmedTimeline) {
+      trimClinicalTimeline(maxDays, minDays, getZoomLevel, width, getTickValues, margin, formatTime, daysToTimeObject, divId);
     }
+    d3.select(".overview").remove();
+    d3.selectAll(".data-control").style("visibility", "hidden");
   }
 
   /**
@@ -629,8 +494,7 @@ var clinicalTimeline = (function(){
       attrs = [attrs];
     }
     // split tracks sequentially by given attrs
-    var split_tracks = [track];
-    var tracks;
+    var split_tracks = [track], tracks;
     for (var i = 0; i < attrs.length; i++) {
       attr = attrs[i];
       tracks = [];
@@ -758,9 +622,8 @@ var clinicalTimeline = (function(){
       },
       events: {
         render: function(event, api) {
-          var tooltipDiv = $.parseHTML("<div></div>");
-          var d = elem.prop("__data__");
-          var table;
+          var tooltipDiv = $.parseHTML("<div></div>"),
+            d = elem.prop("__data__"), table;
           if ("tooltip_tables" in d) {
             for (var i=0; i < d.tooltip_tables.length; i++) {
               if (i !== 0) {
@@ -793,14 +656,19 @@ var clinicalTimeline = (function(){
           // tooltip is already showing because of the mouseover
           if ((api.wasClicked && event.originalEvent.type === 'mouseleave') ||
               (!api.wasClicked && event.originalEvent.type === 'click')) {
-              try{ event.preventDefault(); } catch(e) {}
+              try{ 
+                event.preventDefault(); 
+              } 
+              catch(e) {
+                console.log(e.message)
+              }
           }
         }
       },
       show: {event: "mouseover"},
       hide: {event: "mouseleave"},
       style: { classes: 'qtip-light qtip-rounded qtip-wide' },
-      position: {my:'top middle',at:'bottom middle',viewport: $(window)},
+      position: {my:'top middle',at:'bottom middle',viewport: $(window)}
    });
   };
 
@@ -854,7 +722,7 @@ var clinicalTimeline = (function(){
     show: {event: "mouseover"},
     hide: {fixed: true, delay: 0, event: "mouseout"},
     style: { classes: 'qtip-light qtip-rounded qtip-wide' },
-    position: {my:'top middle',at:'top middle',viewport: $(window)},
+    position: {my:'top middle',at:'top middle',viewport: $(window)}
     });
   }
 
@@ -900,7 +768,7 @@ var clinicalTimeline = (function(){
       show: {event: "click"},
       hide: {fixed: true, delay: 0, event: "mouseout"},
       style: { classes: 'qtip-light qtip-rounded qtip-wide' },
-      position: {my:'left middle',at:'top middle',viewport: $(window)},
+      position: {my:'left middle',at:'top middle',viewport: $(window)}
     });
   }
 
@@ -927,7 +795,7 @@ var clinicalTimeline = (function(){
       show: {event: "mouseover"},
       hide: {fixed: true, delay: 0, event: "mouseout"},
       style: { classes: 'qtip-light qtip-rounded qtip-wide' },
-      position: {my:'top middle',at:'top middle',viewport: $(window)},
+      position: {my:'top middle',at:'top middle',viewport: $(window)}
     });
   }
   
@@ -992,7 +860,7 @@ var clinicalTimeline = (function(){
       show: {event: "mouseover"},
       hide: {fixed: true, delay: 0, event: "mouseout"},
       style: { classes: 'qtip-light qtip-rounded qtip-wide' },
-      position: {my:'top middle',at:'top middle',viewport: $(window)},
+      position: {my:'top middle',at:'top middle',viewport: $(window)}
     });
   }
 
@@ -1019,9 +887,9 @@ var clinicalTimeline = (function(){
   }
 
   function daysToTimeObject(dayCount) {
-      var time = {};
-      var daysPerYear = clinicalTimelineUtil.timelineConstants.DAYS_PER_YEAR;
-      var daysPerMonth = clinicalTimelineUtil.timelineConstants.DAYS_PER_MONTH;
+      var time = {},
+        daysPerYear = clinicalTimelineUtil.timelineConstants.DAYS_PER_YEAR,
+        daysPerMonth = clinicalTimelineUtil.timelineConstants.DAYS_PER_MONTH;
       time.daysPerYear = daysPerYear;
       time.daysPerMonth = daysPerMonth;
       time.y = dayCount > 0? Math.floor(dayCount / daysPerYear) : Math.ceil(dayCount / daysPerYear);
@@ -1040,9 +908,7 @@ var clinicalTimeline = (function(){
   }
 
   function formatTime(time, zoomLevel) {
-      var dayFormat = [];
-      var d, m, y;
-
+      var dayFormat = [], d, m, y;
       if (clinicalTimelineUtil.timelineConstants.ALLOWED_ZOOM_LEVELS.indexOf(zoomLevel) > -1){
         if (time.y === 0 && time.m === 0 && time.d === 0) {
           dayFormat = "0";
@@ -1110,9 +976,8 @@ var clinicalTimeline = (function(){
   }
 
   function roundUpDays(dayCount, zoomLevel) {
-    var rv;
-    var time = daysToTimeObject(dayCount);
-    additive = dayCount < 0? 1: -1;
+    var time = daysToTimeObject(dayCount), rv,
+      additive = dayCount < 0? 1: -1;
     switch(zoomLevel) {
       case "years":
         rv = (time.y + additive) * time.daysPerYear;
@@ -1135,7 +1000,9 @@ var clinicalTimeline = (function(){
     return Math.max(a, b) - Math.min(a, b);
   }
 
-  // Rounds up to the nearest multiple of a number
+  /*
+   * Rounds up to the nearest multiple of a number
+   */
   function roundUp(numToRound, multiple) {
     var remainder = numToRound % multiple;
     if (multiple === 0 || remainder === 0) {
@@ -1149,7 +1016,9 @@ var clinicalTimeline = (function(){
     }
   }
 
-  // Rounds down to the nearest multiple of a number
+  /*
+   * Rounds down to the nearest multiple of a number
+   */
   function roundDown(numToRound, multiple) {
     var remainder = numToRound % multiple;
     if (multiple === 0 || remainder === 0) {
@@ -1192,49 +1061,33 @@ var clinicalTimeline = (function(){
       return tickValues;
   }
 
-  timeline.enableTrackTooltips = function(b) {
-    if (!arguments.length) return enableTrackTooltips;
+  function getOrSetBool(bool, b) {
+    if (arguments.length === 1) return timelineBool[bool];
 
     if (b === true || b === false) {
-      enableTrackTooltips = b;
+      timelineBool[bool] = b;
     }
     return timeline;
+  }
+
+  timeline.enableTrackTooltips = function(b) {
+    return getOrSetBool("enableTrackTooltips", b);
   };
 
   timeline.enableZoom = function(b) {
-    if (!arguments.length) return enableZoom;
-
-    if (b === true || b === false) {
-      enableZoom = b;
-    }
-    return timeline;
+    return getOrSetBool("enableZoom", b);
   };
 
   timeline.enableTrimmedTimeline = function(b) {
-    if (!arguments.length) return enableTrimmedTimeline;
-
-    if (b === true || b === false) {
-      enableTrimmedTimeline = b;
-    }
-    return timeline;
+   return getOrSetBool("enableTrimmedTimeline", b);
   };
 
   timeline.enableVerticalLine = function(b) {
-    if (!arguments.length) return enableVerticalLine;
-
-    if (b === true || b === false) {
-      enableVerticalLine = b;
-    }
-    return timeline;
+    return getOrSetBool("enableVerticalLine", b);
   };
 
   timeline.advancedView = function(b) {
-    if (!arguments.length) return advancedView;
-
-    if (b === true || b === false) {
-      advancedView = b;
-    }
-    return timeline;
+    return getOrSetBool("advancedView", b);
   };
 
   timeline.width = function (w) {
@@ -1330,8 +1183,8 @@ var clinicalTimeline = (function(){
 
     trackData.times.forEach(function(t) {
       for (var i=0; i < t.tooltip_tables.length; i++) {
-        var tt = t.tooltip_tables[i];
-        var sortTt = [];
+        var tt = t.tooltip_tables[i],
+          sortTt = [];
 
         for (var j=0; j < allLabelRows.length; j++) {
           row = tt.filter(function(x) {return x[0] === allLabelRows[j];})[0];
@@ -1421,23 +1274,24 @@ var clinicalTimeline = (function(){
   };
 
   timeline.toggleTooltipOnVerticalLine = function() {
-    if (tooltipOnVerticalLine) {
-      tooltipOnVerticalLine = false;
+    if (timelineBool.tooltipOnVerticalLine) {
+      timelineBool.tooltipOnVerticalLine = false;
       $('#tooltip-controller a').text("Show tooltips on vertical-line");
     } else {
-      tooltipOnVerticalLine = true;
+      timelineBool.tooltipOnVerticalLine = true;
       $('#tooltip-controller a').text("Hide tooltips on vertical-line");
     }
+    timeline();
   }
   
   timeline.toggleVerticalLineAndTrim = function(radioSelection) {
     if (radioSelection.value === "trim") {
-      enableVerticalLine = false;
-      enableTrimmedTimeline = true;
+      timelineBool.enableVerticalLine = false;
+      timelineBool.enableTrimmedTimeline = true;
       $("#tooltip-controller").css("display", "none");
     } else {
-      enableVerticalLine = true;
-      enableTrimmedTimeline = false;
+      timelineBool.enableVerticalLine = true;
+      timelineBool.enableTrimmedTimeline = false;
       $("#tooltip-controller").css("display", "inline-block");
     }
     timeline();
@@ -1446,10 +1300,10 @@ var clinicalTimeline = (function(){
   /* start-test-code-not-included-in-build */
     //functions to be tested come here
     timeline.__tests__ = {}
-    timeline.__tests__.getTrack = getTrack;
-    timeline.__tests__.daysToTimeObject = daysToTimeObject;
-    timeline.__tests__.formatTime = formatTime;
-    timeline.__tests__.roundDown = roundDown;
+    timeline.__tests__.getTrack = getTrack,
+    timeline.__tests__.daysToTimeObject = daysToTimeObject,
+    timeline.__tests__.formatTime = formatTime,
+    timeline.__tests__.roundDown = roundDown,
     timeline.__tests__.roundUp = roundUp;
   /* end-test-code-not-included-in-build */
   
