@@ -5,7 +5,7 @@ d3 = require('d3');
 var clinicalTimeline = (function(){
   var allData,
     colorCycle = d3.scale.category20(),
-    margin = {left: 200, right:30, top: 15, bottom:0},
+    margin = {left: 200, right:30, top: 15, bottom:0, overviewAxis: {left: 15, right: 15}},
     itemHeight = 6,
     itemMargin = 8,
     divId = null,
@@ -23,7 +23,9 @@ var clinicalTimeline = (function(){
     // last day
     maxDays = 0,
     overviewAxisWidth = 0,
-    overviewX = 0,
+    startAllowedOverview = 0,
+    endAllowedOverview = 0,
+    overviewX = margin.overviewAxis.left,
     chart=null,
     timelineBool = {};
   timelineBool.enableTrackTooltips = true,
@@ -169,14 +171,14 @@ var clinicalTimeline = (function(){
       .attr("width", overviewAxisWidth)
       .attr("class", "overview");
 
+    clinicalTimelineOverviewAxis(overviewSVG, getTickValues, minDays, maxDays, overviewAxisWidth, formatTime, daysToTimeObject, getZoomLevel, width,  margin);
+    clinicalTimelineVerticalLine(timelineBool.enableVerticalLine, beginning, ending, timelineBool.advancedView, timelineBool.tooltipOnVerticalLine);
+
     if(timelineBool.advancedView){
       initAdvancedView(overviewSVG)
     } else {
       initSimpleView(overviewSVG);
     }
-
-    clinicalTimelineOverviewAxis(overviewSVG, getTickValues, minDays, maxDays, overviewAxisWidth, formatTime, daysToTimeObject);
-    clinicalTimelineVerticalLine(timelineBool.enableVerticalLine, beginning, ending, timelineBool.advancedView, timelineBool.tooltipOnVerticalLine);
 
     postTimelineHooks.forEach(function(hook) {
       hook.call();
@@ -202,11 +204,11 @@ var clinicalTimeline = (function(){
       // Add rectangular zoom selection
       // zoom in after brush ends
       var brushend = function() {
-
+        var originalZoomLevel = getZoomLevel(minDays, maxDays, width);
         //handle positioning of the overview rectangle post zoom in.
         var overViewScale = d3.time.scale()
-          .domain([beginning, ending])
-          .range([0 , overviewAxisWidth]);
+          .domain([roundDown(minDays, clinicalTimelineUtil.getDifferenceTicksDays(originalZoomLevel)), roundUp(maxDays, clinicalTimelineUtil.getDifferenceTicksDays(originalZoomLevel))])
+          .range([0 + margin.overviewAxis.left, overviewAxisWidth - margin.overviewAxis.right]);
 
         overviewX = overViewScale(brush.extent()[0].valueOf());
 
@@ -217,12 +219,16 @@ var clinicalTimeline = (function(){
         } else {
           zoomFactor = getZoomFactor("days", minDays, maxDays, width);
         }
+
+        var zoomLevel = getZoomLevel(minDays, maxDays, width * zoomFactor),
+          tickValues = getTickValues(minDays, maxDays, zoomLevel);
+        startAllowedOverview = overViewScale(roundDown(minDays, clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel))); - overViewScale(roundDown(minDays, clinicalTimelineUtil.getDifferenceTicksDays(originalZoomLevel)));
+        endAllowedOverview = overViewScale(roundUp(maxDays, clinicalTimelineUtil.getDifferenceTicksDays(originalZoomLevel))) - overViewScale(roundUp(maxDays, clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel)));
+
         // TODO: Translation post zooming is not entirely correct
 
         if (xDaysRect > minDays) {
-          var zoomLevel = getZoomLevel(minDays, maxDays, width * zoomFactor),
-            tickValues = getTickValues(minDays, maxDays, zoomLevel),
-            xZoomScale = d3.time.scale()
+          var xZoomScale = d3.time.scale()
              .domain([tickValues[0], tickValues[tickValues.length-1]])
              .range([margin.left, width * zoomFactor - margin.right]);
           translateX = -xZoomScale(xDaysRect);
@@ -249,8 +255,8 @@ var clinicalTimeline = (function(){
           timeline();
           d3.select(divId).style("visibility", "visible");
           chart.scrolledX(null);
-          overviewX = 0;
-          d3.select(".overview-rectangle").attr("x", overviewX).attr("width", width);
+          overviewX = margin.overviewAxis.left;
+          d3.select(".overview-rectangle").attr("x", overviewX).attr("width", overviewAxisWidth - margin.overviewAxis.left - margin.overviewAxis.right);
           this.remove();
         });
       };
@@ -302,18 +308,18 @@ var clinicalTimeline = (function(){
 
   function initAdvancedView(overviewSVG) {
     var zoomedWidth = chart.width();
-    var rectangleOverviewWidth = width/zoomFactor;
+    var rectangleOverviewWidth = (overviewAxisWidth - margin.overviewAxis.left - margin.overviewAxis.right) / zoomFactor;
 
     //scale to map the amount dragged on the zoomedWidth of original timeline to the overviewAxis width
     //helps position the overview-rectangle correctly if original timeline dragged
     var xScaleOverviewZoomed = d3.time.scale()
       .domain([0, -zoomedWidth])
-      .range([0 , overviewAxisWidth]);
+      .range([0 + startAllowedOverview, overviewAxisWidth - endAllowedOverview]);
 
     //scale to map the amount dragged on the overview-rectangle to the orignal timeline's zoomedWidth
     //helps position the original-timeline correctly if the overview rectagle is dragged
     var xScaleRectangle = d3.time.scale()
-      .domain([0, overviewAxisWidth])
+      .domain([0 + startAllowedOverview, overviewAxisWidth - endAllowedOverview])
       .range([0 , -zoomedWidth]);
 
 
@@ -331,14 +337,14 @@ var clinicalTimeline = (function(){
       .on("drag", function(d,i) {
         //handle the timeline if the overview rectangle is dragged
         var x  = parseInt(d3.select(".overview-rectangle").attr("x"))+d3.event.dx;
-        if(x > 0 && x < overviewAxisWidth - rectangleOverviewWidth){
+        if(x > startAllowedOverview && x < overviewAxisWidth - rectangleOverviewWidth - endAllowedOverview){
           d3.select(divId+" svg g").attr("transform","translate("+xScaleRectangle(x)+",0)");
           d3.select(".overview-rectangle").attr("x", x); 
           overviewX = x;
         }
       });
 
-    var rectangle = overviewSVG.append("rect")
+    var rectangleOverview = overviewSVG.append("rect")
         .attr("height", 16)
         .attr("width", rectangleOverviewWidth)
         .attr("x", overviewX)
