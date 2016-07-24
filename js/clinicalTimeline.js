@@ -169,14 +169,36 @@ var clinicalTimeline = (function(){
       .attr("width", overviewAxisWidth)
       .attr("class", "overview");
 
-    if(timelineBool.advancedView){
-      initAdvancedView(overviewSVG)
-    } else {
-      initSimpleView(overviewSVG);
-    }
-
     clinicalTimelineOverviewAxis(overviewSVG, getTickValues, minDays, maxDays, overviewAxisWidth, formatTime, daysToTimeObject);
     clinicalTimelineVerticalLine(timelineBool.enableVerticalLine, beginning, ending, timelineBool.advancedView, timelineBool.tooltipOnVerticalLine);
+
+    if(timelineBool.advancedView){
+      initAdvancedView(overviewSVG);
+      $("#advBtn").prop("disabled", true); //disable repeated clicking of advButton
+      $("#advBtn").addClass("active");
+      $("#simpleBtn").prop("disabled", false); //enable simpleBtn
+      $("#simpleBtn").removeClass("active");
+      $(".dropdown-toggle").prop("disabled", true);
+      $("#jsonInput").css("display", "block");
+      $("#tooltip-controller").css("visibility", "hidden");
+      $(".radio").css("visibility", "hidden");
+      if (location.href.indexOf("?view=simple") > -1) {  
+        window.history.replaceState('advancedView', '', location.href.replace("?view=simple", "?view=advanced"));
+      }
+    } else {
+      initSimpleView(overviewSVG);
+      $("#advBtn").prop("disabled", false); //enable advBtn
+      $("#advBtn").removeClass("active");
+      $("#simpleBtn").prop("disabled", true); //disable repeated clicking of simpleBtn
+      $("#simpleBtn").addClass("active");
+      $(".dropdown-toggle").prop("disabled", false);
+      $("#jsonInput").css("display", "none");
+      $("#tooltip-controller").css("visibility", "visible");
+      $(".radio").css("visibility", "visible");
+      if (location.href.indexOf("?view=advanced") > -1) {  
+        window.history.replaceState('simpleView', '', location.href.replace("?view=advanced", "?view=simple"));
+      }
+    }
 
     postTimelineHooks.forEach(function(hook) {
       hook.call();
@@ -1089,6 +1111,30 @@ var clinicalTimeline = (function(){
   timeline.advancedView = function(b) {
     return getOrSetBool("advancedView", b);
   };
+
+  window.handlePlugins = function (plugin, bool) {
+    switch(plugin) {
+      case "trimTimeline":
+        getOrSetBool("advancedView", !bool);
+        getOrSetBool("enableTrimmedTimeline", bool);
+        getOrSetBool("enableVerticalLine", !bool);
+        getOrSetBool("enableZoom", !bool);
+        break;
+      case "verticalLine":
+        getOrSetBool("advancedView", !bool);
+        getOrSetBool("enableTrimmedTimeline", !bool);
+        getOrSetBool("enableVerticalLine", bool);
+        getOrSetBool("enableZoom", !bool);
+        break;
+      case "zoom":
+        getOrSetBool("advancedView", bool);
+        getOrSetBool("enableZoom", bool);
+        break;
+      default:
+        console.log("Plugin " + plugin + " not available");
+    }
+    timeline();
+  }
 
   timeline.width = function (w) {
     if (!arguments.length) return width;
