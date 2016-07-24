@@ -219,33 +219,6 @@
       timeline();
 
       $("#trim").prop("checked", true)
-
-      //initiliase simple-advanced buttons
-      if (enableAdvanced) {
-        $("#advBtn").prop("disabled", true); //disable repeated clicking of advButton
-        $("#advBtn").addClass("active");
-        $("#simpleBtn").prop("disabled", false); //enable simpleBtn
-        $("#simpleBtn").removeClass("active");
-        $(".dropdown-toggle").prop("disabled", true);
-        $("#jsonInput").css("display", "block");
-        $("#tooltip-controller").css("visibility", "hidden");
-        $(".radio").css("visibility", "hidden");
-        if (location.href.indexOf("?view=simple") > -1) {  
-          window.history.replaceState('advancedView', '', location.href.replace("?view=simple", "?view=advanced"));
-        }
-      } else {
-        $("#advBtn").prop("disabled", false); //enable advBtn
-        $("#advBtn").removeClass("active");
-        $("#simpleBtn").prop("disabled", true); //disable repeated clicking of simpleBtn
-        $("#simpleBtn").addClass("active");
-        $(".dropdown-toggle").prop("disabled", false);
-        $("#jsonInput").css("display", "none");
-        $("#tooltip-controller").css("visibility", "visible");
-        $(".radio").css("visibility", "visible");
-        if (location.href.indexOf("?view=advanced") > -1) {  
-          window.history.replaceState('simpleView', '', location.href.replace("?view=advanced", "?view=simple"));
-        }
-      }
     }
   </script>
 </head>
