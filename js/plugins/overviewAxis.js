@@ -2,8 +2,9 @@
  * Handles the drawing and panning of the overviewAxis
  * drawn below the actual timeline
  */  
-var clinicalTimelineOverviewAxis = function (overviewSVG, getTickValues, minDays, maxDays, overviewAxisWidth, formatTime, daysToTimeObject) {
-  var overviewAxisTicks = getTickValues(minDays, maxDays, "months");
+var clinicalTimelineOverviewAxis = function (overviewSVG, getTickValues, minDays, maxDays, overviewAxisWidth, formatTime, daysToTimeObject, getZoomLevel, width, margin) {
+  var originalZoomLevel = getZoomLevel(minDays, maxDays, width)
+  var overviewAxisTicks = getTickValues(minDays, maxDays, originalZoomLevel);
   var minDayTick = overviewAxisTicks[0];
   var maxDayTick =  overviewAxisTicks[overviewAxisTicks.length-1];
 
@@ -15,23 +16,25 @@ var clinicalTimelineOverviewAxis = function (overviewSVG, getTickValues, minDays
   //scale for drawing the the overviewAxis and ticks in the specified width
   var xScaleOverview = d3.time.scale()
     .domain([minDayTick, maxDayTick])
-    .range([0 , overviewAxisWidth]);
+    .range([0 + margin.overviewAxis.left , overviewAxisWidth - margin.overviewAxis.right]);
 
   //Draws the ticks at bottom of time-stamp labels in the overviewAxis
   var overviewAxis = d3.svg.axis().scale(xScaleOverview).orient("bottom")
     .tickFormat(function(d) { 
-      return formatTime(daysToTimeObject(d.valueOf()), "months");
+      return formatTime(daysToTimeObject(d.valueOf()), originalZoomLevel);
     })
     .ticks(overviewAxisTicks.length)
+    .tickValues(overviewAxisTicks)
     .tickSize(3)
     .tickPadding(4);
 
   //Draws the ticks at top of time-stamp labels in the overviewAxis
   var overviewAxisMirror = d3.svg.axis().scale(xScaleOverview).orient("top")
     .tickFormat(function(d) { 
-      return formatTime(daysToTimeObject(d.valueOf()), "months");
+      return formatTime(daysToTimeObject(d.valueOf()), originalZoomLevel);
     })
     .ticks(overviewAxisTicks.length)
+    .tickValues(overviewAxisTicks)
     .tickSize(3)
     .tickPadding(0);
 
