@@ -178,7 +178,7 @@ var clinicalTimeline = (function(){
       $("#advBtn").addClass("active");
       $("#simpleBtn").prop("disabled", false); //enable simpleBtn
       $("#simpleBtn").removeClass("active");
-      $(".dropdown-toggle").prop("disabled", true);
+      $("#export-button").prop("disabled", true);
       $("#jsonInput").css("display", "block");
       $("#tooltip-controller").css("visibility", "hidden");
       $(".radio").css("visibility", "hidden");
@@ -191,7 +191,7 @@ var clinicalTimeline = (function(){
       $("#advBtn").removeClass("active");
       $("#simpleBtn").prop("disabled", true); //disable repeated clicking of simpleBtn
       $("#simpleBtn").addClass("active");
-      $(".dropdown-toggle").prop("disabled", false);
+      $("#export-button").prop("disabled", false);
       $("#jsonInput").css("display", "none");
       $("#tooltip-controller").css("visibility", "visible");
       $(".radio").css("visibility", "visible");
@@ -215,7 +215,7 @@ var clinicalTimeline = (function(){
    * Add rectangular zoom selection. Use brush to zoom. After zooming in, scroll mouse or drag to pan.
    */
   function addZoomOptions() {
-    $(".dropdown-toggle").prop("disabled", true);
+    $("#export-button").prop("disabled", true);
     var svg = d3.select(divId + " svg"),
       g = d3.select(divId + " svg g"),
       gBoundingBox = g[0][0].getBoundingClientRect();

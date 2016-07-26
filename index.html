@@ -224,9 +224,30 @@
 </head>
 <body>
   <div>
+
+      <div class="dropdown" id="config-dropdown">
+    <button class="btn btn-default dropdown-toggle" type="button" id="configDropdownBtn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+      Config
+      <span class="caret"></span>
+    </button>
+    <ul class="dropdown-menu" aria-labelledby="configDropdownBtn">
+      <li><input type="checkbox" name="trimTimeline">Trimming</li>
+      <li><input type="checkbox" name="zoom">Zoom</li>
+      <li><input type="checkbox" name="overviewAxis">Overview</li>
+      <li><input type="checkbox" name="hover">Hover-Line</li>
+      <li><input type="checkbox" name="verticalLine">Vertical-Line</li>
+    </ul>
+    <script type="text/javascript">
+      $(".dropdown-menu li input").on("change", function () {
+        handlePlugins(this.name, this.checked)
+      })
+    </script>
+</div>
+
+
     <h3>clinical timeline</h3>
-    <div class="dropdown">
-      <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown">Export As
+    <div class="dropdown" id="export-dropdown">
+      <button class="btn btn-default dropdown-toggle" id="export-button" type="button" data-toggle="dropdown">Export As
       <span class="caret"></span></button>
       <ul class="dropdown-menu">
         <li><a href="javascript:clinicalTimelineExporter.generateSVG()">SVG Image</a></li>
