@@ -7,8 +7,10 @@
   <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
   <script src="js/lib/underscore-min.js"></script>
   <script>
-  /* To make node specific functions work in browser, include fake require
-  * function and module object. */
+  /**
+   * To make node specific functions work in browser, include fake require
+   * function and module object
+   */
   var require = function(module) {
     if (typeof window[module] === "undefined") {
       return {};
@@ -17,16 +19,27 @@
     }
   };
   var module = {};
+  /**
+   * To ensure backward compatibility of the method Object.setPrototypeOf
+   * introduced in ECMA6, not supported by PhantomJS
+   */
+  Object.setPrototypeOf = Object.setPrototypeOf || function(obj, proto) {
+    obj.__proto__ = proto;
+    return obj; 
+  }
   </script>
   <script src="http://cdn.rawgit.com/MrRio/jsPDF/master/dist/jspdf.min.js"></script>
   <script src="http://html2canvas.hertzen.com/build/html2canvas.js"></script>
   <script src="js/lib/d3-timeline.js"></script>
   <script src="js/plugins/util.js"></script>
+  <script src="js/plugins/pluginPrototype.js"></script>
   <script src="js/plugins/exportTimeline.js"></script>
   <script src="js/plugins/trimTimeline.js"></script>
   <script src="js/plugins/verticalLine.js"></script>
   <script src="js/plugins/helperLines.js"></script>
   <script src="js/plugins/overviewAxis.js"></script>
+  <script src="js/plugins/zoom.js"></script>
+  <script src="js/plugins/configButton.js"></script>
   <script src="js/clinicalTimeline.js"></script>
   <script src="js/sanity.js"></script>
   <script src="js/parser.js"></script>
@@ -121,18 +134,27 @@
     }
     #tooltip-controller{
       position: relative;
-      left: 300px;
+      left: 325px;
+      top: -85px;
       font-size: 12px;
-      display: none;
+      visibility: hidden;
+      cursor: pointer;
     }
-    .radio{
-      display: inline-block;
-      margin-right: 20px;
+    #export-div{
+      left: -370px;
     }
-    #vertical-trim-toggle{
-      position: fixed;
-      top: 375px;
-      left: 230px;
+    #config-div{
+      position: absolute;
+      top: 5px;
+      left: 5px;
+    }
+    #config-div ul li {
+      font-size: 14px;
+      padding-left: 5px;
+    }
+    #config-div ul input{
+      margin: 3px 5px 0 0;
+      float: left;
     }
   </style>
   <script>
@@ -154,7 +176,7 @@
       
       if (jsonURL !== "") {
         if (jsonURL.indexOf("?view=") > -1) {
-          jsonURL = jsonURL.substring(0, jsonURL.indexOf("?view="))
+          jsonURL = jsonURL.substring(0, jsonURL.indexOf("?view="));
         }
         $("#jsonInput").val(JSON.stringify(JSON.parse(decodeURIComponent(jsonURL)), null, '    '));
       } else if (jsonCBioPortal !== "") {
@@ -171,6 +193,7 @@
       } else {
         if (testData !== "") {
           dataFed = testData.substring(0, testData.indexOf("?view="));
+          $(".data-control").css("display", "none");
         }
         $.getJSON("test/data/"+dataFed+".json", function(data) {
           $("#jsonInput").val(JSON.stringify(data, null, '    '));
@@ -182,24 +205,13 @@
         });
       }
       $("#parseJson").on("click", function() {
-         if (viewType === "simple") {
-          initViews(false);
-          if (location.href.indexOf("?view=") === -1) {  
-            window.history.replaceState('simpleView', '', location.href+="?view=simple");
-          }
-        } else {
-          //viewType isn't specified in the URl, show advanced view
-          initViews(true);
-          if (location.href.indexOf("?view=") === -1) {  
-           window.history.replaceState('advancedView', '', location.href+="?view=advanced");
-          }
-        }
+        initTimeline(viewType === "simple");
       });
     });
 
-    function initViews(enableAdvanced) {
+    function initTimeline(trimmingForSceenshotTest) {
       allData = JSON.parse($("#jsonInput").val());
-      
+
       var timeline = clinicalTimeline
         .width(800)
         .data(allData)
@@ -212,72 +224,79 @@
         .sizeByClinicalAttribute("Phos", "Result")
         .orderAllTooltipTables(["Source","Location"])
         .enableTrackTooltips(true)
-        .enableZoom(enableAdvanced) //zoom functionality avaiable only in the advance view
-        .advancedView(enableAdvanced)
-        .enableTrimmedTimeline(true)
-        .enableVerticalLine(false)
-        .enableHelperLines(true)
+        .plugins([
+          {
+            obj: new trimClinicalTimeline("Trim Timeline"), 
+            enabled: trimmingForSceenshotTest
+          },  
+          {
+            obj: new clinicalTimelineHelperLines("Helper Lines"), 
+            enabled: false
+          }, 
+          {
+            obj: new clinicalTimelineZoom("Zoom"), 
+            enabled: !trimmingForSceenshotTest
+          },
+          {
+            obj: new clinicalTimelineOverviewAxis("Overview Axis"), 
+            enabled:!trimmingForSceenshotTest
+          },
+          {
+            obj: new clinicalTimelineVerticalLine("Vertical Timeline", 
+              {
+                tooltipControllerId: "#tooltip-controller", 
+                hoverBegin: 200, 
+                hoverEnd: 770
+              }),
+            enabled: false},
+          {
+            obj: new configCheckManager(null, 
+              {
+                configUlId: "#timeline-wrapper #config-div #config-dropdown"
+              }), 
+            enabled: true
+          },
+          {
+            obj: new clinicalTimelineExporter("Export", 
+              {
+                exportDivId : "#export-div"
+              }), 
+            enabled: true}
+        ])
         .collapseAll();
       timeline();
-
-      $("#trim").prop("checked", true)
-
-      //initiliase simple-advanced buttons
-      if (enableAdvanced) {
-        $("#advBtn").prop("disabled", true); //disable repeated clicking of advButton
-        $("#advBtn").addClass("active");
-        $("#simpleBtn").prop("disabled", false); //enable simpleBtn
-        $("#simpleBtn").removeClass("active");
-        $(".dropdown-toggle").prop("disabled", true);
-        $("#jsonInput").css("display", "block");
-        $("#tooltip-controller").css("visibility", "hidden");
-        $(".radio").css("visibility", "hidden");
-        if (location.href.indexOf("?view=simple") > -1) {  
-          window.history.replaceState('advancedView', '', location.href.replace("?view=simple", "?view=advanced"));
-        }
-      } else {
-        $("#advBtn").prop("disabled", false); //enable advBtn
-        $("#advBtn").removeClass("active");
-        $("#simpleBtn").prop("disabled", true); //disable repeated clicking of simpleBtn
-        $("#simpleBtn").addClass("active");
-        $(".dropdown-toggle").prop("disabled", false);
-        $("#jsonInput").css("display", "none");
-        $("#tooltip-controller").css("visibility", "visible");
-        $(".radio").css("visibility", "visible");
-        if (location.href.indexOf("?view=advanced") > -1) {  
-          window.history.replaceState('simpleView', '', location.href.replace("?view=advanced", "?view=simple"));
-        }
-      }
     }
   </script>
 </head>
 <body>
-  <div>
+  <div id="timeline-wrapper">
     <h3>clinical timeline</h3>
-    <div class="dropdown">
-      <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown">Export As
+    <div class="dropdown" id="config-div">
+        <button class="btn btn-default dropdown-toggle" type="button" id="configDropdownBtn" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+          Config
+          <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu" id="config-dropdown">
+          <!-- dynamically populated via js/plugins/configButton.plugins -->
+        </ul>
+    </div>
+    <div class="dropdown" id="export-div">
+      <button class="btn btn-default dropdown-toggle" id="export-button" type="button" data-toggle="dropdown">Export As
       <span class="caret"></span></button>
       <ul class="dropdown-menu">
-        <li><a href="javascript:clinicalTimelineExporter.generateSVG()">SVG Image</a></li>
-        <li><a href="javascript:clinicalTimelineExporter.generatePNG(true)">PNG Image</a></li>
-        <li><a href="javascript:clinicalTimelineExporter.generatePDF()">PDF Document</a></li>
+        <script type="text/javascript">
+          var exporter = (new clinicalTimelineExporter()).run(null, {exportDivId : "#export-div"}); 
+        </script>
+        <li><a href='javascript:exporter.generateSVG()'>SVG Image</a></li>
+        <li><a href='javascript:exporter.generatePNG(true)'>PNG Image</a></li>
+        <li><a href='javascript:exporter.generatePDF()'>PDF Document</a></li>
       </ul>
-    </div>
-    <div class="btn-group btn-group-view" role="group" aria-label="Basic example">
-      <button type="button" class="btn btn-default" id="simpleBtn" onclick="initViews(false)">Simple</button>
-      <button type="button" class="btn btn-default" id="advBtn" onclick="initViews(true)">Advanced</button>
     </div>
     <div id="timeline">
     </div>
-    <span id="tooltip-controller"><a href="javascript:clinicalTimeline.toggleTooltipOnVerticalLine()">Hide tooltips on vertical-line</a></span>
-    <div id="vertical-trim-toggle">
-      <span class="radio">
-        <label><input type="radio" id="trim" name="optradio" value="trim" onclick="javascript:clinicalTimeline.toggleVerticalLineAndTrim(this)" checked>Trim Timeline</label>
-      </span>
-      <span class="radio">
-        <label><input type="radio" id="vertical" name="optradio" value="vertical" onclick="javascript:clinicalTimeline.toggleVerticalLineAndTrim(this)">Vertical Line</label>
-      </span>
-    </div>
+    <span id="tooltip-controller">
+      <a>Hide tooltips on vertical-line</a>
+    </span>
     <h4 class="data-control">data</h4>
     <button id="parseJson" class="btn btn-primary data-control">Parse JSON</button><br />
     <textarea id="jsonInput" class="form-control data-control">
