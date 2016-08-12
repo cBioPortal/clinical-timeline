@@ -45,7 +45,7 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
       timeline.overviewX(overViewScale(brush.extent()[0].valueOf()));
 
       var xDaysRect = brush.extent()[0].valueOf();
-      timeline.zoomFactor((parseInt(width) - parseInt(margin.left) - parseInt(margin.right)) / (parseInt(d3.select(".extent").attr("width"))));
+      timeline.zoomFactor((parseInt(width) - parseInt(margin.left) - parseInt(margin.right)) / (parseInt(d3.select(timeline.divId()+" .extent").attr("width"))));
       if (timeline.zoomFactor() > 0) {
         timeline.zoomFactor(Math.min(timeline.zoomFactor(), timeline.computeZoomFactor("days", minDays, maxDays, width)));
       } else {
@@ -101,15 +101,15 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
         .attr("id", "overlayBrush");
       overlayBrush.attr("class", "brush")
         .call(brush)
-        .selectAll('.extent,.background,.resize rect')
+        .selectAll(divId+' .extent,'+divId+' .background,'+divId+' .resize rect')
           .attr("height", gBoundingBox.height)
           .attr("y", 20)
           .style("cursor", "zoom-in");
       zoomExplanation(divId, svg, "Click + drag to zoom", "hidden", 120);
-      d3.select('.background').on("mouseover", function() {
-          d3.select("#timelineZoomExplanation").style("visibility", "visible");
+      d3.select(divId+' .background').on("mouseover", function() {
+          d3.select(divId+" #timelineZoomExplanation").style("visibility", "visible");
       }).on("mouseout", function() {
-          d3.select("#timelineZoomExplanation").style("visibility", "hidden");
+          d3.select(divId+" #timelineZoomExplanation").style("visibility", "hidden");
       });
     }
   } else {

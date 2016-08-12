@@ -20,7 +20,8 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
     timelineElements = [],
     breakTimelineForKink = [],
     tickCoordinatesKink = [],
-    svg = d3.select(".timeline"),
+    divId = timeline.divId(),
+    svg = d3.select(timeline.divId()+" .timeline"),
     maxDays = timeline.getReadOnlyVars().maxDays,
     minDays = timeline.getReadOnlyVars().minDays,
     width = timeline.width(),
@@ -41,7 +42,7 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
     }),
     ticksToShow = [tickValuesInt[0], tickValuesInt[tickValuesInt.length - 1]];
 
-  d3.selectAll(".timeline g rect, .timeline g circle").each(function(d, e) {
+  d3.selectAll(divId+" .timeline g rect,"+divId+" .timeline g circle").each(function(d, e) {
    for (var i = parseInt(d.starting_time); i <= parseInt(d.ending_time); i += clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel)) {
       if (timelineElements.indexOf(i) === -1) {
         timelineElements.push(parseInt(i));
@@ -159,26 +160,26 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
     return tickCoordinatesKink[first] + (pos - ticksToShow[first]) * (tickCoordinatesKink[second] - tickCoordinatesKink[first]) / (ticksToShow[second] - ticksToShow[first]);
   }
 
-  d3.selectAll("[id^=timelineItem]").attr("cx", function(x) {
-    //update x position for circular elements in the trimmed timeline
-    return getXPosAdjustedForKink(x.starting_time);
-  });
-
-  d3.selectAll("[id^=timelineItem]").attr("x", function(x) {
-    //update x position for rectangular elements in the trimmed timeline
-    return getXPosAdjustedForKink(x.starting_time);
-  });
-
-  var widthMultiplier = (tickCoordinatesKink[1] - tickCoordinatesKink[0])/ (d3.transform(d3.select($(".axis .tick")[1]).attr("transform")).translate[0] - d3.transform(d3.select($(".axis .tick")[0]).attr("transform")).translate[0]);
+  var diffCoordinatesPostTrim = tickCoordinatesKink[1] - tickCoordinatesKink[0],
+    diffTicksSVGPreTrim = d3.transform(d3.select($(divId+" .axis .tick")[1]).attr("transform")).translate[0] - d3.transform(d3.select($(divId+" .axis .tick")[0]).attr("transform")).translate[0],
+    widthMultiplier = diffCoordinatesPostTrim / diffTicksSVGPreTrim;
   
-  d3.selectAll("[id^=timelineItem]").attr("width", function (x) {
-    //update width for rectangular elements in the trimmed timeline
-    return d3.select(this).attr("width") * widthMultiplier;  
-  });
-
-  d3.selectAll("[id^=timelineItem]").attr("r", function (x) {
-    //update radius for circular elements in the trimmed timeline keeping height same
-    return d3.select(this).attr("r");  
+  d3.selectAll(divId+" [id^=timelineItem]").each(function (x) {
+    if (this.tagName === "circle") {
+      d3.select(this)
+        //update x position for circular elements in the trimmed timeline
+        .attr("cx", getXPosAdjustedForKink(x.starting_time))
+        //update radius for circular elements in the trimmed timeline keeping height same
+        .attr("r", d3.select(this).attr("r"));
+    } else if (this.tagName === "rect") {
+      d3.select(this)
+        //update x position for rectangular elements in the trimmed timeline
+        .attr("x", getXPosAdjustedForKink(x.starting_time))
+        //update width for rectangular elements in the trimmed timeline
+        .attr("width", d3.select(this).attr("width") * widthMultiplier);
+    } else {
+      console.log("No such element as " + this)
+    }
   });
 }
 

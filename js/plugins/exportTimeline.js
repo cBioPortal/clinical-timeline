@@ -5,7 +5,7 @@
  */
 function clinicalTimelineExporter(name, spec){
   clinicalTimelinePlugin.call(this, name, spec);
-  this.id = "verticalLine";
+  this.id = "exportTimeline";
 }
 
 /**

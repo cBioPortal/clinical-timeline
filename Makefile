@@ -19,5 +19,4 @@ clean:
 
 build: dist/clinical-timeline.js dist/clinical-timeline.min.js
 
-
 .PHONY: build clean
