@@ -1,16 +1,27 @@
 /**
- * Displays the x-coordinate i.e the label and y-coordiante i.e the day
- * when clicked on a timeline element in advanced view.
+ * Plugin to display the x-coordinate i.e the label and y-coordiante i.e the day
+ * when clicked on a timeline element
+ * @type {clinicalTimelinePlugin}
  */
-function initHelperLines(enableHelperLines, zoomFactor, advancedView, divId, formatTime, daysToTimeObject) {
+function clinicalTimelineHelperLines(name, spec){
+  clinicalTimelinePlugin.call(this, name, spec);
+  this.id = "helperLines";
+}
+
+/**
+ * runs the clinicalTimelineHelperLines plugin
+ * @param  {function} timeline    clinicalTimeline object
+ * @param  {Object}   [spec=null] specification specific to the plugin
+ */
+clinicalTimelineHelperLines.prototype.run = function(timeline, spec) {
   //enable helper lines only if no zoom and in advanced view
   d3.selectAll("[id^='timelineItem']").on("click", function(x) {
-    if (enableHelperLines && zoomFactor === 1 && advancedView) {
-      var helperLineGroup = d3.select(divId + " svg").append("g").attr("class", "helper-line-group");
-      var elementXCoordinate = parseInt(this.getAttribute("x"));
-      var elementYCoordinate = parseInt(this.getAttribute("y"));
-      var elementWidth = parseInt(this.getAttribute("width"));
-      var elementHeight = parseInt(this.getAttribute("height"));
+    if (timeline.zoomFactor() === 1) {
+      var helperLineGroup = d3.select(timeline.divId() + " svg").append("g").attr("class", "helper-line-group"),
+        elementXCoordinate = parseInt(this.getAttribute("x")),
+        elementYCoordinate = parseInt(this.getAttribute("y")),
+        elementWidth = parseInt(this.getAttribute("width")),
+        elementHeight = parseInt(this.getAttribute("height"));
 
       //horizontal line
       helperLineGroup.append("line")
@@ -53,15 +64,22 @@ function initHelperLines(enableHelperLines, zoomFactor, advancedView, divId, for
       helperLineGroup.append("text")
         .attr("x", this.getAttribute("x"))
         .attr("y", 40)
-        .text(formatTime(daysToTimeObject(x.starting_time), "days"))
+        .text(timeline.formatTime(timeline.daysToTimeObject(x.starting_time), "days"))
         .style("text-anchor", "middle")
         .style("font-size", "10px");
       
-      $(this).qtip("hide");  //hide qtip when helper line visible
-      //remove the helper lines after 1s 
+      //hide qtip when helper line visible
+      $(this).qtip("hide");
       setTimeout(function() {
+        //remove the helper lines after 1s 
         helperLineGroup.remove();
       }, 1000);
     }
-  });  
+  }); 
 }
+
+Object.setPrototypeOf(clinicalTimelineHelperLines.prototype, clinicalTimelinePlugin.prototype);
+
+/* start-test-code-not-included-in-build */
+module.exports = clinicalTimelineHelperLines;
+/* end-test-code-not-included-in-build */

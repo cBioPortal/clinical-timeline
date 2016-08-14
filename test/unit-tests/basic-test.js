@@ -1,9 +1,8 @@
 var expect = require('chai').expect;
 
 global.clinicalTimelineUtil = require('../../js/plugins/util.js');
+global.clinicalTimelinePlugin = require('../../js/plugins/pluginPrototype.js');
 var clinicalTimeline = require('../../js/clinicalTimeline.js');
-var exportTimeline = require('../../js/plugins/exportTimeline.js');
-
 var oldConsoleLog = null;
 /**
  * Disable the logger to prevent any console.log from clinicalTimeline
@@ -37,7 +36,7 @@ describe('clinicalTimeline.getTrack', function() {
 
 describe('clinicalTimeline.daysToTimeObject', function() {
   it('should return time object with year, months and days', function() {
-    var daysToTimeObject = clinicalTimeline.__tests__.daysToTimeObject;
+    var daysToTimeObject = clinicalTimeline.daysToTimeObject;
     var data1 = JSON.stringify({daysPerYear : 365, daysPerMonth :30, y : 0, m : 0, d : 25});
     var data2 = JSON.stringify({daysPerYear : 365, daysPerMonth :30, y : 0, m : 4, d : 22});
     var data3 = JSON.stringify({daysPerYear : 365, daysPerMonth :30, y : 1, m : 1, d : 5});
@@ -50,8 +49,8 @@ describe('clinicalTimeline.daysToTimeObject', function() {
 
 describe('clinicalTimeline.formatTime', function() {
   it('should should properly format the input time', function() {
-    var daysToTimeObject = clinicalTimeline.__tests__.daysToTimeObject;
-    var formatTime = clinicalTimeline.__tests__.formatTime;
+    var daysToTimeObject = clinicalTimeline.daysToTimeObject;
+    var formatTime = clinicalTimeline.formatTime;
 
      expect("0").to.equal(formatTime(daysToTimeObject(0), "days"));
      expect("0").to.equal(formatTime(daysToTimeObject(0), "3days"));
@@ -80,7 +79,7 @@ describe('clinicalTimeline.formatTime', function() {
 
 describe('clinicalTimeline.roundDown', function() {
   it('should round down a number to it\'s nearest multiple', function() {
-     var roundDown = clinicalTimeline.__tests__.roundDown;
+     var roundDown = clinicalTimelineUtil.roundDown;
      expect(10).to.equal(roundDown(12.4, 5));
      expect(-15).to.equal(roundDown(-12.4, 5));
      expect(0).to.equal(roundDown(0.1, 2));
@@ -92,7 +91,7 @@ describe('clinicalTimeline.roundDown', function() {
 
 describe('clinicalTimeline.roundUp', function() {
   it('should round up a number to it\'s nearest multiple', function() {
-    var roundUp = clinicalTimeline.__tests__.roundUp;
+    var roundUp = clinicalTimelineUtil.roundUp;
      expect(15).to.equal(roundUp(12.4, 5));
      expect(-10).to.equal(roundUp(-12.4, 5));
      expect(2).to.equal(roundUp(0.1, 2));

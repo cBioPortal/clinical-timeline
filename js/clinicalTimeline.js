@@ -23,18 +23,11 @@ var clinicalTimeline = (function(){
     // last day
     maxDays = 0,
     overviewAxisWidth = 0,
-    startAllowedOverview = 0,
-    endAllowedOverview = 0,
+    enableTrackTooltips,
     overviewX = margin.overviewAxis.left,
-    chart=null,
-    timelineBool = {};
-  timelineBool.enableTrackTooltips = true,
-  timelineBool.enableZoom = true,
-  timelineBool.advancedView=false,
-  timelineBool.enableVerticalLine = false,
-  timelineBool.tooltipOnVerticalLine = true,
-  timelineBool.enableTrimmedTimeline=false,
-  timelineBool.enableHelperLines=false;
+    chart = null,
+    clinicalTimelinePlugins,
+    clinicalTimelineReadOnlyVars;
 
   function getTrack(data, track) {
     return data.filter(function(x) {
@@ -62,8 +55,8 @@ var clinicalTimeline = (function(){
     }
     
     minDays = Math.min(getMinStartingTime(allData), 0);
-    var zoomLevel = getZoomLevel(minDays, maxDays, width * zoomFactor),
-      tickValues = getTickValues(minDays, maxDays, zoomLevel);
+    var zoomLevel = timeline.computeZoomLevel(minDays, maxDays, width * zoomFactor),
+      tickValues = timeline.getTickValues(minDays, maxDays, zoomLevel);
     
     beginning = tickValues[0];
     ending = tickValues[tickValues.length-1];
@@ -73,8 +66,8 @@ var clinicalTimeline = (function(){
       .stack()
       .margin(margin)
       .tickFormat({
-        format: function(d) { return formatTime(daysToTimeObject(d.valueOf()), zoomLevel); },
-        tickValues: getTickValues(minDays, maxDays, zoomLevel),
+        format: function(d) { return timeline.formatTime(timeline.daysToTimeObject(d.valueOf()), zoomLevel); },
+        tickValues: timeline.getTickValues(minDays, maxDays, zoomLevel),
         tickSize: 6
       })
       .translate(translateX)
@@ -114,7 +107,7 @@ var clinicalTimeline = (function(){
           mouseout : function() { modifyTimelineElementsSize(this, -2) } 
         });
     });
-    if (timelineBool.enableTrackTooltips) {
+    if (enableTrackTooltips) {
       $(".timeline-label").each(function(i) {
         if ($(this).prop("__data__")[i].split && !$(this).prop("__data__")[i].parent_track) {
           addSplittedTrackTooltip($(this), allData);
@@ -142,10 +135,6 @@ var clinicalTimeline = (function(){
       x.setAttributeNS("http://www.w3.org/XML/1998/namespace", "xml:space", "preserve");
     });
 
-    if (timelineBool.enableZoom) {
-      addZoomOptions();
-    }
-
     // Add white background for labels to prevent timepoint overlap
     d3.select(divId + " svg")
       .insert("rect", ".timeline-label")
@@ -163,15 +152,24 @@ var clinicalTimeline = (function(){
       .attr("width", overviewAxisWidth)
       .attr("class", "overview");
 
-    clinicalTimelineOverviewAxis(overviewSVG, getTickValues, minDays, maxDays, overviewAxisWidth, formatTime, daysToTimeObject, getZoomLevel, width,  margin);
-    clinicalTimelineVerticalLine(timelineBool.enableVerticalLine, beginning, ending, timelineBool.advancedView, timelineBool.tooltipOnVerticalLine);
-    initHelperLines(timelineBool.enableHelperLines, zoomFactor, timelineBool.advancedView, divId, formatTime, daysToTimeObject);
+    //object to be shared by all plugins
+    clinicalTimelineReadOnlyVars = {
+      beginning: beginning,
+      ending: ending,
+      minDays: minDays,
+      maxDays: maxDays,
+      margin: margin,
+      chart: chart
+    };
 
-    if(timelineBool.advancedView){
-      initAdvancedView(overviewSVG)
-    } else {
-      initSimpleView(overviewSVG);
-    }
+    clinicalTimelinePlugins.forEach(function (element) {
+      var plugin = element.obj;
+      if(plugin.run instanceof Function && element.enabled){
+        plugin.run(timeline, element.obj.spec);
+      } else if(!plugin.enabled) {
+        plugin.remove(timeline, element.obj.spec);
+      }
+    });
 
     postTimelineHooks.forEach(function(hook) {
       hook.call();
@@ -182,190 +180,6 @@ var clinicalTimeline = (function(){
   function modifyTimelineElementsSize(element, change) {
     $(element).attr("r", parseInt($(element).attr("r")) + change);
     $(element).attr("height", parseInt($(element).attr("height")) + change);
-  }
-
-  /*
-   * Add rectangular zoom selection. Use brush to zoom. After zooming in, scroll mouse or drag to pan.
-   */
-  function addZoomOptions() {
-    $(".dropdown-toggle").prop("disabled", true);
-    var svg = d3.select(divId + " svg"),
-      g = d3.select(divId + " svg g"),
-      gBoundingBox = g[0][0].getBoundingClientRect();
-
-    if (zoomFactor === 1) {
-      // Add rectangular zoom selection
-      // zoom in after brush ends
-      var brushend = function() {
-        var originalZoomLevel = getZoomLevel(minDays, maxDays, width);
-        //handle positioning of the overview rectangle post zoom in.
-        var overViewScale = d3.time.scale()
-          .domain([roundDown(minDays, clinicalTimelineUtil.getDifferenceTicksDays(originalZoomLevel)), roundUp(maxDays, clinicalTimelineUtil.getDifferenceTicksDays(originalZoomLevel))])
-          .range([0 + margin.overviewAxis.left, overviewAxisWidth - margin.overviewAxis.right]);
-
-        overviewX = overViewScale(brush.extent()[0].valueOf());
-
-        var xDaysRect = brush.extent()[0].valueOf();
-        zoomFactor = (parseInt(width) - parseInt(margin.left) - parseInt(margin.right)) / (parseInt(d3.select(".extent").attr("width")));
-        if (zoomFactor > 0) {
-          zoomFactor = Math.min(zoomFactor, getZoomFactor("days", minDays, maxDays, width));
-        } else {
-          zoomFactor = getZoomFactor("days", minDays, maxDays, width);
-        }
-
-        var zoomLevel = getZoomLevel(minDays, maxDays, width * zoomFactor),
-          tickValues = getTickValues(minDays, maxDays, zoomLevel);
-        startAllowedOverview = overViewScale(roundDown(minDays, clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel))); - overViewScale(roundDown(minDays, clinicalTimelineUtil.getDifferenceTicksDays(originalZoomLevel)));
-        endAllowedOverview = overViewScale(roundUp(maxDays, clinicalTimelineUtil.getDifferenceTicksDays(originalZoomLevel))) - overViewScale(roundUp(maxDays, clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel)));
-
-        // TODO: Translation post zooming is not entirely correct
-
-        if (xDaysRect > minDays) {
-          var xZoomScale = d3.time.scale()
-             .domain([tickValues[0], tickValues[tickValues.length-1]])
-             .range([margin.left, width * zoomFactor - margin.right]);
-          translateX = -xZoomScale(xDaysRect);
-        } else {
-          translateX = 0;
-        }
-        $('.'+divId.substr(1)+'-qtip').qtip("hide");
-        d3.select(divId).style("visibility", "hidden");
-        timeline();
-        d3.select(divId).style("visibility", "visible");
-        var zoomBtn = d3.select(divId + " svg")
-          .insert("text")
-          .attr("transform", "translate("+(parseInt(svg.attr("width"))-70)+", "+parseInt(svg.attr("height")-5)+")")
-          .attr("class", "timeline-label")
-          .text("Zoom out")
-          .style("cursor", "zoom-out")
-          .attr("id", "timelineZoomOut");
-        zoomBtn.on("click", function() {
-          zoomFactor = 1;
-          beginning = 0;
-          ending = 0;
-          $('.'+divId.substr(1)+'-qtip').qtip("hide");
-          d3.select(divId).style("visibility", "hidden");
-          timeline();
-          d3.select(divId).style("visibility", "visible");
-          chart.scrolledX(null);
-          overviewX = margin.overviewAxis.left;
-          d3.select(".overview-rectangle").attr("x", overviewX).attr("width", overviewAxisWidth - margin.overviewAxis.left - margin.overviewAxis.right);
-          this.remove();
-        });
-      };
-
-      if (getZoomLevel(minDays, maxDays, width * zoomFactor) !== "days") {
-        // add brush overlay
-        var xScale = d3.time.scale()
-           .domain([beginning, ending])
-           .range([margin.left - 10, width - margin.right + 10]);
-        var brush = d3.svg.brush()
-          .x(xScale)
-          .on("brush", function() {
-            var extent = d3.event.target.extent();
-          })
-          .on("brushend", brushend);
-        var overlayBrush = g.insert("g", ".axis")
-          .attr("id", "overlayBrush");
-        overlayBrush.attr("class", "brush")
-          .call(brush)
-          .selectAll('.extent,.background,.resize rect')
-            .attr("height", gBoundingBox.height)
-            .attr("y", 20)
-            .style("cursor", "zoom-in");
-        zoomExplanation(divId, svg, "Click + drag to zoom", "hidden", 120);
-        d3.select('.background').on("mouseover", function() {
-            d3.select("#timelineZoomExplanation").style("visibility", "visible");
-        }).on("mouseout", function() {
-            d3.select("#timelineZoomExplanation").style("visibility", "hidden");
-        });
-      }
-    } else {
-      // Add panning explanation and visual indicator
-      zoomExplanation(divId, svg, "Scroll/drag to move", "visible", 180);
-      d3.select(divId + " svg").style("cursor", "move");
-    }
-  }
-
-  function zoomExplanation(divId, svg, text, visibility, pos) {
-    d3.select(divId + " svg")
-      .insert("text")
-      .attr("transform", "translate("+(parseInt(svg.attr("width"))-pos)+", "+parseInt(svg.attr("height")-5)+")")
-      .attr("class", "timeline-label")
-      .text("")
-      .attr("id", "timelineZoomExplanation")
-      .text(text)
-      .style("visibility", visibility);
-  }
-
-
-  function initAdvancedView(overviewSVG) {
-    var zoomedWidth = chart.width();
-    var rectangleOverviewWidth = (overviewAxisWidth - margin.overviewAxis.left - margin.overviewAxis.right) / zoomFactor;
-
-    //scale to map the amount dragged on the zoomedWidth of original timeline to the overviewAxis width
-    //helps position the overview-rectangle correctly if original timeline dragged
-    var xScaleOverviewZoomed = d3.time.scale()
-      .domain([0, -zoomedWidth])
-      .range([0 + startAllowedOverview, overviewAxisWidth - endAllowedOverview]);
-
-    //scale to map the amount dragged on the overview-rectangle to the orignal timeline's zoomedWidth
-    //helps position the original-timeline correctly if the overview rectagle is dragged
-    var xScaleRectangle = d3.time.scale()
-      .domain([0 + startAllowedOverview, overviewAxisWidth - endAllowedOverview])
-      .range([0 , -zoomedWidth]);
-
-
-    var dragChart = d3.behavior.drag()
-      .on("drag", function(d,i) {
-        //handle overview rectangle if the original-timeline is dragged
-        if(chart.scrolledX()){
-          var zoomedBeginTick = xScaleOverviewZoomed(chart.scrolledX()); 
-          d3.select(".overview-rectangle").attr("x", zoomedBeginTick);
-          overviewX = zoomedBeginTick;
-        }
-      });
-
-    var dragRectangle = d3.behavior.drag()
-      .on("drag", function(d,i) {
-        //handle the timeline if the overview rectangle is dragged
-        var x  = parseInt(d3.select(".overview-rectangle").attr("x"))+d3.event.dx;
-        if(x > startAllowedOverview && x < overviewAxisWidth - rectangleOverviewWidth - endAllowedOverview){
-          d3.select(divId+" svg g").attr("transform","translate("+xScaleRectangle(x)+",0)");
-          d3.select(".overview-rectangle").attr("x", x); 
-          overviewX = x;
-        }
-      });
-
-    var rectangleOverview = overviewSVG.append("rect")
-        .attr("height", 16)
-        .attr("width", rectangleOverviewWidth)
-        .attr("x", overviewX)
-        .attr("y", 27)
-        .attr("fill", "rgba(25,116,255, 0.4)")
-        .attr("class", "overview-rectangle")
-        .style("cursor", "move")
-        .call(dragRectangle);     
-      d3.select(divId+" svg").call(dragChart);
-      d3.selectAll(".data-control").style("visibility", "visible");
-  }
-
-  function initSimpleView(overviewSVG) {
-    overviewSVG.attr("display", "none");
-    zoomFactor = 1;
-    beginning = 0;
-    ending = 0;
-    $('.'+divId.substr(1)+'-qtip').qtip("hide");
-    d3.select(divId).style("visibility", "hidden");
-    d3.select(divId).style("visibility", "visible");
-    scrolledX = null;
-    overviewX = margin.overviewAxis.left;
-    d3.select("overview-rectangle").remove();
-    if (timelineBool.enableTrimmedTimeline) {
-      trimClinicalTimeline(maxDays, minDays, getZoomLevel, width, getTickValues, margin, formatTime, daysToTimeObject, divId);
-    }
-    d3.select(".overview").remove();
-    d3.selectAll(".data-control").style("visibility", "hidden");
   }
 
   /**
@@ -885,7 +699,7 @@ var clinicalTimeline = (function(){
       }));
   }
 
-  function daysToTimeObject(dayCount) {
+  timeline.daysToTimeObject = function(dayCount) {
       var time = {},
         daysPerYear = clinicalTimelineUtil.timelineConstants.DAYS_PER_YEAR,
         daysPerMonth = clinicalTimelineUtil.timelineConstants.DAYS_PER_MONTH;
@@ -906,7 +720,7 @@ var clinicalTimeline = (function(){
       return time;
   }
 
-  function formatTime(time, zoomLevel) {
+  timeline.formatTime = function(time, zoomLevel) {
       var dayFormat = [], d, m, y;
       if (clinicalTimelineUtil.timelineConstants.ALLOWED_ZOOM_LEVELS.indexOf(zoomLevel) > -1){
         if (time.y === 0 && time.m === 0 && time.d === 0) {
@@ -938,7 +752,7 @@ var clinicalTimeline = (function(){
   /*
    * Return zoomLevel in human comprehensible form by determining the width in pixels of a single day
    */
-  function getZoomLevel(minDays, maxDays, width) {
+  timeline.computeZoomLevel = function(minDays, maxDays, width) {
     pixelsPerDay = parseFloat(parseInt(width) / difference(parseInt(minDays), parseInt(maxDays)));
     if (pixelsPerDay < 1) {
       return "years";
@@ -957,7 +771,7 @@ var clinicalTimeline = (function(){
    * Return zoomFactor by specifying what kind of zoomLevel on the x axis (e.g.
    * years, days) is desired
    */
-  function getZoomFactor(zoomLevel, minDays, maxDays, width) {
+  timeline.computeZoomFactor = function(zoomLevel, minDays, maxDays, width) {
     switch(zoomLevel) {
       case "years":
         return 0.9 * difference(parseInt(minDays), parseInt(maxDays)) / parseInt(width);
@@ -975,7 +789,7 @@ var clinicalTimeline = (function(){
   }
 
   function roundUpDays(dayCount, zoomLevel) {
-    var time = daysToTimeObject(dayCount), rv,
+    var time = timeline.daysToTimeObject(dayCount), rv,
       additive = dayCount < 0? 1: -1;
     switch(zoomLevel) {
       case "years":
@@ -998,43 +812,13 @@ var clinicalTimeline = (function(){
   function difference(a, b) {
     return Math.max(a, b) - Math.min(a, b);
   }
-
-  /*
-   * Rounds up to the nearest multiple of a number
-   */
-  function roundUp(numToRound, multiple) {
-    var remainder = numToRound % multiple;
-    if (multiple === 0 || remainder === 0) {
-      return numToRound;
-    } else{
-      if (numToRound < 0) {
-        return -1 * roundDown(-1 * numToRound, multiple);
-      } else {
-        return Math.round(numToRound + multiple - remainder);
-      }
-    }
-  }
-
-  /*
-   * Rounds down to the nearest multiple of a number
-   */
-  function roundDown(numToRound, multiple) {
-    var remainder = numToRound % multiple;
-    if (multiple === 0 || remainder === 0) {
-      return numToRound;
-    } else{
-        if (numToRound < 0) {
-          return -1 * roundUp(-1 * numToRound, multiple);
-        } else {
-          return Math.round(numToRound - remainder);
-        }
-    }
-  }
-
-  function getTickValues(minDays, maxDays, zoomLevel) {
-      var tickValues = [];
-      var maxTime = daysToTimeObject(parseInt(maxDays));
-      var minTime = daysToTimeObject(parseInt(minDays));
+  
+  timeline.getTickValues = function (minDays, maxDays, zoomLevel) {
+      var tickValues = [],
+        maxTime = timeline.daysToTimeObject(parseInt(maxDays)),
+        minTime = timeline.daysToTimeObject(parseInt(minDays)),
+        roundDown = clinicalTimelineUtil.roundDown,
+        roundUp = clinicalTimelineUtil.roundUp;
       var i;
       if (zoomLevel === "years") {
           for (i=roundDown(minTime.toYears(), 1); i <= roundUp(maxTime.toYears(), 1); i++) {
@@ -1060,42 +844,21 @@ var clinicalTimeline = (function(){
       return tickValues;
   }
 
-  function getOrSetBool(bool, b) {
-    if (arguments.length === 1) return timelineBool[bool];
-
-    if (b === true || b === false) {
-      timelineBool[bool] = b;
-    }
-    return timeline;
-  }
-
   timeline.enableTrackTooltips = function(b) {
-    return getOrSetBool("enableTrackTooltips", b);
-  };
-
-  timeline.enableZoom = function(b) {
-    return getOrSetBool("enableZoom", b);
-  };
-
-  timeline.enableTrimmedTimeline = function(b) {
-   return getOrSetBool("enableTrimmedTimeline", b);
-  };
-
-  timeline.enableVerticalLine = function(b) {
-    return getOrSetBool("enableVerticalLine", b);
-  };
-
-  timeline.advancedView = function(b) {
-    return getOrSetBool("advancedView", b);
-  };
-
-  timeline.enableHelperLines = function(b) {
-    return getOrSetBool("enableHelperLines", b);
+    if (!arguments.length) return enableTrackTooltips;
+    enableTrackTooltips = b;
+    return timeline;
   };
 
   timeline.width = function (w) {
     if (!arguments.length) return width;
     width = w;
+    return timeline;
+  };
+
+  timeline.overviewAxisWidth = function (w) {
+    if (!arguments.length) return overviewAxisWidth;
+    overviewAxisWidth = w;
     return timeline;
   };
 
@@ -1115,6 +878,31 @@ var clinicalTimeline = (function(){
     divId = name;
     return timeline;
   };
+
+  timeline.plugins = function (plugins) {
+    if (!arguments.length) return clinicalTimelinePlugins;
+    clinicalTimelinePlugins = plugins;
+    return timeline;
+  };
+
+  timeline.zoomFactor = function (zFactor) {
+    if (!arguments.length) return zoomFactor;
+    zoomFactor = zFactor;
+  };
+
+  timeline.overviewX = function (x) {
+    if (!arguments.length) return overviewX;
+    overviewX = x;
+  };
+
+  timeline.translateX = function (x){
+    if (!arguments.length) return translateX;
+    translateX = x;
+  };
+
+  timeline.getReadOnlyVars = function () {
+    return clinicalTimelineReadOnlyVars;
+  }
 
   timeline.collapseAll = function() {
     var singlePointTracks = allData.filter(function(trackData) {
@@ -1276,38 +1064,10 @@ var clinicalTimeline = (function(){
     return timeline;
   };
 
-  timeline.toggleTooltipOnVerticalLine = function() {
-    if (timelineBool.tooltipOnVerticalLine) {
-      timelineBool.tooltipOnVerticalLine = false;
-      $('#tooltip-controller a').text("Show tooltips on vertical-line");
-    } else {
-      timelineBool.tooltipOnVerticalLine = true;
-      $('#tooltip-controller a').text("Hide tooltips on vertical-line");
-    }
-    timeline();
-  }
-  
-  timeline.toggleVerticalLineAndTrim = function(radioSelection) {
-    if (radioSelection.value === "trim") {
-      timelineBool.enableVerticalLine = false;
-      timelineBool.enableTrimmedTimeline = true;
-      $("#tooltip-controller").css("display", "none");
-    } else {
-      timelineBool.enableVerticalLine = true;
-      timelineBool.enableTrimmedTimeline = false;
-      $("#tooltip-controller").css("display", "inline-block");
-    }
-    timeline();
-  }
-
   /* start-test-code-not-included-in-build */
     //functions to be tested come here
-    timeline.__tests__ = {}
-    timeline.__tests__.getTrack = getTrack,
-    timeline.__tests__.daysToTimeObject = daysToTimeObject,
-    timeline.__tests__.formatTime = formatTime,
-    timeline.__tests__.roundDown = roundDown,
-    timeline.__tests__.roundUp = roundUp;
+    timeline.__tests__ = {};
+    timeline.__tests__.getTrack = getTrack;
   /* end-test-code-not-included-in-build */
   
   return timeline;

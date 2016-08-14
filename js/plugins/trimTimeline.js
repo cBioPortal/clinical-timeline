@@ -1,33 +1,45 @@
-/*
- * Cuts the timeline to areas of interest
+/**
+ * Plugin which trims the timeline to areas of interest
  * by cutting off portions with no timeline-elements
+ * @type {clinicalTimelinePlugin}
  */
-var trimClinicalTimeline = function (maxDays, minDays, getZoomLevel, width, getTickValues, margin, formatTime, daysToTimeObject, divId) {
-  $(divId+" > svg > g > g.axis").css("visibility", "hidden");
-  
+function trimClinicalTimeline(name, spec){
+  clinicalTimelinePlugin.call(this, name, spec);
+  this.id = "trimClinicalTimeline";
+}
+
+/**
+ * runs the trimClinicalTimeline plugin
+ * @param  {function} timeline    clinicalTimeline object
+ * @param  {Object}   [spec=null] specification specific to the plugin
+ */
+trimClinicalTimeline.prototype.run = function (timeline, spec) {
+  $(timeline.divId()+" > svg > g > g.axis").css("visibility", "hidden");
+
   var toleranceRatio = 0.2, //cut the timeline after how much of inactivity in terms of percentage of width of timeline
     timelineElements = [],
     breakTimelineForKink = [],
     tickCoordinatesKink = [],
     svg = d3.select(".timeline"),
-    zoomLevel = getZoomLevel(minDays, maxDays, width),
-    tickValues = getTickValues(minDays, maxDays, zoomLevel),
+    maxDays = timeline.getReadOnlyVars().maxDays,
+    minDays = timeline.getReadOnlyVars().minDays,
+    width = timeline.width(),
+    margin = timeline.getReadOnlyVars().margin,
+    zoomLevel = timeline.computeZoomLevel(minDays, maxDays, width),
+    tickValues = timeline.getTickValues(minDays, maxDays, zoomLevel),
     kinkLineData = [{ "x": 75,  "y": 0  }, { "x": 80,  "y": 5 }, //drawing the kink svg
                     { "x": 85,  "y": -5 }, { "x": 90,  "y": 5 },
                     { "x": 95,  "y": -5 }, { "x": 100, "y": 5 },
                     { "x": 105, "y": -5 }, { "x": 110, "y": 0 }],
-    tolerance = Math.max((maxDays - minDays) * toleranceRatio, clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel));
-  
-  var kinkLine = d3.svg.line()
-    .x(function(d) { return d.x; })
-    .y(function(d) { return d.y; })
-    .interpolate("linear");
-
-  var tickValuesInt = tickValues.map(function(x) {
-    return Math.round(x);
-  });
-
-  var ticksToShow = [tickValuesInt[0], tickValuesInt[tickValuesInt.length - 1]];
+    tolerance = Math.max((maxDays - minDays) * toleranceRatio, clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel)),
+    kinkLine = d3.svg.line()
+      .x(function(d) { return d.x; })
+      .y(function(d) { return d.y; })
+      .interpolate("linear"),
+    tickValuesInt = tickValues.map(function(x) {
+      return Math.round(x);
+    }),
+    ticksToShow = [tickValuesInt[0], tickValuesInt[tickValuesInt.length - 1]];
 
   d3.selectAll(".timeline g rect, .timeline g circle").each(function(d, e) {
    for (var i = parseInt(d.starting_time); i <= parseInt(d.ending_time); i += clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel)) {
@@ -99,7 +111,7 @@ var trimClinicalTimeline = function (maxDays, minDays, getZoomLevel, width, getT
     .scale(xScale)
     .orient("top")
     .tickValues(tickCoordinatesKink)
-    .tickFormat(function(d, i) { return formatTime(daysToTimeObject(ticksToShow[i]), zoomLevel) });
+    .tickFormat(function(d, i) { return timeline.formatTime(timeline.daysToTimeObject(ticksToShow[i]), zoomLevel) });
 
   // Add the trimmmed axis
   svg.append("g") 
@@ -133,9 +145,11 @@ var trimClinicalTimeline = function (maxDays, minDays, getZoomLevel, width, getT
   }
 
   /**
-   * returns updated x positions for the data elements according to th trimmed timeline 
+   * returns updated x coordinate for the data elements according to th trimmed timeline 
+   * @param  {int} pos starting time of the clinical timeline element
+   * @return {int}     updated x coordinate post-trimming
    */
-  function getXPosAdjustedForKink(x, pos) {   
+  function getXPosAdjustedForKink(pos) {   
     var first = clinicalTimelineUtil.getLowerBoundIndex(ticksToShow, pos);
     var second = first + 1;
 
@@ -147,12 +161,12 @@ var trimClinicalTimeline = function (maxDays, minDays, getZoomLevel, width, getT
 
   d3.selectAll("[id^=timelineItem]").attr("cx", function(x) {
     //update x position for circular elements in the trimmed timeline
-    return getXPosAdjustedForKink(x, x.starting_time);
+    return getXPosAdjustedForKink(x.starting_time);
   });
 
   d3.selectAll("[id^=timelineItem]").attr("x", function(x) {
     //update x position for rectangular elements in the trimmed timeline
-    return getXPosAdjustedForKink(x, x.starting_time);
+    return getXPosAdjustedForKink(x.starting_time);
   });
 
   var widthMultiplier = (tickCoordinatesKink[1] - tickCoordinatesKink[0])/ (d3.transform(d3.select($(".axis .tick")[1]).attr("transform")).translate[0] - d3.transform(d3.select($(".axis .tick")[0]).attr("transform")).translate[0]);
@@ -166,7 +180,9 @@ var trimClinicalTimeline = function (maxDays, minDays, getZoomLevel, width, getT
     //update radius for circular elements in the trimmed timeline keeping height same
     return d3.select(this).attr("r");  
   });
-};
+}
+
+Object.setPrototypeOf(trimClinicalTimeline.prototype, clinicalTimelinePlugin.prototype);
 
 /* start-test-code-not-included-in-build */
 module.exports = trimClinicalTimeline;
