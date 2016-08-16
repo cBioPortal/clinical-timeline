@@ -15,7 +15,7 @@ function clinicalTimelineHelperLines(name, spec){
  */
 clinicalTimelineHelperLines.prototype.run = function(timeline, spec) {
   //enable helper lines only if no zoom and in advanced view
-  d3.selectAll("[id^='timelineItem']").on("click", function(x) {
+  d3.selectAll(timeline.divId()+" [id^='timelineItem']").on("click", function(x) {
     if (timeline.zoomFactor() === 1) {
       var helperLineGroup = d3.select(timeline.divId() + " svg").append("g").attr("class", "helper-line-group"),
         elementXCoordinate = parseInt(this.getAttribute("x")),
@@ -58,8 +58,8 @@ clinicalTimelineHelperLines.prototype.run = function(timeline, spec) {
         .style("stroke", "rgb(146, 36, 40)")  
         .style("fill", "none")     
         .attr("d", "M " + (elementXCoordinate - 5) + 
-              ", 30, L " + elementXCoordinate + 
-              ", 20, L " + (elementXCoordinate + 5) + ", 30 Z");
+              " 30 L " + elementXCoordinate + 
+              " 20 L " + (elementXCoordinate + 5) + " 30 Z");
 
       helperLineGroup.append("text")
         .attr("x", this.getAttribute("x"))

@@ -14,18 +14,17 @@ function clinicalTimelineVerticalLine(name, spec){
  * @param  {Object}   [spec=null] specification specific to the plugin
  */
 clinicalTimelineVerticalLine.prototype.run = function(timeline, spec) {
-  var hoverLineGroup = d3.select(".timeline").append("g")
-    .attr("class", "hover-line");
-
-  var hoverLine = hoverLineGroup
-    .append("line")
-    .attr("x1", 0)
-    .attr("x2", 0) 
-    .attr("y1", 20)
-    .attr("y2", 268)
-    .style("stroke", "#ccc");
-
-  var svgHeight = d3.select(timeline.divId() + " svg")[0][0].getBoundingClientRect().height,
+  var divId = timeline.divId(),
+    hoverLineGroup = d3.select(divId + " svg").append("g")
+      .attr("class", "hover-line"),
+    hoverLine = hoverLineGroup
+      .append("line")
+      .attr("x1", 0)
+      .attr("x2", 0) 
+      .attr("y1", 20)
+      .attr("y2", 268)
+      .style("stroke", "#ccc"),
+    svgHeight = d3.select(divId + " svg")[0][0].getBoundingClientRect().height,
     /**
      * text to be displayed along with hoverLine
      */
@@ -55,7 +54,7 @@ clinicalTimelineVerticalLine.prototype.run = function(timeline, spec) {
 
   hoverLineGroup.style("opacity", 0);
 
-  d3.select(".timeline").on("mousemove", function() {
+  d3.select(divId+" svg").on("mousemove", function() {
     var hoverX = d3.mouse(this)[0];
     if (hoverX > hoverBegin && hoverX < hoverEnd) {
       hoverText.text(parseInt(hoverScale(hoverX)) + "d");
@@ -64,8 +63,8 @@ clinicalTimelineVerticalLine.prototype.run = function(timeline, spec) {
       hoverLineGroup.style("opacity", 1);
       
       if(tooltipOnVerticalLine){         
-        $(".timeline g rect,.timeline g circle").each(function(index) {
-          var element = $(".timeline g rect, .timeline g circle")[index];
+        $(divId+" .timeline g rect, "+divId+" .timeline g circle").each(function(index) {
+          var element = $(divId+" .timeline g rect, "+divId+" .timeline g circle")[index];
           var elementX = parseInt(element.getBBox().x);
           var elementWidth = parseInt(element.getBBox().width);
           var tolerance = 2;

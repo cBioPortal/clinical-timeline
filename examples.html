@@ -1,0 +1,237 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+    <script src="js/lib/jquery.dataTables.min.js"></script>
+    <script src="js/lib/jquery.qtip.min.js"></script>
+    <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    <script src="js/lib/underscore-min.js"></script>
+    <script>
+    /**
+     * To make node specific functions work in browser, include fake require
+     * function and module object
+     */
+    var require = function(module) {
+      if (typeof window[module] === "undefined") {
+        return {};
+      } else {
+        return window[module];
+      }
+    };
+    var module = {};
+    /**
+     * To ensure backward compatibility of the method Object.setPrototypeOf
+     * introduced in ECMA6, not supported by PhantomJS
+     */
+    Object.setPrototypeOf = Object.setPrototypeOf || function(obj, proto) {
+      obj.__proto__ = proto;
+      return obj; 
+    }
+    </script>
+    <script src="http://cdn.rawgit.com/MrRio/jsPDF/master/dist/jspdf.min.js"></script>
+    <script src="http://html2canvas.hertzen.com/build/html2canvas.js"></script>
+    <script src="js/lib/d3-timeline.js"></script>
+    <script src="js/plugins/util.js"></script>
+    <script src="js/plugins/pluginPrototype.js"></script>
+    <script src="js/plugins/exportTimeline.js"></script>
+    <script src="js/plugins/trimTimeline.js"></script>
+    <script src="js/plugins/verticalLine.js"></script>
+    <script src="js/plugins/helperLines.js"></script>
+    <script src="js/plugins/overviewAxis.js"></script>
+    <script src="js/plugins/zoom.js"></script>
+    <script src="js/plugins/configButton.js"></script>
+    <script src="js/clinicalTimeline.js"></script>
+    <script src="js/sanity.js"></script>
+    <script src="js/parser.js"></script>
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <link href="css/lib/jquery.qtip.min.css" type="text/css" rel="stylesheet" />
+    <link href="css/lib/dataTables.tableTools.min.css" type="text/css" rel="stylesheet" />
+    <style type="text/css">
+      .axis path,
+      .axis line {
+        fill: none;
+        stroke: black;
+        shape-rendering: crispEdges;
+      }
+
+      .timeline-example .overview-axis path,
+      .timeline-example .overview-axis line{
+        fill: none;
+        stroke: #bbb;
+        shape-rendering: crispEdges;
+      }
+
+      .timeline-example .overview-axis .tick text{
+        color: #ddd;
+      }
+
+      .timeline-example .overview-axis-mirror .tick text{
+        font-size: 0px !important;
+      }
+
+      #timelineZoomOut {
+        fill: blue;
+      }
+      .axis .tick text {
+        font-family: sans-serif;
+        font-size: 10px;
+      }
+      .show-track, .hide-track {
+        font-family: sans-serif;
+        font-size: 12px;
+      }
+
+      .timeline-label {
+        font-family: sans-serif;
+        font-size: 12px;
+      }
+
+      body {
+        text-align: center;
+        background-color: white;
+      }
+      .timeline-example {
+        width: 100%;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        margin-top: 10px;
+      }
+      .brush .extent {
+        stroke: #fff;
+        fill-opacity: .125;
+        shape-rendering: crispEdges;
+      }
+      .timeline-example .overview {
+        margin: 0 auto;
+        display: block;
+        position: relative;
+        left: 80px;
+      }
+      #tooltip-controller{
+        position: relative;
+        left: 325px;
+        top: -85px;
+        font-size: 12px;
+        visibility: hidden;
+        cursor: pointer;
+      }
+      #export-div{
+        width: 100px;
+        margin-left: 200px;
+      }
+      h3{
+        margin-bottom: 20px;
+      }
+      .heading{
+        margin-bottom: 50px;
+      }
+
+    </style>
+    <script>
+      $(document).ready(function() {
+        var funcHolder = {}
+        function initTimeline(dataFile, timelineDiv, plugins){
+          $.getJSON("test/data/"+dataFile+".json", function(data) {
+            var allData = JSON.parse(JSON.stringify(data, null, '    '));
+            var timeline = clinicalTimeline
+              .width(800)
+              .data(allData)
+              .divId(timelineDiv)
+              .splitByClinicalAttributes("Surgery", "Location")
+              .splitByClinicalAttributes("Test", "Type")
+              .splitByClinicalAttributes("TreatmentType", ["TREATMENT_TYPE", "AGENT"])
+              .splitByClinicalAttributes("TreatmentTypeStuff", ["TREATMENT_TYPE", "STUFF"])
+              .sizeByClinicalAttribute("PSA", "Result")
+              .sizeByClinicalAttribute("Phos", "Result")
+              .orderAllTooltipTables(["Source","Location"])
+              .enableTrackTooltips(true)
+              .plugins(plugins)
+              .collapseAll();
+            timeline();
+          }).error(function() {
+            alert("Error Loading JSON Data");
+          });
+        }
+
+        initTimeline("data2", "#timeline1", []);
+       
+        initTimeline("data2", "#timeline2", [
+          { obj: new trimClinicalTimeline("Trim Timeline"), enabled: true } 
+        ]);
+
+        initTimeline("data2", "#timeline3", [
+        { obj: new clinicalTimelineExporter("Export", {
+            exportDivId : "#export-div"}), enabled: true}
+        ]);
+
+        initTimeline("data1", "#timeline4", [
+        { obj: new clinicalTimelineVerticalLine("Vertical Timeline", { tooltipControllerId: "#tooltip-controller", hoverBegin: 200, hoverEnd: 770}), enabled: true}
+        ]);
+
+        initTimeline("data1", "#timeline5", [
+          { obj: new trimClinicalTimeline("Trim Timeline"), enabled: false },  
+          { obj: new clinicalTimelineZoom("Zoom"), enabled: true },
+          { obj: new clinicalTimelineHelperLines("Helper Lines"), enabled: true }, 
+          { obj: new clinicalTimelineOverviewAxis("Overview Axis"), enabled: true },
+          { obj: new clinicalTimelineVerticalLine("Vertical Timeline", { tooltipControllerId: "#tooltip-controller", hoverBegin: 200, hoverEnd: 770}),
+            enabled: false
+          },
+        ]);
+      });
+    </script>
+  </head>
+  <body>
+    <div class="heading">
+      <h1> Examples showcasing the usage of 
+        <a href="http://github.com/cbioportal/clinical-timeline" target="_blank">
+          clinical-timeline
+        </a> 
+        library</h1>
+    </div>
+
+    <div class="timeline-example-wrapper">
+      <h3>Basic timeline with circular and rectangular elements</h3>
+      <div id="timeline1" class="timeline-example"></div>
+    </div>
+     
+    <div class="timeline-example-wrapper">
+      <h3>Trimming off areas with no activity</h3>
+      <div id="timeline2" class="timeline-example"></div>
+    </div>
+
+    <div class="timeline-example-wrapper">
+      <h3>Exporting Timeline as SVG/PNG/PDF</h3>
+        <div class="dropdown" id="export-div">
+        <button class="btn btn-default dropdown-toggle" id="export-button" type="button" data-toggle="dropdown">Export As
+        <span class="caret"></span></button>
+        <ul class="dropdown-menu">
+          <script type="text/javascript">
+            var exporter = (new clinicalTimelineExporter()).run(null, {exportDivId : "#export-div"}); 
+          </script>
+          <li><a href='javascript:exporter.generateSVG()'>SVG Image</a></li>
+          <li><a href='javascript:exporter.generatePNG(true)'>PNG Image</a></li>
+          <li><a href='javascript:exporter.generatePDF()'>PDF Document</a></li>
+        </ul>
+      </div>
+      <div id="timeline3" class="timeline-example"></div>
+      <!-- canvas and div used for redrawing the timeline SVG required for exporting -->
+      <canvas id="canvas" width="800" height="268" style="display:none"></canvas>
+      <div id="png-container" style="display:none"></div>
+    </div>
+
+    <div class="timeline-example-wrapper">
+      <h3>Vertical hover-line</h3>
+      <div id="timeline4" class="timeline-example"></div>
+    </div>
+
+    <div class="timeline-example-wrapper">
+      <h3>Zoom and overview-axis with helper lines</h3>
+      <div id="timeline5" class="timeline-example"></div>
+    </div>
+  </body>
+</html>

@@ -19,7 +19,8 @@ clinicalTimelineOverviewAxis.prototype.run = function(timeline, spec) {
     overviewAxisWidth = timeline.overviewAxisWidth(),
     chart = readOnlyVars.chart,
     zoomFactor = timeline.zoomFactor(),
-    overviewSVG = d3.select(".overview"),
+    divId = timeline.divId(),
+    overviewSVG = d3.select(divId+" .overview"),
     originalZoomLevel = timeline.computeZoomLevel(readOnlyVars.minDays, readOnlyVars.maxDays, timeline.width()),
     overviewAxisTicks = timeline.getTickValues(readOnlyVars.minDays, readOnlyVars.maxDays, originalZoomLevel),
     minDayTick = overviewAxisTicks[0],
@@ -73,7 +74,7 @@ clinicalTimelineOverviewAxis.prototype.run = function(timeline, spec) {
     .attr("transform", "translate(0,44)")
     .call(overviewAxisMirror);
 
-  overviewSVG.selectAll("rect.overview-border").data(overviewBorderData).enter().append("rect")
+  overviewSVG.selectAll(divId+" rect.overview-border").data(overviewBorderData).enter().append("rect")
     .attr("height", function(d) { return d.height; })
     .attr("width", function(d) { return d.width; })
     .attr("x", function(d) { return d.x; })
@@ -104,7 +105,7 @@ clinicalTimelineOverviewAxis.prototype.run = function(timeline, spec) {
       //handle overview rectangle if the original-timeline is dragged
       if(chart.scrolledX()){
         var zoomedBeginTick = xScaleOverviewZoomed(chart.scrolledX()); 
-        d3.select(".overview-rectangle").attr("x", zoomedBeginTick);
+        d3.select(divId+" .overview-rectangle").attr("x", zoomedBeginTick);
         timeline.overviewX(zoomedBeginTick);
       }
     });
@@ -112,10 +113,10 @@ clinicalTimelineOverviewAxis.prototype.run = function(timeline, spec) {
   var dragRectangle = d3.behavior.drag()
     .on("drag", function(d,i) {
       //handle the timeline if the overview rectangle is dragged
-      var x  = parseInt(d3.select(".overview-rectangle").attr("x"))+d3.event.dx;
+      var x  = parseInt(d3.select(divId+" .overview-rectangle").attr("x"))+d3.event.dx;
       if(x > startAllowedOverview && x < overviewAxisWidth - rectangleOverviewWidth - endAllowedOverview && zoomFactor > 1){
-        d3.select(timeline.divId()+" svg g").attr("transform","translate("+xScaleRectangle(x)+",0)");
-        d3.select(".overview-rectangle").attr("x", x); 
+        d3.select(divId+" svg g").attr("transform","translate("+xScaleRectangle(x)+",0)");
+        d3.select(divId+" .overview-rectangle").attr("x", x); 
         timeline.overviewX(x);
       }
     });
@@ -129,7 +130,7 @@ clinicalTimelineOverviewAxis.prototype.run = function(timeline, spec) {
       .attr("class", "overview-rectangle")
       .style("cursor", "move")
       .call(dragRectangle);     
-  d3.select(timeline.divId()+" svg").call(dragChart);
+  d3.select(divId+" svg").call(dragChart);
 }
 
 Object.setPrototypeOf(clinicalTimelineOverviewAxis.prototype, clinicalTimelinePlugin.prototype);

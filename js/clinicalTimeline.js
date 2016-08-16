@@ -62,7 +62,7 @@ var clinicalTimeline = (function(){
     ending = tickValues[tickValues.length-1];
     overviewAxisWidth = width - 200;
 
-    chart = d3.timeline()
+    var chart = d3.timeline()
       .stack()
       .margin(margin)
       .tickFormat({
@@ -98,17 +98,17 @@ var clinicalTimeline = (function(){
 
     svg.datum(mergeAllTooltipTablesAtEqualTimepoint(visibleData)).call(chart);
 
-    $("[id^='timelineItem']").each(function() {
+    $(divId+" [id^='timelineItem']").each(function() {
       timeline.addDataPointTooltip($(this));
     });
-    $("[id^='timelineItem']").each(function() {
+    $(divId+" [id^='timelineItem']").each(function() {
       $(this).on({
           mouseover: function() { modifyTimelineElementsSize(this, 2) },
           mouseout : function() { modifyTimelineElementsSize(this, -2) } 
         });
     });
     if (enableTrackTooltips) {
-      $(".timeline-label").each(function(i) {
+      $(divId+" .timeline-label").each(function(i) {
         if ($(this).prop("__data__")[i].split && !$(this).prop("__data__")[i].parent_track) {
           addSplittedTrackTooltip($(this), allData);
         } else {
@@ -128,10 +128,10 @@ var clinicalTimeline = (function(){
       .attr("transform", "translate(0, 15)")
       .attr("class", "timeline-label")
       .text("Time since diagnosis");
-    d3.select(".axis").attr("transform", "translate(0,20)");
+    d3.select(divId+" .axis").attr("transform", "translate(0,20)");
 
     // preserve whitespace for easy indentation of labels
-    $(".timeline-label").each(function(i, x) {
+    $(divId+" .timeline-label").each(function(i, x) {
       x.setAttributeNS("http://www.w3.org/XML/1998/namespace", "xml:space", "preserve");
     });
 
@@ -145,7 +145,7 @@ var clinicalTimeline = (function(){
       .style("fill", "rgb(255, 255, 255)");
 
     // change mouse to pointer for all timeline items
-    $("[id^='timelineItem']").css("cursor", "pointer");
+    $(divId+" [id^='timelineItem']").css("cursor", "pointer");
 
     var overviewSVG = d3.select(divId).append("svg")
       .attr("height", 75)
@@ -174,8 +174,8 @@ var clinicalTimeline = (function(){
     postTimelineHooks.forEach(function(hook) {
       hook.call();
     });
-
   }
+
 
   function modifyTimelineElementsSize(element, change) {
     $(element).attr("r", parseInt($(element).attr("r")) + change);

@@ -42,15 +42,20 @@
     "browserify": "^13.0.1",
     "chai": "^3.5.0",
     "coveralls": "^2.11.9",
+    "documentation": "^4.0.0-beta9",
     "jquery": "^1.11.1",
     "mocha": "^2.5.3",
     "mocha-lcov-reporter": "^1.2.0",
     "uglify-js": "^2.6.1"
   },
-	"config": {
-		"blanket": {
-			"pattern": "js",
-			"data-cover-never": ["node_modules","lib", "test"]
-		}
-	}
+  "config": {
+    "blanket": {
+      "pattern": "js",
+      "data-cover-never": [
+        "node_modules",
+        "lib",
+        "test"
+      ]
+    }
+  }
 }
