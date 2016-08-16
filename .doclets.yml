@@ -1,5 +1,5 @@
 dir: js/plugins
 packageJson: package.json
 articles:
- 	- Overview: README.md
- 	- Contributing: CONTRIBUTING.md
+  - Overview: README.md
+  - Contributing Guide: CONTRIBUTING.md
