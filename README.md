@@ -14,13 +14,15 @@ With the correct configuration one can instantiate a timeline as follows:
 The [index.html](http://rawgit.com/cBioPortal/clinical-timeline/master/index.html) showcases clinical-timeline's features in an exhuastive way.
 
 ## Building
-Building the javascript files in clinical-timeline is handled by a Makefile. Makefiles are primarily used for building software on unix, but they are also great task runners. Executing the command `make build` in the root directory of clinical-timeline generates the distributable version of the timeline `clinical-timeline.min.js` in the `dist/` directory post concatination with minification and the documentation is generated in `docs/` directory. Whereas the command `make clean` can be used to clean the `dist/` directory, the command `make docs` updates only the documentation without building the distributable files.
+Building the javascript files in clinical-timeline is handled by a Makefile. Makefiles are primarily used for building software on unix, but they are also great task runners. Executing the command `make build` in the root directory of clinical-timeline generates the distributable version of the timeline `clinical-timeline.min.js` in the `dist/` directory post concatination and minification. Also the command `make clean` can be used to clean the `dist/` directory. [JSDoc](http://usejsdoc.org/) syntax should be strictly followed for documentation as it is automatically build by [doclets](https://doclets.io/cBioPortal/clinical-timeline/master).
 
 ## Examples
 - [Stable](http://cbioportal.github.io/clinical-timeline/)
 - [Development](http://rawgit.com/cBioPortal/clinical-timeline/master/index.html)
 - [Various Usage](http://rawgit.com/cBioPortal/clinical-timeline/master/examples.html)
 - [Live Deployment on cBioPortal](http://www.cbioportal.org/case.do?cancer_study_id=lgg_ucsf_2014&case_id=P15#nav_case_ids=P01,P02,P04,P05,P06,P07,P08,P09,P10,P11,P12,P13,P15,P16,P17,P18,P21,P24,P25,P26,P27,P28,P29)
+
+_Note : Kindly browse over HTTP instead of HTTPS for the rawgit versions._
 
 ## Documentation
 Documentation for the library can be found [here](https://doclets.io/cBioPortal/clinical-timeline/master)
@@ -35,7 +37,7 @@ Checks before sending a PR:
   the `-s` option).
 - Please add a before/after screenshot or gif here with e.g. [GifGrabber](http://www.gifgrabber.com/) if there is a new visual feature.
 - Run all tests to assure nothing else was accidentally broken. This is done by running: `npm test`.
-- Make sure you have added the necessary tests for your changes.
+- Make sure you have added the necessary tests and [documentation](http://usejsdoc.org/) for your changes.
 
 clinical-timeline uses [code-climate](https://codeclimate.com/) to maintain code quality and [coveralls](https://coveralls.io) for code-coverage. Please ensure that the [repo GPA](https://codeclimate.com/github/cBioPortal/clinical-timeline) and [code-coverage](https://coveralls.io/github/cBioPortal/clinical-timeline) doesn't falls if not increase post the new commit. Adding new [unit tests](https://github.com/cBioPortal/clinical-timeline/tree/master/test/unit-tests) is most welcomed. 
 

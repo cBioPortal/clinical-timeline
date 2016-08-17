@@ -23,6 +23,20 @@ for testdata in $(echo ${DIR}/data/data*.json); do
     done
 done
 
+#examples.html screenshots
+screenshot_png="${DIR}/screenshots/examples.png"
+phantomjs --ignore-ssl-errors=true ${DIR}/make_screenshots.js \
+    "${DIR}/../examples.html" \
+    $screenshot_png \
+    50
+# make sure screenshot is still the same as the one in the repo, if not upload
+# the image
+git diff --quiet -- $screenshot_png
+if [[ $? -ne 0 ]]; then
+    screenshot_error_count=$(($screenshot_error_count + 1))
+    echo "screenshot differs see:" && curl -F "clbin=@${screenshot_png}" https://clbin.com
+fi
+
 if [[ $screenshot_error_count -gt 0 ]]; then
     echo "${screenshot_error_count} SCREENSHOT TESTS FAILED"
     exit 1
