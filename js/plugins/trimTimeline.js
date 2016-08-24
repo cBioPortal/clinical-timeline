@@ -14,8 +14,6 @@ function trimClinicalTimeline(name, spec){
  * @param  {Object}   [spec=null] specification specific to the plugin
  */
 trimClinicalTimeline.prototype.run = function (timeline, spec) {
-  $(timeline.divId()+" > svg > g > g.axis").css("visibility", "hidden");
-
   var toleranceRatio = 0.2, //cut the timeline after how much of inactivity in terms of percentage of width of timeline
     timelineElements = [],
     breakTimelineForKink = [],
@@ -40,7 +38,10 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
     tickValuesInt = tickValues.map(function(x) {
       return Math.round(x);
     }),
-    ticksToShow = [tickValuesInt[0], tickValuesInt[tickValuesInt.length - 1]];
+    ticksToShow = [tickValuesInt[0], tickValuesInt[tickValuesInt.length - 1]],
+    expandedXAxis = d3.select(timeline.divId()+" > svg > g > g.axis");
+
+  expandedXAxis.style("visibility", "hidden");
 
   d3.selectAll(divId+" .timeline g rect,"+divId+" .timeline g circle").each(function(d, e) {
    for (var i = parseInt(d.starting_time); i <= parseInt(d.ending_time); i += clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel)) {
@@ -115,7 +116,7 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
     .tickFormat(function(d, i) { return timeline.formatTime(timeline.daysToTimeObject(ticksToShow[i]), zoomLevel) });
 
   // Add the trimmmed axis
-  svg.append("g") 
+  var trimmedXAxis = svg.append("g") 
     .attr("class", "x axis")
     .attr("transform", "translate(0,20)")
     .call(xAxis);
@@ -133,7 +134,7 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
         .attr("class","kink-bg")
         .attr("x", kinkPosition - 17.5)
         .attr("y", 15)
-        .attr("fill", "white");
+        .attr("fill", "white")
 
       kink.append("path")
         .attr("d", kinkLine(kinkLineData))
@@ -141,9 +142,15 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
         .attr("stroke-width", 1)
         .attr("fill", "none")
         .attr("class","kink-line")
-        .attr("transform", "translate("+ (kinkPosition - 92.5) +",20)");
+        .attr("transform", "translate("+ (kinkPosition - 92.5) +",20)")
     }
   }
+
+  d3.selectAll(divId+" .kink-bg, "+divId+" .kink-line")
+    .style("cursor", "pointer")
+    .on("click", clickHandlerKink)
+    .append("svg:title")
+    .text("Click to expand the timeline");
 
   /**
    * returns updated x coordinate for the data elements according to th trimmed timeline 
@@ -181,6 +188,22 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
       console.log("No such element as " + this)
     }
   });
+
+  /**
+   * Handles double clicking of the kinks in trimmed timeline
+   * by extending back the timeline 
+   * and also handles coming back to trimmed timeline
+   */
+  function clickHandlerKink() {
+    timeline.pluginSetOrGetState("trimClinicalTimeline", false);
+    d3.select(timeline.divId()+" > svg > g > g.axis")
+      .style("cursor", "pointer")
+      .on("click", function () {
+        timeline.pluginSetOrGetState("trimClinicalTimeline", true);
+      })
+      .append("svg:title")
+      .text("Click to trim the timeline");
+  }
 }
 
 Object.setPrototypeOf(trimClinicalTimeline.prototype, clinicalTimelinePlugin.prototype);

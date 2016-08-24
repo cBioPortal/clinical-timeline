@@ -1,4 +1,4 @@
-dir: js/plugins
+dir: js
 packageJson: package.json
 articles:
   - Overview: README.md

@@ -35,6 +35,9 @@ var clinicalTimeline = (function(){
     })[0];
   }
 
+  /**
+   * Publically accessible object returned by clinicalTimeline
+   */
   function timeline() {
     visibleData = allData.filter(function(x) {
         return x.visible;
@@ -217,7 +220,7 @@ var clinicalTimeline = (function(){
     trackData.times = expandedTimes;
   }
 
-  /*
+  /**
    * Merge timepoints that have the same starting_time into one timepoint with
    * multiple tooltip_tables
    */
@@ -698,7 +701,14 @@ var clinicalTimeline = (function(){
           }));
       }));
   }
-
+  
+  /**
+   * Converts the dayCount (input time in days) to time object
+   * which contains the time in terms of days, months and years
+   * i.e 570 days become {y:1, m:6, d:25}
+   * @param  {Number} dayCount
+   * @return {Object} converted time object
+   */
   timeline.daysToTimeObject = function(dayCount) {
       var time = {},
         daysPerYear = clinicalTimelineUtil.timelineConstants.DAYS_PER_YEAR,
@@ -720,6 +730,13 @@ var clinicalTimeline = (function(){
       return time;
   }
 
+  /**
+   * Formats and converts time according to the required zoomLevel
+   * i.e adds 'd' if time in days, 'm' if in months and 'y' if years
+   * @param  {Object} time
+   * @param  {string} zoomLevel
+   * @return {string} formatted and converted time
+   */
   timeline.formatTime = function(time, zoomLevel) {
       var dayFormat = [], d, m, y;
       if (clinicalTimelineUtil.timelineConstants.ALLOWED_ZOOM_LEVELS.indexOf(zoomLevel) > -1){
@@ -749,8 +766,13 @@ var clinicalTimeline = (function(){
       return dayFormat;
   }
 
-  /*
-   * Return zoomLevel in human comprehensible form by determining the width in pixels of a single day
+  /**
+   * Return zoomLevel in human comprehensible form
+   * by determining the width in pixels of a single day
+   * @param  {Number} minDays
+   * @param  {Number} maxDays
+   * @param  {Number} width
+   * @return {string} zoomLevel
    */
   timeline.computeZoomLevel = function(minDays, maxDays, width) {
     pixelsPerDay = parseFloat(parseInt(width) / difference(parseInt(minDays), parseInt(maxDays)));
@@ -767,9 +789,14 @@ var clinicalTimeline = (function(){
     }
   }
 
-  /*
-   * Return zoomFactor by specifying what kind of zoomLevel on the x axis (e.g.
-   * years, days) is desired
+  /**
+   * Return zoomFactor by specifying what kind of zoomLevel on the x axis 
+   * (e.g. years, days) is desired
+   * @param  {string} zoomLevel
+   * @param  {Number} minDays
+   * @param  {Number} maxDays  
+   * @param  {Number} width
+   * @return {Number} zoomFactor    
    */
   timeline.computeZoomFactor = function(zoomLevel, minDays, maxDays, width) {
     switch(zoomLevel) {
@@ -788,6 +815,9 @@ var clinicalTimeline = (function(){
     }
   }
 
+  /**
+   * @deprecated use roundUp() and roundDown() in util.js
+   */
   function roundUpDays(dayCount, zoomLevel) {
     var time = timeline.daysToTimeObject(dayCount), rv,
       additive = dayCount < 0? 1: -1;
@@ -813,6 +843,14 @@ var clinicalTimeline = (function(){
     return Math.max(a, b) - Math.min(a, b);
   }
   
+  /**
+   * Computes and returns the tick values for placing the ticks
+   * for the timeline drawn
+   * @param  {Number} minDays
+   * @param  {Number} maxDays  
+   * @param  {string} zoomLevel
+   * @return {Number[]} tickValues
+   */
   timeline.getTickValues = function (minDays, maxDays, zoomLevel) {
       var tickValues = [],
         maxTime = timeline.daysToTimeObject(parseInt(maxDays)),
@@ -844,66 +882,152 @@ var clinicalTimeline = (function(){
       return tickValues;
   }
 
+  /**
+   * Change the value of the variable enableTrackToolTips of clinicalTimeline
+   * if argument b is provided, else return the existing value
+   * @param  {boolean} b
+   * @returns {Object} clinicalTimeline object
+   */
   timeline.enableTrackTooltips = function(b) {
     if (!arguments.length) return enableTrackTooltips;
     enableTrackTooltips = b;
     return timeline;
   };
 
+  /**
+   * Change the value of the variable width of clinicalTimeline
+   * if argument w is provided, else return the existing value
+   * @param  {Number} w
+   * @returns {Object} clinicalTimeline object
+   */
   timeline.width = function (w) {
     if (!arguments.length) return width;
     width = w;
     return timeline;
   };
 
+  /**
+   * Change the value of the variable overviewAxisWidth of clinicalTimeline
+   * if argument w is provided, else return the existing value
+   * @param  {Number} w
+   * @returns {Object} clinicalTimeline object
+   */
   timeline.overviewAxisWidth = function (w) {
     if (!arguments.length) return overviewAxisWidth;
     overviewAxisWidth = w;
     return timeline;
   };
 
+  /**
+   * Return the value of clinicalTimeline variable stackSlack
+   * @returns {Object} clinicalTimeline object
+   */
   timeline.stackSlack = function () {
     if (!arguments.length) return stackSlack;
     return timeline;
   };
 
+  /**
+   * Change the value of the variable allData of clinicalTimeline
+   * if argument data is provided, else return the existing value
+   * @param  {Object} data
+   * @returns {Object} clinicalTimeline object
+   */
   timeline.data = function (data) {
     if (!arguments.length) return allData;
     allData = data;
     return timeline;
   };
 
+  /**
+   * Change the value of the variable divId of clinicalTimeline
+   * if argument name is provided, else return the existing value
+   * @param  {string} name
+   * @returns {Object} clinicalTimeline object
+   */
   timeline.divId = function (name) {
     if (!arguments.length) return divId;
     divId = name;
     return timeline;
   };
 
+  /**
+   * Change the value of the variable plugins of clinicalTimeline
+   * if argument plugins is provided, else return the existing value
+   * @param  {Object} plugins[]
+   * @returns {Object} clinicalTimeline object
+   */
   timeline.plugins = function (plugins) {
     if (!arguments.length) return clinicalTimelinePlugins;
     clinicalTimelinePlugins = plugins;
     return timeline;
   };
 
+  /**
+   * Enable or disable a particular plugin based on the pluginId
+   * if the argument state is given, else return the existing state
+   * @paran {string} pluginId
+   * @param  {boolean} state
+   */
+  timeline.pluginSetOrGetState = function (pluginId, state) {
+    clinicalTimelinePlugins.forEach(function (element, index) {
+      if(element.obj.id === pluginId) {
+        if (typeof(state) !== "boolean") {
+          return element.enabled;
+        } else {
+          element.enabled = state;
+          timeline();
+        }
+      }
+    })
+  }
+
+  /**
+   * Change the value of the variable zoomFactor of clinicalTimeline
+   * if argument zFactor is provided, else return the existing value
+   * @param  {Number} zFactor
+   * @returns {Object} clinicalTimeline object
+   */
   timeline.zoomFactor = function (zFactor) {
     if (!arguments.length) return zoomFactor;
     zoomFactor = zFactor;
   };
 
+  /**
+   * Change the value of the variable overviewX of clinicalTimeline
+   * if argument x is provided, else return the existing value
+   * @param  {Number} x
+   * @returns {Object} clinicalTimeline object
+   */
   timeline.overviewX = function (x) {
     if (!arguments.length) return overviewX;
     overviewX = x;
   };
 
+  /**
+   * Change the value of the variable translateX of clinicalTimeline
+   * if argument x is provided, else return the existing value
+   * @param  {Number} x
+   * @returns {Object} clinicalTimeline object
+   */
   timeline.translateX = function (x){
     if (!arguments.length) return translateX;
     translateX = x;
   };
 
+  /**
+   * Returns te read-only variables of clinicalTimeline
+   * @param  {Number} x
+   * @returns {Object}
+   */
   timeline.getReadOnlyVars = function () {
     return clinicalTimelineReadOnlyVars;
   }
 
+  /**
+   * @param  {string} trackData
+   * @returns {Object} clinicalTimeline object
+   */
   timeline.collapseAll = function() {
     var singlePointTracks = allData.filter(function(trackData) {
       return !isDurationTrack(trackData);
@@ -913,9 +1037,11 @@ var clinicalTimeline = (function(){
     return timeline;
   };
 
-  /*
+  /**
    * Order tracks by given array of label names. Tracks with label names not
    * included in the sequence are appended to the end in alhpanumeric order.
+   * @param  {string[]} labels
+   * @returns {Object} clinicalTimeline object
    */
   timeline.orderTracks = function(labels) {
     if (!arguments.length) {
@@ -941,10 +1067,13 @@ var clinicalTimeline = (function(){
     return timeline;
   };
 
-  /*
+  /**
    * Order tooltip tables in given track by given array of row keys. Tooltip
    * table rows with keys not included given rowkeys argument are appended to
    * the end in alhpanumeric order.
+   * @param  {string} track
+   * @param  {string[]} rowkeys
+   * @returns {Object} clinicalTimeline object
    */
   timeline.orderTrackTooltipTables = function(track, rowkeys) {
     trackData = getTrack(allData, track);
@@ -989,10 +1118,12 @@ var clinicalTimeline = (function(){
     return timeline;
   };
 
-  /*
+  /**
    * Order all tooltip tables by given array of row keys. Tooltip table rows
    * with keys not included given rowkeys argument are appended to the end in
    * alhpanumeric order.
+   * @param  {string[]} rowkeys
+   * @returns {Object} clinicalTimeline object
    */
   timeline.orderAllTooltipTables = function(rowkeys) {
     allData.forEach(function(track) {
@@ -1001,11 +1132,14 @@ var clinicalTimeline = (function(){
     return timeline;
   };
 
-  /*
+  /**
    * Split a track into multiple tracks based on the value of an
    * attribute in the tooltip_tables. The attributes to attrs agument can be a
    * single string or an array of strings. An array of strings splits the
    * tracks sequentially.
+   * @param  {string} track
+   * @param  {string} attr
+   * @returns {Object} clinicalTimeline object
    */
   timeline.splitByClinicalAttributes = function(track, attrs) {
     var trackData = getTrack(allData, track);
@@ -1015,9 +1149,12 @@ var clinicalTimeline = (function(){
     return timeline;
   };
 
-  /*
+  /**
    * Set the size of each timepoint in a track based on the value of an
    * attribute in the tooltip_tables.
+   * @param  {string} track
+   * @param  {string} attr
+   * @returns {Object} clinicalTimeline object
    */
   timeline.sizeByClinicalAttribute = function(track, attr) {
     var trackData = getTrack(allData, track);
@@ -1032,8 +1169,10 @@ var clinicalTimeline = (function(){
     return timeline;
   };
 
-  /*
+  /**
    * Collapse or stack timepoints on given track
+   * @param  {string} track
+   * @returns {Object} clinicalTimeline object
    */
   timeline.toggleTrackCollapse = function(track) {
     var trackData = getTrack(allData, track);
@@ -1043,9 +1182,12 @@ var clinicalTimeline = (function(){
     return timeline;
   };
 
-  /*
+  /**
    * Set the display attribute for all timepoints with one tooltip_table on a
    * given track.
+   * @param {string} track
+   * @param {string} display
+   * @returns {Object} clinicalTimeline object
    */
   timeline.setTimepointsDisplay = function(track, display) {
     var trackData = getTrack(allData, track);
@@ -1059,6 +1201,12 @@ var clinicalTimeline = (function(){
     return timeline;
   };
 
+  /**
+   * Add functions to postTimelineHooks i.e
+   * the code run everytime timeline() is called
+   * @param {Object} hook Array of functions to be added to postTimelineHook
+   * @returns {Object} clinicalTimeline object
+   */
   timeline.addPostTimelineHook = function(hook) {
     postTimelineHooks = postTimelineHooks.concat(hook);
     return timeline;
