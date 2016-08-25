@@ -134,10 +134,10 @@
     <script>
       $(document).ready(function() {
         var funcHolder = {}
-        function initTimeline(dataFile, timelineDiv, plugins, callback){
+        function initTimeline(dataFile, timelineDiv, plugins) {
           $.getJSON("test/data/"+dataFile+".json", function(data) {
             var allData = JSON.parse(JSON.stringify(data, null, '    '));
-            var timeline = clinicalTimeline
+            var timeline = clinicalTimeline()
               .width(800)
               .data(allData)
               .divId(timelineDiv)
@@ -152,44 +152,44 @@
               .plugins(plugins)
               .collapseAll();
             timeline();
-            if (typeof(callback === "function")) {
-              callback();
-            }
           }).error(function() {
             alert("Error Loading JSON Data");
           });
         }
-        // TODO: figure out a way to instantiate multiple timelines on a page without them interfering with each other
-        // Callback chain is a temporary solution
-        initTimeline("data2", "#timeline1", [], function(){
-          initTimeline("data2", "#timeline2", [
-            { obj: new trimClinicalTimeline("Trim Timeline"), enabled: true } 
-            ], function() {
-              initTimeline("data2", "#timeline3", [
-                { obj: new clinicalTimelineExporter("Export", {
-                  exportDivId : "#export-div"}), enabled: true}
-                ], function() {
-                  initTimeline("data1", "#timeline4", [
-                    { obj: new clinicalTimelineVerticalLine("Vertical Timeline", { tooltipControllerId: "#tooltip-controller", hoverBegin: 200, hoverEnd: 770}), enabled: true}
-                    ], function() {
-                      initTimeline("data1", "#timeline4", [
-                        { obj: new clinicalTimelineVerticalLine("Vertical Timeline", { tooltipControllerId: "#tooltip-controller", hoverBegin: 200, hoverEnd: 770}), enabled: true}
-                        ], function() {
-                          initTimeline("data1", "#timeline5", [
-                            { obj: new trimClinicalTimeline("Trim Timeline"), enabled: false },  
-                            { obj: new clinicalTimelineZoom("Zoom"), enabled: true },
-                            { obj: new clinicalTimelineHelperLines("Helper Lines"), enabled: true }, 
-                            { obj: new clinicalTimelineOverviewAxis("Overview Axis"), enabled: true },
-                            { obj: new clinicalTimelineVerticalLine("Vertical Timeline", { tooltipControllerId: "#tooltip-controller", hoverBegin: 200, hoverEnd: 770}),
-                            enabled: false
-                          }], function(){
-                          });
-                        });
-                    });
-                });
-            });
-        });
-      });
+        initTimeline("data2", "#timeline1", []);
+
+        initTimeline("data2", "#timeline2", [
+          { obj: new trimClinicalTimeline("Trim Timeline"), enabled: true }
+        ]);
+
+        initTimeline("data5", "#timeline3", [
+        { obj: new clinicalTimelineExporter("Export", {
+            exportDivId : "#export-div"}), enabled: true}
+        ]);
+
+        initTimeline("data7", "#timeline4", [
+        { obj: new clinicalTimelineVerticalLine("Vertical Timeline", { tooltipControllerId: "#tooltip-controller", hoverBegin: 200, hoverEnd: 770}), enabled: true}
+        ]);
+
+        initTimeline("data1", "#timeline5", [
+          { obj: new clinicalTimelineHelperLines("Helper Lines"), enabled: true },
+        ]);
+
+        initTimeline("data6", "#timeline6", [
+          { obj: new clinicalTimelineZoom("Zoom"), enabled: true }
+        ]);
+
+        initTimeline("data1", "#timeline7", [
+          { obj: new trimClinicalTimeline("Trim Timeline"), enabled: false },
+          { obj: new clinicalTimelineZoom("Zoom"), enabled: true },
+          { obj: new clinicalTimelineHelperLines("Helper Lines"), enabled: false },
+          { obj: new clinicalTimelineOverviewAxis("Overview Axis"), enabled: true },
+          { obj: new clinicalTimelineVerticalLine("Vertical Timeline", { tooltipControllerId: "#tooltip-controller", hoverBegin: 200, hoverEnd: 770}),
+            enabled: false
+          },
+        ]);
+
+	  })
     </script>
   </head>
   <body>
@@ -218,7 +218,7 @@
         <span class="caret"></span></button>
         <ul class="dropdown-menu">
           <script type="text/javascript">
-            var exporter = (new clinicalTimelineExporter()).run(null, {exportDivId : "#export-div"}); 
+            var exporter = (new clinicalTimelineExporter()).run(null, {exportDivId : "#export-div", timelineDiv : "#timeline3"}); 
           </script>
           <li><a href='javascript:exporter.generateSVG()'>SVG Image</a></li>
           <li><a href='javascript:exporter.generatePNG(true)'>PNG Image</a></li>
@@ -235,11 +235,22 @@
       <h3>Vertical hover-line</h3>
       <div id="timeline4" class="timeline-example"></div>
     </div>
+
+    <div class="timeline-example-wrapper">
+      <h3>Helper Lines</h3>
+      <div id="timeline5" class="timeline-example"></div>
+    </div>
     
     <!-- fix the height of the wrapper to prevent scrolling on re-drawing of svg -->
+    <div class="timeline-example-wrapper" style="height:225px">
+      <h3>Zooming and panning</h3>
+      <div id="timeline6" class="timeline-example"></div>
+    </div>
+
+    <!-- fix the height of the wrapper to prevent scrolling on re-drawing of svg -->
     <div class="timeline-example-wrapper" style="height:400px">
-      <h3>Zoom and overview-axis with helper lines</h3>
-      <div id="timeline5" class="timeline-example"></div>
+      <h3>Zoom with overview-axis</h3>
+      <div id="timeline7" class="timeline-example"></div>
     </div>
   </body>
 </html>

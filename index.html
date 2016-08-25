@@ -207,12 +207,11 @@
       $("#parseJson").on("click", function() {
         initTimeline(viewType === "simple");
       });
-    });
 
     function initTimeline(trimmingForSceenshotTest) {
       allData = JSON.parse($("#jsonInput").val());
 
-      var timeline = clinicalTimeline
+      var timeline = clinicalTimeline()
         .width(800)
         .data(allData)
         .divId("#timeline")
@@ -248,7 +247,8 @@
                 hoverBegin: 200, 
                 hoverEnd: 770
               }),
-            enabled: false},
+            enabled: false
+          },
           {
             obj: new configCheckManager(null, 
               {
@@ -259,7 +259,7 @@
           {
             obj: new clinicalTimelineExporter("Export", 
               {
-                exportDivId : "#export-div"
+                exportDivId : "#export-div",
               }), 
             enabled: true
           }
@@ -267,6 +267,7 @@
         .collapseAll();
       timeline();
     }
+  })
   </script>
 </head>
 <body>
@@ -286,7 +287,7 @@
       <span class="caret"></span></button>
       <ul class="dropdown-menu">
         <script type="text/javascript">
-          var exporter = (new clinicalTimelineExporter()).run(null, {exportDivId : "#export-div"}); 
+          var exporter = (new clinicalTimelineExporter()).run(null, {exportDivId : "#export-div", timelineDiv : "#timeline"}); 
         </script>
         <li><a href='javascript:exporter.generateSVG()'>SVG Image</a></li>
         <li><a href='javascript:exporter.generatePNG(true)'>PNG Image</a></li>
