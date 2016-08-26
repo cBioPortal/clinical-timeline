@@ -408,7 +408,7 @@ var clinicalTimeline = (function(){
 
   timeline.addDataPointTooltip = function addDataPointTooltip(elem) {
     function createDataTable(tooltip_table) {
-      dataTable = {
+      var dataTable = {
         "sDom": 't',
         "bJQueryUI": true,
         "bDestroy": true,

@@ -196,7 +196,15 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
    */
   function clickHandlerKink() {
     timeline.pluginSetOrGetState("trimClinicalTimeline", false);
-    d3.select(timeline.divId()+" > svg > g > g.axis")
+    //create a bounding box to ease the clicking of axis
+    xAxisBBox = d3.select(timeline.divId()+" > svg > g > g.axis")[0][0].getBBox()
+    d3.select(timeline.divId()+"> svg > g")
+      .insert("rect")
+      .attr("x", xAxisBBox.x)
+      .attr("y", 4)
+      .attr("width", xAxisBBox.width)
+      .attr("height", xAxisBBox.height)
+      .attr("fill", "rgba(0,0,0,0)")
       .style("cursor", "pointer")
       .on("click", function () {
         timeline.pluginSetOrGetState("trimClinicalTimeline", true);
