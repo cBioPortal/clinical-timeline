@@ -21,7 +21,7 @@ clinicalTimelineExporter.prototype.run = function(timeline, spec) {
      */
     generateSVG :  function () {
       $("#addtrack").css("visibility","hidden");
-      var svg = document.getElementsByClassName("timeline")[0];
+      var svg = document.querySelector(spec.timelineDiv+" svg");
       var serializer = new XMLSerializer();
       var source = serializer.serializeToString(svg);
       var link = document.createElement("a");
@@ -49,7 +49,7 @@ clinicalTimelineExporter.prototype.run = function(timeline, spec) {
      */
     generatePNG : function(download) {
       $("#addtrack").css("visibility","hidden");
-      var svgString = new XMLSerializer().serializeToString(document.querySelector(".timeline"));
+      var svgString = new XMLSerializer().serializeToString(document.querySelector(spec.timelineDiv+" svg"));
       var canvas = document.getElementById("canvas");
       var ctx = canvas.getContext("2d");
       var DOMURL = self.URL || self.webkitURL || self;

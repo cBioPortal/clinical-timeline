@@ -3,6 +3,8 @@
 d3 = require('d3');
 /* end-test-code-not-included-in-build */
 var clinicalTimeline = (function(){
+  "use strict";
+
   var allData,
     colorCycle = d3.scale.category20(),
     margin = {left: 200, right:30, top: 15, bottom:0, overviewAxis: {left: 15, right: 15}},
@@ -39,7 +41,7 @@ var clinicalTimeline = (function(){
    * Publically accessible object returned by clinicalTimeline
    */
   function timeline() {
-    visibleData = allData.filter(function(x) {
+    var visibleData = allData.filter(function(x) {
         return x.visible;
     });
 
@@ -190,7 +192,7 @@ var clinicalTimeline = (function(){
    * end dates.
    */
   function isDurationTrack(trackData) {
-    isDuration = false;
+    var isDuration = false;
     trackData.times.forEach(function(x) {
       if (parseInt(x.starting_time) !== parseInt(x.ending_time)) {
         isDuration = true;
@@ -312,7 +314,7 @@ var clinicalTimeline = (function(){
     // split tracks sequentially by given attrs
     var split_tracks = [track], tracks;
     for (var i = 0; i < attrs.length; i++) {
-      attr = attrs[i];
+      var attr = attrs[i];
       tracks = [];
       for (var j = 0; j < split_tracks.length; j++) {
         tracks = tracks.concat(splitByClinicalAttribute(split_tracks[j], attr));
@@ -346,7 +348,7 @@ var clinicalTimeline = (function(){
     var attrValues = _.sortBy(Object.keys(g), function(k) {
       return _.min(_.pluck(g[k], "starting_time"));
     });
-    for (j=0; j < attrValues.length; j++) {
+    for (var j=0; j < attrValues.length; j++) {
       allData.splice(trackIndex+j+1, 0, {"label":indent+attrValues[j], "times":g[attrValues[j]], "visible":true,"split":true,"parent_track":track});
     }
     // return names of new tracks
@@ -775,7 +777,7 @@ var clinicalTimeline = (function(){
    * @return {string} zoomLevel
    */
   timeline.computeZoomLevel = function(minDays, maxDays, width) {
-    pixelsPerDay = parseFloat(parseInt(width) / difference(parseInt(minDays), parseInt(maxDays)));
+    var pixelsPerDay = parseFloat(parseInt(width) / difference(parseInt(minDays), parseInt(maxDays)));
     if (pixelsPerDay < 1) {
       return "years";
     } else if (pixelsPerDay < 10){
@@ -1076,12 +1078,12 @@ var clinicalTimeline = (function(){
    * @returns {Object} clinicalTimeline object
    */
   timeline.orderTrackTooltipTables = function(track, rowkeys) {
-    trackData = getTrack(allData, track);
+    var trackData = getTrack(allData, track);
     if (trackData.times.length === 0) {
       return timeline;
     }
     // sort rows not in given rowkeys
-    alphaSortRows = _.uniq(
+    var alphaSortRows = _.uniq(
       trackData.times.map(function(t) {
         return t.tooltip_tables.map(function(tt) {
           return tt.map(function(row) {
@@ -1095,6 +1097,7 @@ var clinicalTimeline = (function(){
       }, [])
     ).sort();
     // If there are any rows other than the given ones add them
+    var allLabelRows;
     if (alphaSortRows && alphaSortRows[0]) {
       allLabelRows = rowkeys.concat(alphaSortRows);
     } else {
@@ -1107,7 +1110,7 @@ var clinicalTimeline = (function(){
           sortTt = [];
 
         for (var j=0; j < allLabelRows.length; j++) {
-          row = tt.filter(function(x) {return x[0] === allLabelRows[j];})[0];
+          var row = tt.filter(function(x) {return x[0] === allLabelRows[j];})[0];
           if (row) {
             sortTt = sortTt.concat([row]);
           }
@@ -1219,7 +1222,7 @@ var clinicalTimeline = (function(){
   /* end-test-code-not-included-in-build */
   
   return timeline;
-})();
+});
 
 /* start-test-code-not-included-in-build */
 module.exports = clinicalTimeline;

@@ -28,7 +28,7 @@ describe('clinicalTimeline', function() {
 
 describe('clinicalTimeline.getTrack', function() {
   it('should return the track Status when requesting track Status', function() {
-    var getTrack = clinicalTimeline.__tests__.getTrack;
+    var getTrack = clinicalTimeline().__tests__.getTrack;
     var data1 = require('../data/data1.json');
     expect("Status").to.equal(getTrack(data1, "Status").label);
   });
@@ -36,7 +36,7 @@ describe('clinicalTimeline.getTrack', function() {
 
 describe('clinicalTimeline.daysToTimeObject', function() {
   it('should return time object with year, months and days', function() {
-    var daysToTimeObject = clinicalTimeline.daysToTimeObject;
+    var daysToTimeObject = clinicalTimeline().daysToTimeObject;
     var data1 = JSON.stringify({daysPerYear : 365, daysPerMonth :30, y : 0, m : 0, d : 25});
     var data2 = JSON.stringify({daysPerYear : 365, daysPerMonth :30, y : 0, m : 4, d : 22});
     var data3 = JSON.stringify({daysPerYear : 365, daysPerMonth :30, y : 1, m : 1, d : 5});
@@ -49,8 +49,8 @@ describe('clinicalTimeline.daysToTimeObject', function() {
 
 describe('clinicalTimeline.formatTime', function() {
   it('should should properly format the input time', function() {
-    var daysToTimeObject = clinicalTimeline.daysToTimeObject;
-    var formatTime = clinicalTimeline.formatTime;
+    var daysToTimeObject = clinicalTimeline().daysToTimeObject;
+    var formatTime = clinicalTimeline().formatTime;
 
      expect("0").to.equal(formatTime(daysToTimeObject(0), "days"));
      expect("0").to.equal(formatTime(daysToTimeObject(0), "3days"));
@@ -100,3 +100,12 @@ describe('clinicalTimeline.roundUp', function() {
      expect(-20).to.equal(roundUp(-20, 10));
   });
 });
+
+describe('clinicalTimeline()', function() {
+  it('should not replace previously defined timelines for each call', function() {
+    var data1 = require('../data/data1.json');
+    var t1 = clinicalTimeline().data(data1).divId("#t1");
+    var t2 = clinicalTimeline().data(data1).divId("#t2");
+    expect(t1.divId()).to.not.equal(t2.divId())
+  })
+})
