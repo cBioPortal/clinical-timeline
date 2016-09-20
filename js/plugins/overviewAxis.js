@@ -64,6 +64,9 @@ clinicalTimelineOverviewAxis.prototype.run = function(timeline, spec) {
     .tickSize(3)
     .tickPadding(0);
 
+  // show overview
+  overviewSVG.style("display", "initial");
+
   overviewSVG.append("g")
     .attr("class", "x axis overview-axis")
     .attr("transform", "translate(0,25)")

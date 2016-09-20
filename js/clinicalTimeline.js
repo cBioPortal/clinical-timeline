@@ -155,7 +155,8 @@ var clinicalTimeline = (function(){
     var overviewSVG = d3.select(divId).append("svg")
       .attr("height", 75)
       .attr("width", overviewAxisWidth)
-      .attr("class", "overview");
+      .attr("class", "overview")
+      .style("display", "none");
 
     //object to be shared by all plugins
     clinicalTimelineReadOnlyVars = {
