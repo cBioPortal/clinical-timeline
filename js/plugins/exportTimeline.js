@@ -21,6 +21,16 @@ clinicalTimelineExporter.prototype.run = function(timeline, spec) {
      */
     generateSVG :  function () {
       $("#addtrack").css("visibility","hidden");
+      var element = document.getElementsByTagName('path')[0];
+      element.setAttribute("stroke" , "black"); 
+      element.setAttribute("fill" , "none");
+      element = document.getElementsByTagName('line');
+      for( var i=0 ; i<element.length ; i++)
+      {
+        element[i].setAttribute("stroke" , "black");
+        element[i].setAttribute("fill" , "none");
+          
+      }
       var svg = document.querySelector(spec.timelineDiv+" svg");
       var serializer = new XMLSerializer();
       var source = serializer.serializeToString(svg);
@@ -49,6 +59,16 @@ clinicalTimelineExporter.prototype.run = function(timeline, spec) {
      */
     generatePNG : function(download) {
       $("#addtrack").css("visibility","hidden");
+      var element = document.getElementsByTagName('path')[0];
+      element.setAttribute("stroke" , "black"); 
+      element.setAttribute("fill" , "none");
+      element = document.getElementsByTagName('line');
+      for( var i=0 ; i<element.length ; i++)
+      {
+        element[i].setAttribute("stroke" , "black");
+        element[i].setAttribute("fill" , "none");
+          
+      }
       var svgString = new XMLSerializer().serializeToString(document.querySelector(spec.timelineDiv+" svg"));
       var canvas = document.getElementById("canvas");
       var ctx = canvas.getContext("2d");
