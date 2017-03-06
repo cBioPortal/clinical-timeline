@@ -1,14 +1,22 @@
 language: node_js
 node_js:
-  - "6"
+- '6'
 install:
-  - sudo apt-get install npm
-  - npm config set registry http://registry.npmjs.org/
-  - npm install --dev
+- sudo apt-get install npm
+- npm config set registry http://registry.npmjs.org/
+- npm install --dev
 script:
-  - bash -x test/screenshot_script.sh
-  - npm test
+- bash -x test/screenshot_script.sh
+- npm test
 after_success:
-  # upload blanket test coverage to coveralls
-  # see https://github.com/nickmerwin/node-coveralls
-  - NODE_ENV=test YOURPACKAGE_COVERAGE=1 ./node_modules/.bin/mocha --require blanket --reporter mocha-lcov-reporter test/unit-tests/ | ./node_modules/coveralls/bin/coveralls.js
+- NODE_ENV=test YOURPACKAGE_COVERAGE=1 ./node_modules/.bin/mocha --require blanket
+  --reporter mocha-lcov-reporter test/unit-tests/ | ./node_modules/coveralls/bin/coveralls.js
+before_deploy:
+  - make clean && make build
+deploy:
+  skip_cleanup: true
+  provider: npm
+  api_key:
+    secure: n66DO+VjCOM41ffHCbUpjXKCxkaNAM3Ozo0Kdy/8mjuEq2FEIgl/PkeOr4ZlcGbOKumq7XG6UqcGO6wYd+cR1EW0u5oEvhMYs4pmLJz427pl15qJoRYETqCY9l6CwgvAC+WBfLWddmyJvPdifWcbpqBDOhgNVyt+tRpIL8Sf5z5cU0JsWdGgzWnXoXqxoo0AB5ks2ujbCuDHv+E5gFmT5FgcbDbWaFtSBQo6AjuLKZbtddY6kFo01M/1rwATB7xuoA11X9Z/8cjgHGYACIxE93spy31BXU3dkUdysn7ujyiWc2zLKXee4mme/GzRrtcjYT1yRs/jujRR/ynD+44I32t8uLCZI+biUNhBKSTQ4Qq3BCJcUDjEBxTzPMZyEYo+o14oTRAns176ityvVVOmoKOjiFJCXpSOr4SSALBCKRGMzVCDb1l/MPjSH5cSUA1TtYBY6V67z94kg2Up/qf2gWQZ0c/TUj9QyYqjKgv4sjyhsWV7XyJyueiEkFiWRiCNWSgBFgyjC8jFx4bTVpCWBo1JM9MPLDjhKvvyOQ6iajbwjGqRENP1KoLdUu7k6mZKopX11Vgecxg5L9JgeJH5oOHF1vRCNmAnDFIKNCwEe31aZOiBvu041bXAqfhPhT9L1IH0XDDnabmsxTodYtK2WrevtYgXpaF+Aa2xMsmCQz8=
+  on:
+      tags: true
