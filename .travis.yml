@@ -14,6 +14,7 @@ after_success:
 before_deploy:
   - make clean && make build
 deploy:
+  email: cbioportal@gmail.com
   skip_cleanup: true
   provider: npm
   api_key:
