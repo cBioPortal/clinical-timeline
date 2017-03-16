@@ -1,4 +1,3 @@
-// vim: ts=2 sw=2
 /* start-test-code-not-included-in-build */
 d3 = require('d3');
 /* end-test-code-not-included-in-build */
