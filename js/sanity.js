@@ -1,4 +1,3 @@
-// vim: ts=2 sw=2
 /*
  * Check sanity of JSON data representing timeline
  */
