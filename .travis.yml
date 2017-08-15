@@ -12,12 +12,12 @@ after_success:
 - NODE_ENV=test YOURPACKAGE_COVERAGE=1 ./node_modules/.bin/mocha --require blanket
   --reporter mocha-lcov-reporter test/unit-tests/ | ./node_modules/coveralls/bin/coveralls.js
 before_deploy:
-  - make clean && make build
+- make clean && make build
 deploy:
   email: cbioportal@gmail.com
   skip_cleanup: true
   provider: npm
   api_key:
-    secure: n66DO+VjCOM41ffHCbUpjXKCxkaNAM3Ozo0Kdy/8mjuEq2FEIgl/PkeOr4ZlcGbOKumq7XG6UqcGO6wYd+cR1EW0u5oEvhMYs4pmLJz427pl15qJoRYETqCY9l6CwgvAC+WBfLWddmyJvPdifWcbpqBDOhgNVyt+tRpIL8Sf5z5cU0JsWdGgzWnXoXqxoo0AB5ks2ujbCuDHv+E5gFmT5FgcbDbWaFtSBQo6AjuLKZbtddY6kFo01M/1rwATB7xuoA11X9Z/8cjgHGYACIxE93spy31BXU3dkUdysn7ujyiWc2zLKXee4mme/GzRrtcjYT1yRs/jujRR/ynD+44I32t8uLCZI+biUNhBKSTQ4Qq3BCJcUDjEBxTzPMZyEYo+o14oTRAns176ityvVVOmoKOjiFJCXpSOr4SSALBCKRGMzVCDb1l/MPjSH5cSUA1TtYBY6V67z94kg2Up/qf2gWQZ0c/TUj9QyYqjKgv4sjyhsWV7XyJyueiEkFiWRiCNWSgBFgyjC8jFx4bTVpCWBo1JM9MPLDjhKvvyOQ6iajbwjGqRENP1KoLdUu7k6mZKopX11Vgecxg5L9JgeJH5oOHF1vRCNmAnDFIKNCwEe31aZOiBvu041bXAqfhPhT9L1IH0XDDnabmsxTodYtK2WrevtYgXpaF+Aa2xMsmCQz8=
+    secure: njT+WwtVV2Jlf/wY3n4kkY86vJ+70hxmt0J0em38GPBkhtrAUIb/80LS6N35MC+aooz96yEOK9EBB4GY7/I0RrvAU4JhzZ0mDH7AMV4XsyIHA6B953BKu7lFGOgzMGJDe90f0B9WSwnNxFlukLAmS5txF5RZ3eh6dFtcEFe4ELruIDOC/EW/Ovp3tDZITIlPr3rhr1LVLZGXEy6/BWpY/TWW+snrGqOovqRw2L7yZ+os9ykslK2fF4TYZQYl/X90vkDUS8EpJwXy+VUXzIN+DWQdYLCtyKjGUZxNctgpRK8oaN1SNno5yqB5YJfXaGlbM900W3pMEahfo8PmnLdKeCrU6XHGO1gf+XJgU20ejCJh64qC4ua81veW5uof8Baqhr0X+Ms4DqydaFONRKoiNoLhEjjm9p4sbgdntY5ECARJAuDvqmeBonj+Jkaj9Ac+RiHxPPJvIwZubJhcpYNz2iOvKug6MdlNjuJoOt8jFV86nzrYa6jL7mQZhnxJGA1fJhyO5h8t+YqY73bWFFq4TzktAsEpObrHLNUWjaNcWOOq8p9j3jkrh7Sv/mN/dgmL37a1LOW2QWMVMtaWCP5CPUrzhsZu22LhUqrGwI8HoaL5LqjLjzthRn6utmKTQM4lnOR70BhaaRT3hY+6OfPvNwMSs7b/s9jLpKIH5gqJuBU=
   on:
-      tags: true
+    tags: true
