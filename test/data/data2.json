@@ -3,9 +3,9 @@
 {"label":"Diagnosis", "times": [
 {"starting_time": 2, "ending_time":
 2,"display":"circle","tooltip_tables":[[["Health",1],["MRI","good"]]]},
-{"starting_time": 5, "ending_time":
-5,"display":"circle","tooltip_tables":[[["Health",2],["MRI","bad left"]]]},
-{"starting_time": 5, "ending_time":
-5,"display":"circle","tooltip_tables":[[["Health",3],["MRI","bad right"]]]}
+{"starting_time": 6, "ending_time":
+6,"display":"circle","tooltip_tables":[[["Health",2],["MRI","bad left"]]]},
+{"starting_time": 6, "ending_time":
+6,"display":"circle","tooltip_tables":[[["Health",3],["MRI","bad right"]]]}
 ],"visible":true}
 ]

@@ -16,6 +16,7 @@ function trimClinicalTimeline(name, spec){
 trimClinicalTimeline.prototype.run = function (timeline, spec) {
   var toleranceRatio = 0.2, //cut the timeline after how much of inactivity in terms of percentage of width of timeline
     timelineElements = [],
+    breakTimelineForKinkIndex = [],
     breakTimelineForKink = [],
     tickCoordinatesKink = [],
     divId = timeline.divId(),
@@ -44,7 +45,7 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
   expandedXAxis.style("visibility", "hidden");
 
   d3.selectAll(divId+" .timeline g rect,"+divId+" .timeline g circle").each(function(d, e) {
-   for (var i = parseInt(d.starting_time); i <= parseInt(d.ending_time); i += clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel)) {
+   for (var i = parseInt(d.starting_time); i <= parseInt(d.ending_time) + parseInt(clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel)); i += clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel)) {
       if (timelineElements.indexOf(i) === -1) {
         timelineElements.push(parseInt(i));
       }
@@ -85,14 +86,25 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
         ticksToShow.push(Math.round((first + second) / 2))
       } else if (second - first > tolerance) {
         if (toPush - prevPush > 1 || (prevPush === 0 && (second - first) > clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel))) {
-          breakTimelineForKink.push(toPush);
+          breakTimelineForKinkIndex.push(toPush);
+          breakTimelineForKink.push(second);
         }
         prevPush = toPush;
+      } else if (noOfTicksDeletedAfterCurrentIndex > 1) {
+          // add the ticks back if they were deleted but didn't pass tolerance
+          for (var i = 0; i < noOfTicksDeletedAfterCurrentIndex; i++) {
+              ticksToShow.push(first + (i + 1) * clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel));
+          }
       } 
     }
   });
 
   ticksToShow.sort(function(a, b) { return a - b; });
+  // redetermine breakTimelineForKinkIndex after sorting
+  breakTimelineForKinkIndex = [];
+  for (var i = 0; i < breakTimelineForKink.length; i++) {
+      breakTimelineForKinkIndex.push(ticksToShow.indexOf(breakTimelineForKink[i]));
+  }
 
   var xScale = d3.time.scale()
     .domain([margin.left,  width - margin.right])
@@ -101,10 +113,10 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
   var shiftAtBreak = 0; //make space for adding the kink
 
   for (var j = 0; j < ticksToShow.length; j++) {
-    if (breakTimelineForKink.indexOf(j) > -1) {
+    if (breakTimelineForKinkIndex.indexOf(j) > -1) {
       shiftAtBreak += 30;
     }
-    var breakAdjust = breakTimelineForKink.length * 30;
+    var breakAdjust = breakTimelineForKinkIndex.length * 30;
     //calculate the position of the tick to be shown after trimming
     tickCoordinatesKink.push(margin.left + shiftAtBreak + (j * ((width - margin.right - margin.left - breakAdjust) / (ticksToShow.length - 1 ))));
   }
@@ -124,9 +136,9 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
   var kink = svg.append("g")
     .attr("class", "kink");
 
-  for (var i = 0; i < ticksToShow.length; i++) {
+  for (i = 0; i < ticksToShow.length; i++) {
     //add kinks at the places where timeline is cut
-    if (breakTimelineForKink.indexOf(i) > -1) {
+    if (breakTimelineForKinkIndex.indexOf(i) > -1) {
       var kinkPosition = (tickCoordinatesKink[i-1] + tickCoordinatesKink[i])/2;
       kink.append("rect")
         .attr("height", 10)
