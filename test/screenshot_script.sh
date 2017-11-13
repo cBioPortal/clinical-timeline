@@ -18,7 +18,7 @@ for testdata in $(echo ${DIR}/data/data*.json); do
         git diff --quiet -- $screenshot_png
         if [[ $? -ne 0 ]]; then
             screenshot_error_count=$(($screenshot_error_count + 1))
-            echo "screenshot differs see:" && curl -F "clbin=@${screenshot_png}" https://clbin.com
+            echo "screenshot differs see:" &&  (curl -F "c=@${screenshot_png}" https://ptpb.pw/ | grep url | cut -d' ' -f2)
         fi
     done
 done
@@ -34,7 +34,7 @@ phantomjs --ignore-ssl-errors=true ${DIR}/make_screenshots.js \
 git diff --quiet -- $screenshot_png
 if [[ $? -ne 0 ]]; then
     screenshot_error_count=$(($screenshot_error_count + 1))
-    echo "screenshot differs see:" && curl -F "clbin=@${screenshot_png}" https://clbin.com
+    echo "screenshot differs see:" &&  (curl -F "c=@${screenshot_png}" https://ptpb.pw/ | grep url | cut -d' ' -f2)
 fi
 
 if [[ $screenshot_error_count -gt 0 ]]; then
