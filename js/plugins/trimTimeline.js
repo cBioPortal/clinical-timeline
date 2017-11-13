@@ -194,8 +194,10 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
       d3.select(this)
         //update x position for rectangular elements in the trimmed timeline
         .attr("x", getXPosAdjustedForKink(x.starting_time))
-        //update width for rectangular elements in the trimmed timeline
-        .attr("width", d3.select(this).attr("width") * widthMultiplier);
+      if (!(x.hasOwnProperty("display") && (x.display === "square"))) {
+        //update width for non-square elements in the trimmed timeline
+        d3.select(this).attr("width", d3.select(this).attr("width") * widthMultiplier);
+      }
     } else {
       console.log("No such element as " + this)
     }
