@@ -421,7 +421,7 @@
       }
 
       function getWidth(d, i) {
-        if ("display" in d && d.display === "square") {
+        if ("display" in d && d.display !== "rect") {
           return itemHeight;
         } else {
           var width = ((d.ending_time - d.starting_time) * scaleFactor);
