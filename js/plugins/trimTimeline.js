@@ -9,31 +9,7 @@ function trimClinicalTimeline(name, spec){
 }
 
 function isBrowserZoomed() {
-  var screenCssPixelRatio = (window.outerWidth - 8) / window.innerWidth;
-  if (screenCssPixelRatio >= .46 && screenCssPixelRatio <= .54) {
-    browserZoom = "-4";
-  } else if (screenCssPixelRatio <= .64) {
-    browserZoom = "-3";
-  } else if (screenCssPixelRatio <= .76) {
-    browserZoom = "-2";
-  } else if (screenCssPixelRatio <= .92) {
-    browserZoom = "-1";
-  } else if (screenCssPixelRatio <= 1.10) {
-    browserZoom = "0";
-  } else if (screenCssPixelRatio <= 1.32) {
-    browserZoom = "1";
-  } else if (screenCssPixelRatio <= 1.58) {
-    browserZoom = "2";
-  } else if (screenCssPixelRatio <= 1.90) {
-    browserZoom = "3";
-  } else if (screenCssPixelRatio <= 2.28) {
-    browserZoom = "4";
-  } else if (screenCssPixelRatio <= 2.70) {
-    browserZoom = "5";
-  } else {
-    browserZoom = "unknown";
-  }
-  return browserZoom !== "0";
+  return Math.round(window.devicePixelRatio * 100) !== 100;
 }
 
 /**
