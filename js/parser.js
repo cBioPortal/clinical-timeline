@@ -3,7 +3,7 @@ var clinicalTimelineParser = (function() {
   function transformToTimelineJSON(clinical_timeline_data) {
     var transformToTrack = function(clin_events) {
       var track = {
-        "label":capitalizeFirstLetterLowerCaseRest(clin_events[0].eventType),
+        "label":transformLabel(clin_events[0].eventType),
         visible:true,
         "times":[]
       };
@@ -35,6 +35,21 @@ var clinicalTimelineParser = (function() {
    */
   function capitalizeFirstLetterLowerCaseRest(string) {
       return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
+  }
+  
+  /*
+   * If label is uppercase and less than 5 characters (deemed as abbreviation),
+   * or has both lowercase and uppercase characters,
+   * it is assumed to be intentional and kept intact,
+   * otherwise will be transformed by capitalizeFirstLetterLowerCaseRest
+   */
+  function transformLabel(label) {
+    const mixedCase = /(?=.*[a-z])(?=.*[A-Z])/;
+    const upperCaseOnly = /[A-Z]+[a-z]{0}/;
+    if (mixedCase.test(label) || (upperCaseOnly.test(label) && label.length < 5)) {
+      return label;
+    }
+    return capitalizeFirstLetterLowerCaseRest(label);
   }
 
   return transformToTimelineJSON;
