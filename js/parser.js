@@ -44,8 +44,8 @@ var clinicalTimelineParser = (function() {
    * otherwise will be transformed by capitalizeFirstLetterLowerCaseRest
    */
   function transformLabel(label) {
-    const mixedCase = /(?=.*[a-z])(?=.*[A-Z])/;
-    const upperCaseOnly = /[A-Z]+[a-z]{0}/;
+    var mixedCase = /(?=.*[a-z])(?=.*[A-Z])/;
+    var upperCaseOnly = /[A-Z]+[a-z]{0}/;
     if (mixedCase.test(label) || (upperCaseOnly.test(label) && label.length < 5)) {
       return label;
     }
