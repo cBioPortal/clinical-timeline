@@ -1,6 +1,6 @@
 {
   "name": "clinical-timeline",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "description": "Clinical timeline in D3",
   "main": "dist/clinical-timeline.js",
   "directories": {
