@@ -448,7 +448,7 @@
         if (!height && !gParentItem.attr("height")) {
           if (itemHeight) {
             // set height based off of item height
-            height = gSize.height + gSize.top - gParentSize.top;
+            height = gSize.height + gSize.top + 3 - gParentSize.top;
             // set bounding rectangle height
             d3.select(gParent[0][0]).attr("height", height);
           } else {

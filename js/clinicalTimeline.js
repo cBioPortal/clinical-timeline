@@ -886,6 +886,53 @@ var clinicalTimeline = (function(){
   }
 
   /**
+   * Tick values are removed in trimmed areas.
+   * @param  {Number} minDays
+   * @param  {Number} maxDays  
+   * @param  {string} zoomLevel
+   * @return {Number[]} tickValues
+   */
+  timeline.getTickValuesToShow = function (minDays, maxDays, zoomLevel) {
+    var timelineElements = [],
+    tickValuesInt = timeline.getTickValues(minDays, maxDays, zoomLevel).map(function(x) { return Math.round(x);}),
+    ticksToShow = [tickValuesInt[0], tickValuesInt[tickValuesInt.length - 1]];
+
+    d3.selectAll(divId+" .timeline g rect,"+divId+" .timeline g circle").each(function(d, e) {
+      for (
+        var i = parseInt(d.starting_time);
+        i <= parseInt(d.ending_time) + parseInt(clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel));
+        i += clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel)
+      ) {
+         if (timelineElements.indexOf(i) === -1) {
+           timelineElements.push(parseInt(i));
+         }
+       }
+     });
+   
+     timelineElements.sort(function(a, b) { return a - b; });
+   
+     timelineElements.forEach(function(value, index) {
+       if (value > tickValuesInt[0] && value < tickValuesInt[tickValuesInt.length - 1]) {
+         for (var i = 0; i < tickValuesInt.length - 1; i++) {
+           if (value >= tickValuesInt[i] && value <= tickValuesInt[i + 1]) {
+             break;
+           }
+         }
+         if (ticksToShow.indexOf(tickValuesInt[i]) === -1 && i !== tickValuesInt.length - 1) {
+           ticksToShow.push(tickValuesInt[i]);
+         }
+         if (ticksToShow.indexOf(tickValuesInt[i + 1]) === -1 && i !== tickValuesInt.length - 1) {
+           ticksToShow.push(tickValuesInt[i + 1]);
+         }
+       }
+     });
+   
+     ticksToShow.sort(function(a, b) { return a - b; });
+
+     return ticksToShow;
+  }
+
+  /**
    * Change the value of the variable enableTrackToolTips of clinicalTimeline
    * if argument b is provided, else return the existing value
    * @param  {boolean} b

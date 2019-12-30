@@ -39,6 +39,14 @@ Checks before sending a PR:
 - Run all tests to assure nothing else was accidentally broken. This is done by running: `npm test`.
 - Make sure you have added the necessary tests and [documentation](http://usejsdoc.org/) for your changes.
 
+## Development
+The simplest way to verify your changes is via `index.html`. One iteration may look something like this:
+1. Make code change
+1. Rebuild with `make clean build`
+1. View the change in your browser by loading `index.html`
+You can find json examples to load into the parser
+[here](https://github.com/cBioPortal/clinical-timeline/tree/master/test/data)
+
 clinical-timeline uses [code-climate](https://codeclimate.com/) to maintain code quality and [coveralls](https://coveralls.io) for code-coverage. Please ensure that the [repo GPA](https://codeclimate.com/github/cBioPortal/clinical-timeline) and [code-coverage](https://coveralls.io/github/cBioPortal/clinical-timeline) doesn't falls if not increase post the new commit. Adding new [unit tests](https://github.com/cBioPortal/clinical-timeline/tree/master/test/unit-tests) is most welcomed. 
 
 ## License

@@ -8,8 +8,8 @@ function trimClinicalTimeline(name, spec){
   this.id = "trimClinicalTimeline";
 }
 
-function isBrowserZoomed() {
-  return Math.round(window.devicePixelRatio * 100) !== 100;
+function isBrowserZoomed(timeline) { 
+  return Math.round(window.devicePixelRatio * 100) !== 100 || timeline.zoomFactor() > 1;
 }
 
 /**
@@ -20,9 +20,10 @@ function isBrowserZoomed() {
 trimClinicalTimeline.prototype.run = function (timeline, spec) {
   // skip when browser zoomed in, because trimming behaves oddly in those
   // cases
-  if (isBrowserZoomed()) {
+  if (isBrowserZoomed(timeline)) {    
       return;
   }
+  timeline.trimmed = true;
   var toleranceRatio = 0.2, //cut the timeline after how much of inactivity in terms of percentage of width of timeline
     timelineElements = [],
     breakTimelineForKinkIndex = [],
@@ -52,34 +53,7 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
     expandedXAxis = d3.select(timeline.divId()+" > svg > g > g.axis");
 
   expandedXAxis.style("visibility", "hidden");
-
-  d3.selectAll(divId+" .timeline g rect,"+divId+" .timeline g circle").each(function(d, e) {
-   for (var i = parseInt(d.starting_time); i <= parseInt(d.ending_time) + parseInt(clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel)); i += clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel)) {
-      if (timelineElements.indexOf(i) === -1) {
-        timelineElements.push(parseInt(i));
-      }
-    }
-  });
-
-  timelineElements.sort(function(a, b) { return a - b; });
-
-  timelineElements.forEach(function(value, index) {
-    if (value > tickValuesInt[0] && value < tickValuesInt[tickValuesInt.length - 1]) {
-      for (var i = 0; i < tickValuesInt.length - 1; i++) {
-        if (value >= tickValuesInt[i] && value <= tickValuesInt[i + 1]) {
-          break;
-        }
-      }
-      if (ticksToShow.indexOf(tickValuesInt[i]) === -1 && i !== tickValuesInt.length - 1) {
-        ticksToShow.push(tickValuesInt[i]);
-      }
-      if (ticksToShow.indexOf(tickValuesInt[i + 1]) === -1 && i !== tickValuesInt.length - 1) {
-        ticksToShow.push(tickValuesInt[i + 1]);
-      }
-    }
-  });
-
-  ticksToShow.sort(function(a, b) { return a - b; });
+  ticksToShow = timeline.getTickValuesToShow(minDays, maxDays, zoomLevel);
 
   var prevPush = 0;
   ticksToShow.forEach(function(item, index) {

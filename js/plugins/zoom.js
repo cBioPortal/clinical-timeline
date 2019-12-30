@@ -9,6 +9,43 @@ function clinicalTimelineZoom(name, spec){
 }
 
 /**
+ * Problem: brush reads from untrimmed timeline, so extent gives
+ * an incorrect position.
+ * Solution: the point given will have the correct position
+ * on the untrimmed timeline, so find the nearest tick mark
+ * on the trimmed timeline and use that.
+ * @param {*} timeline 
+ * @param {Number} point 
+ * @param {Number} minDays 
+ * @param {Number} maxDays 
+ * @param {string} zoomLevel 
+ */
+function adjustLeftEdge(timeline, point, minDays, maxDays, zoomLevel) {
+  const ticks = timeline.getTickValues(minDays, maxDays, zoomLevel);
+  const shownTicks = timeline.getTickValuesToShow(minDays, maxDays, zoomLevel);
+
+  if (timeline.trimmed === undefined || ticks.length <= 2) {
+    return point;
+  }
+
+  // Weird off by 1 stuff that I couldn't figure out.
+  // When the zoom starts past the first trim in the timeline, you need 
+  // to adjust the start of the zoom by 1 tick.
+  // This holds true when the zoom region starts past the second, third,
+  // etc. ticks. It's always off by 1 tick. Makes no sense, but here's a fix. 
+  var lastSameTick = ticks[0];
+  for (var i = 0; i < ticks.length; i++) {
+    if (i === shownTicks.length || ticks[i] !== shownTicks[i]) {
+      break;
+    }
+    lastSameTick = ticks[i];
+  }
+  
+  const index = Math.floor(((point - minDays) / (maxDays - minDays)) * shownTicks.length);
+  return shownTicks[index] <= lastSameTick ? shownTicks[index] : shownTicks[index] + (ticks[0] - ticks[1]) 
+}
+
+/**
  * runs the clinicalTimelineZoom plugin
  * @param  {function} timeline    clinicalTimeline object
  * @param  {Object}   [spec=null] specification specific to the plugin
@@ -37,14 +74,14 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
      */
     var brushend = function() {
       var originalZoomLevel = timeline.computeZoomLevel(minDays, maxDays, width);
+      const brushStart = adjustLeftEdge(timeline, brush.extent()[0].valueOf(), minDays, maxDays, originalZoomLevel);
       //handle positioning of the overview rectangle post zoom in.
       var overViewScale = d3.time.scale()
         .domain([roundDown(minDays, clinicalTimelineUtil.getDifferenceTicksDays(originalZoomLevel)), roundUp(maxDays, clinicalTimelineUtil.getDifferenceTicksDays(originalZoomLevel))])
         .range([0 + margin.overviewAxis.left, overviewAxisWidth - margin.overviewAxis.right]);
 
-      timeline.overviewX(overViewScale(brush.extent()[0].valueOf()));
+      timeline.overviewX(overViewScale(brushStart));
 
-      var xDaysRect = brush.extent()[0].valueOf();
       timeline.zoomFactor((parseInt(width) - parseInt(margin.left) - parseInt(margin.right)) / (parseInt(d3.select(timeline.divId()+" .extent").attr("width"))));
       if (timeline.zoomFactor() > 0) {
         timeline.zoomFactor(Math.min(timeline.zoomFactor(), timeline.computeZoomFactor("days", minDays, maxDays, width)));
@@ -55,11 +92,11 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
       var zoomLevel = timeline.computeZoomLevel(readOnlyVars.minDays, readOnlyVars.maxDays, timeline.width() * timeline.zoomFactor());
       var tickValues = timeline.getTickValues(readOnlyVars.minDays, readOnlyVars.maxDays, zoomLevel);
       // TODO: Translation post zooming is not entirely correct
-      if (xDaysRect > minDays) {
+      if (brushStart > minDays) {
         var xZoomScale = d3.time.scale()
            .domain([tickValues[0], tickValues[tickValues.length-1]])
            .range([margin.left, width * timeline.zoomFactor() - margin.right]);
-        timeline.translateX(-xZoomScale(xDaysRect));
+        timeline.translateX(-xZoomScale(brushStart));
       } else {
         timeline.translateX(0);
       }
