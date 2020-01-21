@@ -8,6 +8,26 @@ function clinicalTimelineZoom(name, spec){
   this.id = "zoom";
 }
 
+function findNearestTickToLeft(position) {
+  var regex = /(:?translate.)(\d+)(:?.*)/;
+  var ticks = document.getElementsByClassName("tick");
+  var tick = ticks;
+
+  for (var i = 0; i < ticks.length; i++) {
+    var newTick = ticks[i];
+    if (newTick.parentElement.getAttribute("style") === "visibility: hidden;") {
+      continue;
+    }
+    var tickPosition = newTick.getAttribute("transform").match(regex)[2];
+    var distance = position - parseInt(tickPosition);
+    if (distance < 0) {
+      return tick;
+    } else {
+      tick = newTick;
+    }
+  }
+}
+
 /**
  * runs the clinicalTimelineZoom plugin
  * @param  {function} timeline    clinicalTimeline object
@@ -30,6 +50,7 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
     g = d3.select(divId + " svg g"),
     gBoundingBox = g[0][0].getBoundingClientRect();
 
+  timeline.zoomStart(null)
   if (timeline.zoomFactor() === 1) {
     /**
      * Add rectangular zoom selection
@@ -47,10 +68,15 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
       var xDaysRect = brush.extent()[0].valueOf();
       timeline.zoomFactor((parseInt(width) - parseInt(margin.left) - parseInt(margin.right)) / (parseInt(d3.select(timeline.divId()+" .extent").attr("width"))));
       if (timeline.zoomFactor() > 0) {
-        timeline.zoomFactor(Math.min(timeline.zoomFactor(), timeline.computeZoomFactor("days", minDays, maxDays, width)));
+        timeline.zoomFactor(Math.min(timeline.zoomFactor(), timeline.computeZoomFactor("days", minDays, maxDays, width)) / timeline.fractionTimelineShown());
       } else {
        timeline.zoomFactor(timeline.computeZoomFactor("days", minDays, maxDays, width));
       }
+
+      var extendPosition = parseInt(d3.select(timeline.divId()+" .extent").attr("x"));
+      var tick = findNearestTickToLeft(extendPosition);
+      timeline.zoomStart(timeline.approximateTickToDayValue(tick.textContent));
+      timeline.trimmed(false);
 
       var zoomLevel = timeline.computeZoomLevel(readOnlyVars.minDays, readOnlyVars.maxDays, timeline.width() * timeline.zoomFactor());
       var tickValues = timeline.getTickValues(readOnlyVars.minDays, readOnlyVars.maxDays, zoomLevel);
