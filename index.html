@@ -1,10 +1,10 @@
 <!doctype html>
 <html>
 <head>
-  <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+  <script src="//code.jquery.com/jquery-latest.min.js"></script>
   <script src="js/lib/jquery.dataTables.min.js"></script>
   <script src="js/lib/jquery.qtip.min.js"></script>
-  <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+  <script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
   <script src="js/lib/underscore-min.js"></script>
   <script>
   /**
@@ -25,11 +25,11 @@
    */
   Object.setPrototypeOf = Object.setPrototypeOf || function(obj, proto) {
     obj.__proto__ = proto;
-    return obj; 
+    return obj;
   }
   </script>
-  <script src="http://cdn.rawgit.com/MrRio/jsPDF/v1.3.5/dist/jspdf.min.js"></script>
-  <script src="http://html2canvas.hertzen.com/build/html2canvas.js"></script>
+  <script src="//cdn.rawgit.com/MrRio/jsPDF/v1.3.5/dist/jspdf.min.js"></script>
+  <script src="//html2canvas.hertzen.com/build/html2canvas.js"></script>
   <script src="js/lib/d3-timeline.js"></script>
   <script src="js/plugins/util.js"></script>
   <script src="js/plugins/pluginPrototype.js"></script>
@@ -43,8 +43,8 @@
   <script src="js/clinicalTimeline.js"></script>
   <script src="js/sanity.js"></script>
   <script src="js/parser.js"></script>
-  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
-  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
   <link href="css/lib/jquery.qtip.min.css" type="text/css" rel="stylesheet" />
   <link href="css/lib/dataTables.tableTools.min.css" type="text/css" rel="stylesheet" />
   <style type="text/css">
@@ -173,7 +173,7 @@
       var testData = getURLParameterByName("test");
       var dataFed = "data1";
       var waitForParse = false;
-      
+
       if (jsonURL !== "") {
         if (jsonURL.indexOf("?view=") > -1) {
           jsonURL = jsonURL.substring(0, jsonURL.indexOf("?view="));
@@ -225,42 +225,42 @@
         .enableTrackTooltips(true)
         .plugins([
           {
-            obj: new trimClinicalTimeline("Trim Timeline"), 
+            obj: new trimClinicalTimeline("Trim Timeline"),
             enabled: trimmingForSceenshotTest
-          },  
+          },
           {
-            obj: new clinicalTimelineHelperLines("Helper Lines"), 
+            obj: new clinicalTimelineHelperLines("Helper Lines"),
             enabled: false
-          }, 
+          },
           {
-            obj: new clinicalTimelineZoom("Zoom"), 
+            obj: new clinicalTimelineZoom("Zoom"),
             enabled: !trimmingForSceenshotTest
           },
           {
-            obj: new clinicalTimelineOverviewAxis("Overview Axis"), 
+            obj: new clinicalTimelineOverviewAxis("Overview Axis"),
             enabled:!trimmingForSceenshotTest
           },
           {
-            obj: new clinicalTimelineVerticalLine("Vertical Timeline", 
+            obj: new clinicalTimelineVerticalLine("Vertical Timeline",
               {
-                tooltipControllerId: "#tooltip-controller", 
-                hoverBegin: 200, 
+                tooltipControllerId: "#tooltip-controller",
+                hoverBegin: 200,
                 hoverEnd: 770
               }),
             enabled: false
           },
           {
-            obj: new configCheckManager(null, 
+            obj: new configCheckManager(null,
               {
                 configUlId: "#timeline-wrapper #config-div #config-dropdown"
-              }), 
+              }),
             enabled: true
           },
           {
-            obj: new clinicalTimelineExporter("Export", 
+            obj: new clinicalTimelineExporter("Export",
               {
                 exportDivId : "#export-div",
-              }), 
+              }),
             enabled: true
           }
         ])
@@ -287,7 +287,7 @@
       <span class="caret"></span></button>
       <ul class="dropdown-menu">
         <script type="text/javascript">
-          var exporter = (new clinicalTimelineExporter()).run(null, {exportDivId : "#export-div", timelineDiv : "#timeline"}); 
+          var exporter = (new clinicalTimelineExporter()).run(null, {exportDivId : "#export-div", timelineDiv : "#timeline"});
         </script>
         <li><a href='javascript:exporter.generateSVG()'>SVG Image</a></li>
         <li><a href='javascript:exporter.generatePNG(true)'>PNG Image</a></li>
