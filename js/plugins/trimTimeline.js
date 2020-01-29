@@ -8,31 +8,22 @@ function trimClinicalTimeline(name, spec){
   this.id = "trimClinicalTimeline";
 }
 
-function isBrowserZoomed() {
-  return Math.round(window.devicePixelRatio * 100) !== 100;
-}
-
 /**
  * runs the trimClinicalTimeline plugin
  * @param  {function} timeline    clinicalTimeline object
  * @param  {Object}   [spec=null] specification specific to the plugin
  */
 trimClinicalTimeline.prototype.run = function (timeline, spec) {
-  // skip when browser zoomed in, because trimming behaves oddly in those
-  // cases
-  if (isBrowserZoomed()) {
-      return;
-  }
   var toleranceRatio = 0.2, //cut the timeline after how much of inactivity in terms of percentage of width of timeline
     timelineElements = [],
     breakTimelineForKinkIndex = [],
     breakTimelineForKink = [],
     tickCoordinatesKink = [],
     divId = timeline.divId(),
-    svg = d3.select(timeline.divId()+" .timeline"),
+    svg = timeline.zoomFactor() > 1 ? d3.select(timeline.divId()+" .scrollable g") : d3.select(timeline.divId()+" .timeline"),
     maxDays = timeline.getReadOnlyVars().maxDays,
     minDays = timeline.getReadOnlyVars().minDays,
-    width = timeline.width(),
+    width = timeline.zoomFactor() > 1 ? timeline.zoomFactor() * timeline.width() : timeline.width(),
     margin = timeline.getReadOnlyVars().margin,
     zoomLevel = timeline.computeZoomLevel(minDays, maxDays, width),
     tickValues = timeline.getTickValues(minDays, maxDays, zoomLevel),
@@ -48,12 +39,16 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
     tickValuesInt = tickValues.map(function(x) {
       return Math.round(x);
     }),
+    // the first and last ticks on the timeline, as ints
     ticksToShow = [tickValuesInt[0], tickValuesInt[tickValuesInt.length - 1]],
     expandedXAxis = d3.select(timeline.divId()+" > svg > g > g.axis");
 
   expandedXAxis.style("visibility", "hidden");
 
-  d3.selectAll(divId+" .timeline g rect,"+divId+" .timeline g circle").each(function(d, e) {
+  var select = timeline.zoomFactor() > 1 ?
+    (divId+" .scrollable g rect,"+divId+" .scrollable g circle") :
+    (divId+" .timeline g rect,"+divId+" .timeline g circle")
+  d3.selectAll(select).each(function(d, e) {
    for (var i = parseInt(d.starting_time); i <= parseInt(d.ending_time) + parseInt(clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel)); i += clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel)) {
       if (timelineElements.indexOf(i) === -1) {
         timelineElements.push(parseInt(i));
@@ -64,7 +59,9 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
   timelineElements.sort(function(a, b) { return a - b; });
 
   timelineElements.forEach(function(value, index) {
+    // if point is within the timeline range
     if (value > tickValuesInt[0] && value < tickValuesInt[tickValuesInt.length - 1]) {
+      // find the index of the tick directly to the left of the value
       for (var i = 0; i < tickValuesInt.length - 1; i++) {
         if (value >= tickValuesInt[i] && value <= tickValuesInt[i + 1]) {
           break;
