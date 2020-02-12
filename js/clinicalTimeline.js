@@ -28,8 +28,11 @@ var clinicalTimeline = (function(){
     enableTrackTooltips,
     overviewX = margin.overviewAxis.left,
     chart = null,
+    zoomStart = null,
+    trimmed = false,
     clinicalTimelinePlugins,
-    clinicalTimelineReadOnlyVars;
+    clinicalTimelineReadOnlyVars,
+    fractionTimelineShown = 1.0;
 
   function getTrack(data, track) {
     return data.filter(function(x) {
@@ -779,6 +782,7 @@ var clinicalTimeline = (function(){
    */
   timeline.computeZoomLevel = function(minDays, maxDays, width) {
     var pixelsPerDay = parseFloat(parseInt(width) / difference(parseInt(minDays), parseInt(maxDays)));
+    pixelsPerDay = pixelsPerDay / timeline.fractionTimelineShown();
     if (pixelsPerDay < 1) {
       return "years";
     } else if (pixelsPerDay < 10){
@@ -789,6 +793,22 @@ var clinicalTimeline = (function(){
       return "3days";
     } else {
       return "days";
+    }
+  }
+
+  timeline.approximateTickToDayValue = function approximateTickToDayValue(tick) {
+    var dayRegex = /(-?\d+)(:?d)/
+    var monthRegex = /(-?\d+)(:?m)/
+    var yearRegex = /(-?\d+)(:?y?)/
+  
+    if (tick.match(dayRegex)) {
+      return parseInt(tick.match(dayRegex)[1])
+    }
+    if (tick.match(monthRegex)) {
+      return parseInt(tick.match(monthRegex)[1]) * 30.5 
+    }
+    if (tick.match(yearRegex)) {
+      return parseInt(tick.match(yearRegex)[1]) * 365
     }
   }
 
@@ -929,6 +949,42 @@ var clinicalTimeline = (function(){
     if (!arguments.length) return stackSlack;
     return timeline;
   };
+
+  timeline.fractionTimelineShown = function (update) {
+    if (!arguments.length) {
+      return fractionTimelineShown
+    }
+    fractionTimelineShown = update;
+    return timeline;
+  }
+
+  /**
+   * Has the timeline been trimmed yet?
+   * Used to avoid render loops when trimmed and zoomed
+   * 
+   * @param {boolean} update
+   * @returns {object} clinicalTimeline object | boolean
+   */
+  timeline.trimmed = function (update) {
+    if (!arguments.length) {
+      return trimmed
+    }
+    trimmed = update;
+    return timeline;
+  }
+
+  /**
+   * The position in days of the start of the zoom region
+   * @param {number} update
+   * @returns {object} clinicalTimeline object | number
+   */
+  timeline.zoomStart = function (update) {
+    if (!arguments.length) {
+      return zoomStart
+    }
+    zoomStart = update;
+    return timeline;
+  }
 
   /**
    * Change the value of the variable allData of clinicalTimeline

@@ -106,6 +106,8 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
   });
 
   ticksToShow.sort(function(a, b) { return a - b; });
+
+  timeline.fractionTimelineShown(ticksToShow.length / tickValues.length);
   // redetermine breakTimelineForKinkIndex after sorting
   breakTimelineForKinkIndex = [];
   for (var i = 0; i < breakTimelineForKink.length; i++) {
@@ -231,6 +233,27 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
       })
       .append("svg:title")
       .text("Click to trim the timeline");
+  }
+
+  // Adjust where in the timeline we are, since zoom doesn't know about
+  // The trimmed timeline, as it renders after zoom
+  if (timeline.zoomStart() !== null && !timeline.trimmed()) {
+    timeline.trimmed(true);
+    var regex = /(:?translate.)(\d+)(:?.*)/;
+    var ticks = d3.select(divId + " svg g .x")[0][0].children;
+    var tick = ticks[0];
+    for (var i = 0; i < ticks.length; i++) {
+      var newTick = ticks[i];
+      if (timeline.zoomStart() - timeline.approximateTickToDayValue(newTick.textContent) < 0) {
+        break;
+      }
+      tick = newTick;
+    }
+    var translate = "-" + tick.getAttribute("transform").match(regex)[2];
+    timeline.translateX(translate)
+    d3.select(divId).style("visibility", "hidden");
+    timeline();
+    d3.select(divId).style("visibility", "visible");
   }
 }
 
