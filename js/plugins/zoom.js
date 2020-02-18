@@ -1,3 +1,5 @@
+var zoomCount = 0;
+
 /**
  * Plugin to add rectangular zoom selection. 
  * Use brush to zoom. After zooming in, scroll mouse or drag to pan.
@@ -8,10 +10,11 @@ function clinicalTimelineZoom(name, spec){
   this.id = "zoom";
 }
 
-function findNearestTickToLeft(position) {
+function findNearestTick(position) {
   var regex = /(:?translate.)(\d+)(:?.*)/;
   var ticks = document.getElementsByClassName("tick");
   var tick = ticks;
+  var distance = Number.MAX_SAFE_INTEGER;
 
   for (var i = 0; i < ticks.length; i++) {
     var newTick = ticks[i];
@@ -19,10 +22,11 @@ function findNearestTickToLeft(position) {
       continue;
     }
     var tickPosition = newTick.getAttribute("transform").match(regex)[2];
-    var distance = position - parseInt(tickPosition);
-    if (distance < 0) {
+    var newDistance = Math.abs(position - parseInt(tickPosition));
+    if (distance < newDistance) {
       return tick;
     } else {
+      distance = newDistance;
       tick = newTick;
     }
   }
@@ -57,7 +61,16 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
      * zoom in after brush ends
      */
     var brushend = function() {
-      var originalZoomLevel = timeline.computeZoomLevel(minDays, maxDays, width);
+      timeline.trimmed(false); // this will get switched back to true by timTimeline
+      var extendLeft = parseInt(d3.select(timeline.divId()+" .extent").attr("x"));
+      var extendRight = extendLeft + parseInt(d3.select(timeline.divId()+" .extent").attr("width"));
+      var startTick = findNearestTick(extendLeft);
+      var endTick = findNearestTick(extendRight);
+      var zoomStart = timeline.approximateTickToDayValue(startTick.textContent)
+      var zoomEnd = timeline.approximateTickToDayValue(endTick.textContent)
+      timeline.zoomStart(zoomStart);
+
+      var originalZoomLevel = timeline.computeZoomLevel(minDays, maxDays, width, timeline.fractionTimelineShown());
       //handle positioning of the overview rectangle post zoom in.
       var overViewScale = d3.time.scale()
         .domain([roundDown(minDays, clinicalTimelineUtil.getDifferenceTicksDays(originalZoomLevel)), roundUp(maxDays, clinicalTimelineUtil.getDifferenceTicksDays(originalZoomLevel))])
@@ -68,17 +81,13 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
       var xDaysRect = brush.extent()[0].valueOf();
       timeline.zoomFactor((parseInt(width) - parseInt(margin.left) - parseInt(margin.right)) / (parseInt(d3.select(timeline.divId()+" .extent").attr("width"))));
       if (timeline.zoomFactor() > 0) {
-        timeline.zoomFactor(Math.min(timeline.zoomFactor(), timeline.computeZoomFactor("days", minDays, maxDays, width)) / timeline.fractionTimelineShown());
+        timeline.zoomFactor(Math.min(timeline.zoomFactor(), timeline.computeZoomFactor("days", minDays, maxDays, width)));
       } else {
-       timeline.zoomFactor(timeline.computeZoomFactor("days", minDays, maxDays, width));
+        timeline.zoomFactor(timeline.computeZoomFactor("days", minDays, maxDays, width));
       }
+      timeline.zoomFactor(timeline.zoomFactor() * timeline.fractionTimelineShown());
 
-      var extendPosition = parseInt(d3.select(timeline.divId()+" .extent").attr("x"));
-      var tick = findNearestTickToLeft(extendPosition);
-      timeline.zoomStart(timeline.approximateTickToDayValue(tick.textContent));
-      timeline.trimmed(false);
-
-      var zoomLevel = timeline.computeZoomLevel(readOnlyVars.minDays, readOnlyVars.maxDays, timeline.width() * timeline.zoomFactor());
+      var zoomLevel = timeline.computeZoomLevel(zoomStart, zoomEnd, timeline.width(), 1);
       var tickValues = timeline.getTickValues(readOnlyVars.minDays, readOnlyVars.maxDays, zoomLevel);
       // TODO: Translation post zooming is not entirely correct
       if (xDaysRect > minDays) {
@@ -112,7 +121,7 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
       });
     };
 
-    if (timeline.computeZoomLevel(minDays, maxDays, width * timeline.zoomFactor()) !== "days") {
+    if (timeline.computeZoomLevel(minDays, maxDays, width * timeline.zoomFactor(), timeline.fractionTimelineShown()) !== "days") {
       // add brush overlay
       var xScale = d3.time.scale()
          .domain([beginning, ending])
@@ -138,7 +147,12 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
           d3.select(divId+" #timelineZoomExplanation").style("visibility", "hidden");
       });
     }
+    zoomCount = 0;
   } else {
+    zoomCount++;
+    if (zoomCount > 1) {
+      return;
+    }
     // Add panning explanation and visual indicator
     zoomExplanation(divId, svg, "Scroll/drag to move", "visible", 180);
     d3.select(divId + " svg").style("cursor", "move");
@@ -152,7 +166,7 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
    * @param  {number} pos        position of the explanation's text
    */
   function zoomExplanation(divId, svg, text, visibility, pos) {
-    d3.select(divId + " svg")
+    d3.select(divId + " svg g .brush")
       .insert("text")
       .attr("transform", "translate("+(parseInt(svg.attr("width"))-pos)+", "+parseInt(svg.attr("height")-5)+")")
       .attr("class", "timeline-label")

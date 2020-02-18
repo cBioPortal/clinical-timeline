@@ -25,7 +25,7 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
     minDays = timeline.getReadOnlyVars().minDays,
     width = timeline.zoomFactor() > 1 ? timeline.zoomFactor() * timeline.width() : timeline.width(),
     margin = timeline.getReadOnlyVars().margin,
-    zoomLevel = timeline.computeZoomLevel(minDays, maxDays, width),
+    zoomLevel = timeline.computeZoomLevel(minDays, maxDays, width, timeline.fractionTimelineShown()),
     tickValues = timeline.getTickValues(minDays, maxDays, zoomLevel),
     kinkLineData = [{ "x": 75,  "y": 0  }, { "x": 80,  "y": 5 }, //drawing the kink svg
                     { "x": 85,  "y": -5 }, { "x": 90,  "y": 5 },
@@ -42,7 +42,17 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
     // the first and last ticks on the timeline, as ints
     ticksToShow = [tickValuesInt[0], tickValuesInt[tickValuesInt.length - 1]],
     expandedXAxis = d3.select(timeline.divId()+" > svg > g > g.axis");
+  
+  if (timeline.trimmingDidNothing()) {
+    // if the first trim, which happens when not zoomed
+    // does nothing, future trims should also do nothing.
+    // without this, there is a chance that they do, as zooming in
+    // changes the precision of the tick values, which decreases the duration
+    // needed to trigger a trim
+    return;
+  }
 
+  
   expandedXAxis.style("visibility", "hidden");
 
   var select = timeline.zoomFactor() > 1 ?
@@ -107,7 +117,6 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
 
   ticksToShow.sort(function(a, b) { return a - b; });
 
-  timeline.fractionTimelineShown(ticksToShow.length / tickValues.length);
   // redetermine breakTimelineForKinkIndex after sorting
   breakTimelineForKinkIndex = [];
   for (var i = 0; i < breakTimelineForKink.length; i++) {
@@ -254,6 +263,11 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
     d3.select(divId).style("visibility", "hidden");
     timeline();
     d3.select(divId).style("visibility", "visible");
+  }
+
+  timeline.fractionTimelineShown(ticksToShow.length / tickValues.length);
+  if (ticksToShow.length === tickValues.length) {
+    timeline.trimmingDidNothing(true);
   }
 }
 
