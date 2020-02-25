@@ -2,6 +2,53 @@
 /* start-test-code-not-included-in-build */
 d3 = require('d3');
 /* end-test-code-not-included-in-build */
+
+formatDayMonthYear = function(time) {
+  if (Math.abs(time.m) === 12) {
+    time.y = time.y + time.m / 12;
+    time.m = 0;
+  }
+
+  if (time.y !== 0) {
+    if (time.m !== 0) {
+      if (time.d !== 0) {
+        return time.y + "y" + Math.abs(time.m) + "m" + Math.abs(time.d) + "d";
+      } else {
+        return time.y + "y" + Math.abs(time.m) + "m";
+      }
+    } else if (time.d !== 0) {
+      return time.y + "y" + Math.abs(time.d) + "d";
+    } else {
+      return time.y + "y";
+    }
+  } else if (time.m !== 0) {
+    if (time.d !== 0) {
+      return time.m + "m" + Math.abs(time.d) + "d";
+    } else {
+      return time.m + "m";
+    }
+  } else {
+    return time.d + "d";
+  }
+}
+
+formatMonthYear = function(time) {
+  if (Math.abs(time.m) === 12) {
+    time.y = time.y + time.m / 12;
+    time.m = 0;
+  }
+  
+  if (time.y !== 0) {
+    if (time.m !== 0) {
+      return time.y + "y" + Math.abs(time.m) + "m";
+    } else {
+      return time.y + "y";
+    }
+  } else {
+    return time.m + "m";
+  }
+}
+
 var clinicalTimeline = (function(){
   "use strict";
 
@@ -30,6 +77,7 @@ var clinicalTimeline = (function(){
     chart = null,
     zoomStart = null,
     trimmed = false,
+    trimmingDidNothing = false,
     clinicalTimelinePlugins,
     clinicalTimelineReadOnlyVars,
     fractionTimelineShown = 1.0;
@@ -63,7 +111,7 @@ var clinicalTimeline = (function(){
     }
     
     minDays = Math.min(getMinStartingTime(allData), 0);
-    var zoomLevel = timeline.computeZoomLevel(minDays, maxDays, width * zoomFactor),
+    var zoomLevel = timeline.computeZoomLevel(minDays, maxDays, width * zoomFactor, timeline.fractionTimelineShown()),
       tickValues = timeline.getTickValues(minDays, maxDays, zoomLevel);
     
     beginning = tickValues[0];
@@ -753,12 +801,10 @@ var clinicalTimeline = (function(){
             case "days":
             case "3days":
             case "10days":
-              d = time.toDays();
-              dayFormat = d + "d";
+              dayFormat = formatDayMonthYear(time);
               break;
             case "months":
-              m = time.m + 12 * time.y;
-              dayFormat = m + "m";
+              dayFormat = formatMonthYear(time);
               break;
             case "years":
               y = time.y;
@@ -780,9 +826,9 @@ var clinicalTimeline = (function(){
    * @param  {Number} width
    * @return {string} zoomLevel
    */
-  timeline.computeZoomLevel = function(minDays, maxDays, width) {
+  timeline.computeZoomLevel = function(minDays, maxDays, width, fractionTimelineShown) {
     var pixelsPerDay = parseFloat(parseInt(width) / difference(parseInt(minDays), parseInt(maxDays)));
-    pixelsPerDay = pixelsPerDay / timeline.fractionTimelineShown();
+    pixelsPerDay = pixelsPerDay / fractionTimelineShown;
     if (pixelsPerDay < 1) {
       return "years";
     } else if (pixelsPerDay < 10){
@@ -797,19 +843,25 @@ var clinicalTimeline = (function(){
   }
 
   timeline.approximateTickToDayValue = function approximateTickToDayValue(tick) {
-    var dayRegex = /(-?\d+)(:?d)/
-    var monthRegex = /(-?\d+)(:?m)/
-    var yearRegex = /(-?\d+)(:?y?)/
-  
-    if (tick.match(dayRegex)) {
-      return parseInt(tick.match(dayRegex)[1])
+    var dayRegex = /(-?)((\d+)(?:y))?((\d+)(?:m))?((\d+)(?:d))/
+    var monthRegex = /(-?)((\d+)(?:y))?((\d+)(?:m))/
+    var yearRegex = /(-?)((\d+)(?:y))/
+
+    var uParse = function (num) { return num === undefined ? 0 : parseInt(num); };
+
+    var match = tick.match(dayRegex);
+    if (match) {
+      return uParse(match[1] + "1") * (uParse(match[3]) * 365 + uParse(match[5]) * 30.5 + uParse(match[7]))
     }
-    if (tick.match(monthRegex)) {
-      return parseInt(tick.match(monthRegex)[1]) * 30.5 
+    match = tick.match(monthRegex);
+    if (match) {
+      return uParse(match[1] + "1") * (uParse(match[3]) * 365 + uParse(match[5]) * 30.5)
     }
-    if (tick.match(yearRegex)) {
-      return parseInt(tick.match(yearRegex)[1]) * 365
+    match = tick.match(yearRegex);
+    if (match) {
+      return uParse(match[1] + "1") * (uParse(match[3]) * 365)
     }
+    return 0;
   }
 
   /**
@@ -821,7 +873,7 @@ var clinicalTimeline = (function(){
    * @param  {Number} width
    * @return {Number} zoomFactor    
    */
-  timeline.computeZoomFactor = function(zoomLevel, minDays, maxDays, width) {
+  timeline.computeZoomFactor = function(zoomLevel, minDays, maxDays, width) {    
     switch(zoomLevel) {
       case "years":
         return 0.9 * difference(parseInt(minDays), parseInt(maxDays)) / parseInt(width);
@@ -970,6 +1022,14 @@ var clinicalTimeline = (function(){
       return trimmed
     }
     trimmed = update;
+    return timeline;
+  }
+
+  timeline.trimmingDidNothing = function (update) {
+    if (!arguments.length) {
+      return trimmingDidNothing
+    }
+    trimmingDidNothing = update;
     return timeline;
   }
 

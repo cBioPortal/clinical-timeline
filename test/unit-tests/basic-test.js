@@ -61,12 +61,12 @@ describe('clinicalTimeline.formatTime', function() {
      expect("10d").to.equal(formatTime(daysToTimeObject(10), "days"));
      expect("10d").to.equal(formatTime(daysToTimeObject(10), "3days"));
      expect("10d").to.equal(formatTime(daysToTimeObject(10), "10days"));
-     expect("610d").to.equal(formatTime(daysToTimeObject(610), "days"));
-     expect("610d").to.equal(formatTime(daysToTimeObject(610), "3days"));
-     expect("610d").to.equal(formatTime(daysToTimeObject(610), "10days"));
+     expect("1y8m5d").to.equal(formatTime(daysToTimeObject(610), "days"));
+     expect("1y8m5d").to.equal(formatTime(daysToTimeObject(610), "3days"));
+     expect("1y8m5d").to.equal(formatTime(daysToTimeObject(610), "10days"));
 
      expect("0m").to.equal(formatTime(daysToTimeObject(10), "months"));
-     expect("20m").to.equal(formatTime(daysToTimeObject(610), "months"));
+     expect("1y8m").to.equal(formatTime(daysToTimeObject(610), "months"));
 
      expect("0y").to.equal(formatTime(daysToTimeObject(10), "years"));
      expect("1y").to.equal(formatTime(daysToTimeObject(610), "years"));
