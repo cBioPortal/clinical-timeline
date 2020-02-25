@@ -30,6 +30,7 @@ function findNearestTick(position) {
       tick = newTick;
     }
   }
+  return tick;
 }
 
 /**
