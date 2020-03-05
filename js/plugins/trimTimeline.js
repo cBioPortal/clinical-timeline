@@ -23,7 +23,7 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
     svg = timeline.zoomFactor() > 1 ? d3.select(timeline.divId()+" .scrollable g") : d3.select(timeline.divId()+" .timeline"),
     maxDays = timeline.getReadOnlyVars().maxDays,
     minDays = timeline.getReadOnlyVars().minDays,
-    width = timeline.zoomFactor() > 1 ? timeline.zoomFactor() * timeline.width() : timeline.width(),
+    width = timeline.zoomFactor() * timeline.width(),
     margin = timeline.getReadOnlyVars().margin,
     zoomLevel = timeline.computeZoomLevel(minDays, maxDays, width, timeline.fractionTimelineShown()),
     tickValues = timeline.getTickValues(minDays, maxDays, zoomLevel),
@@ -249,8 +249,9 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
   if (timeline.zoomStart() !== null && !timeline.trimmed()) {
     timeline.trimmed(true);
     var regex = /(:?translate.)(\d+)(:?.*)/;
-    var ticks = d3.select(divId + " svg g .x")[0][0].children;
+    var ticks = d3.selectAll(divId + " svg .x .tick")[0];
     var tick = ticks[0];
+    var baseOffset = parseInt(tick.getAttribute("transform").match(regex)[2]);
     for (var i = 0; i < ticks.length; i++) {
       var newTick = ticks[i];
       if (timeline.zoomStart() - timeline.approximateTickToDayValue(newTick.textContent) < 0) {
@@ -258,7 +259,8 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
       }
       tick = newTick;
     }
-    var translate = "-" + tick.getAttribute("transform").match(regex)[2];
+    var closestTickOffset = parseInt(tick.getAttribute("transform").match(regex)[2]);
+    var translate = "-" + (closestTickOffset - baseOffset);
     timeline.translateX(translate)
     d3.select(divId).style("visibility", "hidden");
     timeline();
