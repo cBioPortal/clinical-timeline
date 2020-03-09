@@ -826,9 +826,8 @@ var clinicalTimeline = (function(){
    * @param  {Number} width
    * @return {string} zoomLevel
    */
-  timeline.computeZoomLevel = function(minDays, maxDays, width, fractionTimelineShown) {
+  timeline.computeZoomLevel = function(minDays, maxDays, width) {
     var pixelsPerDay = parseFloat(parseInt(width) / difference(parseInt(minDays), parseInt(maxDays)));
-    pixelsPerDay = pixelsPerDay / fractionTimelineShown;
     if (pixelsPerDay < 1) {
       return "years";
     } else if (pixelsPerDay < 10){

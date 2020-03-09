@@ -10,17 +10,17 @@ function clinicalTimelineZoom(name, spec){
   this.id = "zoom";
 }
 
-function findNearestTick(position) {
+function findNearestTick(position, divId) {
   var regex = /(:?translate.)(\d+)(:?.*)/;
-  var ticks = document.getElementsByClassName("tick");
-  var tick = ticks;
+  var ticks = d3.selectAll(divId + " .x .tick")[0];
+  if (!ticks[0]) {
+    ticks = d3.selectAll(divId + " g .axis .tick")[0];
+  }
+  var tick = ticks[0];
   var distance = Number.MAX_SAFE_INTEGER;
 
   for (var i = 0; i < ticks.length; i++) {
     var newTick = ticks[i];
-    if (newTick.parentElement.getAttribute("style") === "visibility: hidden;") {
-      continue;
-    }
     var tickPosition = newTick.getAttribute("transform").match(regex)[2];
     var newDistance = Math.abs(position - parseInt(tickPosition));
     if (distance < newDistance) {
@@ -31,6 +31,35 @@ function findNearestTick(position) {
     }
   }
   return tick;
+}
+
+/**
+ * The zoom end has to be calculated by taking the pixel distance between
+ * the start and end ticks, then translating pixel distance into actual distance
+ * because otherwise when you zoom over a trimmed region, you will not zoom in an
+ * appropriate ammount.
+ */
+function calculateZoomEnd(zoomStart, startTick, endTick, timeline) {
+  var regex = /(:?translate.)(\d+)(:?.*)/;
+  var ticks = d3.selectAll(timeline.divId() + " .x .tick")[0];
+  var firstTick = ticks[0];
+  var secondTick = ticks[1];
+  var tickPixelDistance = (
+    parseInt(secondTick.getAttribute("transform").match(regex)[2])
+    -
+    parseInt(firstTick.getAttribute("transform").match(regex)[2])
+  )
+  var tickValueDistance = (
+    timeline.approximateTickToDayValue(secondTick.textContent)
+    -
+    timeline.approximateTickToDayValue(firstTick.textContent)
+  )
+  var zoomPixelDistance = (
+    parseInt(endTick.getAttribute("transform").match(regex)[2])
+    -
+    parseInt(startTick.getAttribute("transform").match(regex)[2])
+  )
+  return zoomStart + (tickValueDistance / tickPixelDistance)*zoomPixelDistance;
 }
 
 /**
@@ -65,10 +94,18 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
       timeline.trimmed(false); // this will get switched back to true by timTimeline
       var extendLeft = parseInt(d3.select(timeline.divId()+" .extent").attr("x"));
       var extendRight = extendLeft + parseInt(d3.select(timeline.divId()+" .extent").attr("width"));
-      var startTick = findNearestTick(extendLeft);
-      var endTick = findNearestTick(extendRight);
-      var zoomStart = timeline.approximateTickToDayValue(startTick.textContent)
-      var zoomEnd = timeline.approximateTickToDayValue(endTick.textContent)
+      if (extendRight < extendLeft + 2) {
+        extendLeft = Math.max(0, extendLeft - width / 4);
+        extendRight = Math.min(width, extendRight + width / 4);
+      }
+      var startTick = findNearestTick(extendLeft, timeline.divId());
+      var endTick = findNearestTick(extendRight, timeline.divId());
+      var zoomStart = timeline.approximateTickToDayValue(startTick.textContent);
+      if (d3.selectAll(timeline.divId() + " .x .tick")[0][0]) {
+        var zoomEnd = calculateZoomEnd(zoomStart, startTick, endTick, timeline);
+      } else {
+        var zoomEnd = timeline.approximateTickToDayValue(endTick.textContent);
+      }
       timeline.zoomStart(zoomStart);
 
       var originalZoomLevel = timeline.computeZoomLevel(minDays, maxDays, width, timeline.fractionTimelineShown());
@@ -80,13 +117,17 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
       timeline.overviewX(overViewScale(brush.extent()[0].valueOf()));
 
       var xDaysRect = brush.extent()[0].valueOf();
-      timeline.zoomFactor((parseInt(width) - parseInt(margin.left) - parseInt(margin.right)) / (parseInt(d3.select(timeline.divId()+" .extent").attr("width"))));
+      var selectWidth = parseInt(d3.select(timeline.divId()+" .extent").attr("width"));
+      // Seems like things always zoom in a little too far, so make it zoom out a bit?
+      // Seriously, this seems to work, and I'm at my wit's end.
+      // So for now, just multiply the value that totally makes sense and should work
+      // by 0.75, because that works better.
+      timeline.zoomFactor(0.75 * width / selectWidth);
       if (timeline.zoomFactor() > 0) {
         timeline.zoomFactor(Math.min(timeline.zoomFactor(), timeline.computeZoomFactor("days", minDays, maxDays, width)));
       } else {
         timeline.zoomFactor(timeline.computeZoomFactor("days", minDays, maxDays, width));
       }
-      timeline.zoomFactor(timeline.zoomFactor() * timeline.fractionTimelineShown());
 
       var zoomLevel = timeline.computeZoomLevel(zoomStart, zoomEnd, timeline.width(), 1);
       var tickValues = timeline.getTickValues(readOnlyVars.minDays, readOnlyVars.maxDays, zoomLevel);
