@@ -94,7 +94,12 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
       timeline.trimmed(false); // this will get switched back to true by timTimeline
       var extendLeft = parseInt(d3.select(timeline.divId()+" .extent").attr("x"));
       var extendRight = extendLeft + parseInt(d3.select(timeline.divId()+" .extent").attr("width"));
+      
+      // if the zoom region is tiny, the user clicked instead of clicking 
+      // and dragging. In this case, just make the zoom region half of the timeline,
+      // centered around where they clicked
       if (extendRight < extendLeft + 2) {
+        var zoomFactor = 2.0;
         extendLeft = Math.max(0, extendLeft - width / 4);
         extendRight = Math.min(width, extendRight + width / 4);
       }
@@ -122,7 +127,9 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
       // Seriously, this seems to work, and I'm at my wit's end.
       // So for now, just multiply the value that totally makes sense and should work
       // by 0.75, because that works better.
-      timeline.zoomFactor(0.75 * width / selectWidth);
+      // Also, if the zoomFactor was predetermined as a result of the user clicking
+      // rather than clicking and dragging, use that value
+      timeline.zoomFactor(zoomFactor ? zoomFactor : 0.75 * width / selectWidth);
       if (timeline.zoomFactor() > 0) {
         timeline.zoomFactor(Math.min(timeline.zoomFactor(), timeline.computeZoomFactor("days", minDays, maxDays, width)));
       } else {

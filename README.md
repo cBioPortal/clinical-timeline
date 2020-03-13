@@ -43,3 +43,34 @@ clinical-timeline uses [code-climate](https://codeclimate.com/) to maintain code
 
 ## License
 [LGPL](https://github.com/cBioPortal/clinical-timeline/blob/master/LICENSE)
+
+## Testing
+### Setup:
+1. Run `make clean build`
+2. Copy the repo into frontend/node_modules
+3. Start up the frontend
+
+### Testing in timeline repo
+- Make sure `timeline-example.json` looks right
+- Make sure you can zoom, trim
+
+### Testing in actual frontend
+Link: http://localhost:3000/patient?studyId=lgg_ucsf_2014&caseId=P17
+- Single click zoom
+  - Should zoom in ~ 50%
+  - Should not break if you click before the first tick mark
+  - Should not break if you click after the last tick mark
+  - Should not break if select a trim
+- Click and drag zoom
+  - Should show ~ full region you selected
+  - Should not break if you click before the first tick mark
+  - Should not break if you click after the last tick mark 
+  - Should have reasonable units
+  - Should not break if you select a region that includes a trim
+  - Should zoom in more if you select a smaller region
+- General zooming
+  - Points and ticks are in the right place (verify by looking at start date)
+  - Should not break if you zoom in, zoom out, zoom in
+- Zooming + trimming
+  - http://localhost:3000/patient?studyId=lgg_ucsf_2014&caseId=P04
+  - If no trimming occurs when zoomed out, no trimming should occur if you zoom in
