@@ -242,6 +242,28 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
       })
       .append("svg:title")
       .text("Click to trim the timeline");
+    if (timeline.zoomFactor() > 1) {
+      var chart = timeline.getReadOnlyVars().chart;
+      var _svg = d3.select(divId + " svg");
+      // i zoomed
+      var zoomBtn = d3.select(divId + " svg")
+          .insert("text")
+          .attr("transform", "translate("+(parseInt(_svg.attr("width"))-70)+", "+parseInt(_svg.attr("height")-5)+")")
+          .attr("class", "timeline-label")
+          .text("Zoom out")
+          .style("cursor", "zoom-out")
+          .attr("id", "timelineZoomOut");
+      zoomBtn.on("click", function() {
+        timeline.zoomFactor(1);
+        timeline.overviewX(margin.overviewAxis.left);
+        $('.'+divId.substr(1)+'-qtip').qtip("hide");
+        d3.select(divId).style("visibility", "hidden");
+        timeline();
+        d3.select(divId).style("visibility", "visible");
+        chart.scrolledX(null);
+        this.remove();
+      });
+    }
   }
 
   // Adjust where in the timeline we are, since zoom doesn't know about
