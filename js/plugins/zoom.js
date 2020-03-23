@@ -1,5 +1,3 @@
-var zoomCount = 0;
-
 /**
  * Plugin to add rectangular zoom selection. 
  * Use brush to zoom. After zooming in, scroll mouse or drag to pan.
@@ -196,10 +194,8 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
           d3.select(divId+" #timelineZoomExplanation").style("visibility", "hidden");
       });
     }
-    zoomCount = 0;
   } else {
-    zoomCount++;
-    if (zoomCount > 1) {
+    if (d3.selectAll("#timelineZoomOut")[0].length > 1) {
       return;
     }
     // Add panning explanation and visual indicator
