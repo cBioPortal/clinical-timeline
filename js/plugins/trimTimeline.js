@@ -246,11 +246,22 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
       var chart = timeline.getReadOnlyVars().chart;
       var _svg = d3.select(divId + " svg");
       // i zoomed
+      d3.select(divId + " svg")
+          .insert("rect")
+          .attr("transform", "translate("+(parseInt(_svg.attr("width"))-72)+", "+parseInt(_svg.attr("height")-16)+")")
+          .attr("width", 68)
+          .attr("height", 14)
+          .attr("ry", 2)
+          .attr("rx", 2)
+          .style("stroke-width", 1)
+          .style("fill", "lightgray")
+          .style("stroke", "gray");
+      
       var zoomBtn = d3.select(divId + " svg")
           .insert("text")
           .attr("transform", "translate("+(parseInt(_svg.attr("width"))-70)+", "+parseInt(_svg.attr("height")-5)+")")
           .attr("class", "timeline-label")
-          .text("Zoom out")
+          .text("Reset zoom")
           .style("cursor", "zoom-out")
           .attr("id", "timelineZoomOut");
       zoomBtn.on("click", function() {
