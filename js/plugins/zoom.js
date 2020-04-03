@@ -149,11 +149,21 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
       d3.select(divId).style("visibility", "hidden");
       timeline();
       d3.select(divId).style("visibility", "visible");
+      d3.select(divId + " svg")
+        .insert("rect")
+        .attr("transform", "translate("+(parseInt(svg.attr("width"))-72)+", "+parseInt(svg.attr("height")-16)+")")
+        .attr("width", 68)
+        .attr("height", 14)
+        .attr("ry", 2)
+        .attr("rx", 2)
+        .style("stroke-width", 1)
+        .style("fill", "lightgray")
+        .style("stroke", "gray");
       var zoomBtn = d3.select(divId + " svg")
         .insert("text")
         .attr("transform", "translate("+(parseInt(svg.attr("width"))-70)+", "+parseInt(svg.attr("height")-5)+")")
         .attr("class", "timeline-label")
-        .text("Zoom out")
+        .text("Reset zoom")
         .style("cursor", "zoom-out")
         .attr("id", "timelineZoomOut");
       zoomBtn.on("click", function() {
@@ -184,8 +194,8 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
       overlayBrush.attr("class", "brush")
         .call(brush)
         .selectAll(divId+' .extent,'+divId+' .background,'+divId+' .resize rect')
-          .attr("height", gBoundingBox.height)
-          .attr("y", 20)
+          .attr("height", gBoundingBox.height + 20)
+          .attr("y", 0)
           .style("cursor", "zoom-in");
       zoomExplanation(divId, svg, "Click + drag to zoom", "hidden", 120);
       d3.select(divId+' .background').on("mouseover", function() {
@@ -211,7 +221,7 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
    * @param  {number} pos        position of the explanation's text
    */
   function zoomExplanation(divId, svg, text, visibility, pos) {
-    d3.select(divId + " svg g .brush")
+    d3.select(divId + " svg")
       .insert("text")
       .attr("transform", "translate("+(parseInt(svg.attr("width"))-pos)+", "+parseInt(svg.attr("height")-5)+")")
       .attr("class", "timeline-label")

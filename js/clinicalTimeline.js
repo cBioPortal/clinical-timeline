@@ -171,15 +171,18 @@ var clinicalTimeline = (function(){
           addTrackTooltip($(this), allData);
         }
       });
-      // Add track button
-      svg.attr("height", parseInt(svg.attr("height")) + 15);
-      svg.insert("text")
-        .attr("transform", "translate(0,"+svg.attr("height")+")")
-        .attr("class", "timeline-label")
-        .text("Add track")
-        .attr("id", "addtrack");
-      addNewTrackTooltip($("#addtrack"));
     }
+
+    // Add track button. Hide, but still add if no track tooltips to stop text collisions.
+    svg.attr("height", parseInt(svg.attr("height")) + 15);
+    svg.insert("text")
+      .attr("transform", "translate(0,"+svg.attr("height")+")")
+      .attr("class", "timeline-label")
+      .style("visibility", enableTrackTooltips ? "" : "hidden")
+      .text("Add track")
+      .attr("id", "addtrack");
+    addNewTrackTooltip($("#addtrack"));
+    
     svg.insert("text")
       .attr("transform", "translate(0, 15)")
       .attr("class", "timeline-label")
