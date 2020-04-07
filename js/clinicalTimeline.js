@@ -78,6 +78,8 @@ var clinicalTimeline = (function(){
     zoomStartId = null,
     zoomEndId = null,
     zoomStart = null,
+    firstElementId = null,
+    lastElementId = null,
     trimmed = false,
     trimmingDidNothing = false,
     clinicalTimelinePlugins,
@@ -119,6 +121,8 @@ var clinicalTimeline = (function(){
     beginning = tickValues[0];
     ending = tickValues[tickValues.length-1];
     overviewAxisWidth = width - 200;
+
+    console.log("zoom factor when rendering: ", zoomFactor);
 
     var chart = d3.timeline()
       .stack()
@@ -1072,6 +1076,32 @@ var clinicalTimeline = (function(){
       return zoomEndId;
     }
     zoomEndId = update;
+    return timeline;
+  }
+
+    /**
+   * The id of the last timeline element
+   * @param {number} update
+   * @returns {object} clinicalTimeline object | number
+   */
+  timeline.lastElementId = function (update) {
+    if (!arguments.length) {
+      return lastElementId;
+    }
+    lastElementId = update;
+    return timeline;
+  }
+
+  /**
+   * The id of the first element on the timeline
+   * @param {number} update
+   * @returns {object} clinicalTimeline object | number
+   */
+  timeline.firstElementId = function (update) {
+    if (!arguments.length) {
+      return firstElementId;
+    }
+    firstElementId = update;
     return timeline;
   }
 

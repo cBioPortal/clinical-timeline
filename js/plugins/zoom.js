@@ -62,7 +62,7 @@ function calculateZoomEnd(zoomStart, startTick, endTick, timeline) {
 
 /**
  * Gets all the data points, grouped by series, sorted by x position
- * @param {string} divId 
+ * @param {string} divId
  * @returns {Object} mapping from string to element
  */
 function getOrderedDataPoints(divId) {
@@ -78,7 +78,7 @@ function getOrderedDataPoints(divId) {
     filteredPoints.push(point);
   }
 
-  
+
   filteredPoints.sort(function (a, b) {
     return parseFloat(a.getAttribute("x")) - parseFloat(b.getAttribute("x"))
   });
@@ -87,8 +87,8 @@ function getOrderedDataPoints(divId) {
 }
 
 /**
- * @param {string} divId 
- * @param {number} brushPixelStart 
+ * @param {string} divId
+ * @param {number} brushPixelStart
  * @returns {string | null}
  */
 function findIdOfFirstDataPointInZoomRegion(divId, brushPixelStart) {
@@ -98,7 +98,7 @@ function findIdOfFirstDataPointInZoomRegion(divId, brushPixelStart) {
     var tElement = timelineElements[i];
 
     var x = parseFloat(tElement.getAttribute("x"))
-    if (brushPixelStart - 5 < x) { // add a buffer of 5 pixels for user error
+    if (brushPixelStart < x) { // add a buffer of 5 pixels for user error
       return tElement.getAttribute("id");
     }
   }
@@ -106,8 +106,8 @@ function findIdOfFirstDataPointInZoomRegion(divId, brushPixelStart) {
 }
 
 /**
- * @param {string} divId 
- * @param {number} brushPixelStart 
+ * @param {string} divId
+ * @param {number} brushPixelStart
  * @returns {string | null}
  */
 function findIdOfLastDataPointInZoomRegion(divId, brushPixelEnd) {
@@ -117,7 +117,7 @@ function findIdOfLastDataPointInZoomRegion(divId, brushPixelEnd) {
     var tElement = timelineElements[i];
 
     var x = parseFloat(tElement.getAttribute("x"))
-    if (brushPixelEnd + 5 < x) { // add a buffer of 5 pixels for user error
+    if (brushPixelEnd < x) { // add a buffer of 5 pixels for user error
       return tElement.getAttribute("id");
     }
   }
@@ -175,10 +175,15 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
       }
       timeline.zoomStart(zoomStart);
       if (!zoomFactor) {
+        var points = getOrderedDataPoints(divId);
         var zoomStartId = findIdOfFirstDataPointInZoomRegion(divId, extendLeft);
         var zoomEndId = findIdOfLastDataPointInZoomRegion(divId, extendRight);
+        var firstPointId = points[0].getAttribute("id");
+        var lastPointId = points[points.length - 1].getAttribute("id");
         timeline.zoomStartId(zoomStartId);
         timeline.zoomEndId(zoomEndId);
+        timeline.firstElementId(firstPointId);
+        timeline.lastElementId(lastPointId);
       }
 
       var originalZoomLevel = timeline.computeZoomLevel(minDays, maxDays, width, timeline.fractionTimelineShown());
@@ -191,7 +196,7 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
 
       var xDaysRect = brush.extent()[0].valueOf();
       var selectWidth = parseInt(d3.select(timeline.divId()+" .extent").attr("width"));
-      
+
       // Zoom factor is a number representing how zoomed in the timeline should be.
       // 1 is not zoomed in at all, and values greater than 1 zoom the timeline in.
       // Zoom factor is calculated one of three ways:
