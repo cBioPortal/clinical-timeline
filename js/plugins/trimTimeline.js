@@ -281,20 +281,44 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
   // The trimmed timeline, as it renders after zoom
   if (timeline.zoomStart() !== null && !timeline.trimmed()) {
     timeline.trimmed(true);
-    var regex = /(:?translate.)(\d+)(:?.*)/;
-    var ticks = d3.selectAll(divId + " svg .x .tick")[0];
-    var tick = ticks[0];
-    var baseOffset = parseInt(tick.getAttribute("transform").match(regex)[2]);
-    for (var i = 0; i < ticks.length; i++) {
-      var newTick = ticks[i];
-      if (timeline.zoomStart() - timeline.approximateTickToDayValue(newTick.textContent) < 0) {
-        break;
+
+    // If there is a zoom start id and end id, calculate the zoom factor
+    // using those two pieces of information, then re render the timeline
+    // This will shift the points, so then refind the start point, find its
+    // x coordinate and calculate the translate from there
+    if (timeline.zoomStartId() && timeline.zoomEndId() && timeline.zoomStartId() !== timeline.zoomEndId()) {
+      var zoomStart = parseFloat(d3.select("#" + timeline.zoomStartId())[0][0].getAttribute("x")) - 20;
+
+      var zoomEndElement = d3.select("#" + timeline.zoomEndId())[0][0];
+      var zoomEnd = parseFloat(zoomEndElement.getAttribute("x")) + 20;
+      if (zoomEndElement.localname === "rect") {
+        zoomEnd += parseFloat(zoomEndElement.getAttribute("width"))
       }
-      tick = newTick;
+      timeline.zoomFactor(width / (zoomEnd - zoomStart));
+      
+      d3.select(divId).style("visibility", "hidden");
+      timeline();
+      d3.select(divId).style("visibility", "visible");
+      
+      var zoomStart = parseFloat(d3.select("#" + timeline.zoomStartId())[0][0].getAttribute("x"));
+      timeline.translateX("-" + Math.max(zoomStart - 250, 0));
+    } else {
+      var regex = /(:?translate.)(\d+)(:?.*)/;
+      var ticks = d3.selectAll(divId + " svg .x .tick")[0];
+      var tick = ticks[0];
+      var baseOffset = parseInt(tick.getAttribute("transform").match(regex)[2]);
+      for (var i = 0; i < ticks.length; i++) {
+        var newTick = ticks[i];
+        if (timeline.zoomStart() - timeline.approximateTickToDayValue(newTick.textContent) < 0) {
+          break;
+        }
+        tick = newTick;
+      }
+      var closestTickOffset = parseInt(tick.getAttribute("transform").match(regex)[2]);
+      var translate = "-" + (closestTickOffset - baseOffset);
+      timeline.translateX(translate)
     }
-    var closestTickOffset = parseInt(tick.getAttribute("transform").match(regex)[2]);
-    var translate = "-" + (closestTickOffset - baseOffset);
-    timeline.translateX(translate)
+    
     d3.select(divId).style("visibility", "hidden");
     timeline();
     d3.select(divId).style("visibility", "visible");

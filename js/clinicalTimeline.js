@@ -75,6 +75,8 @@ var clinicalTimeline = (function(){
     enableTrackTooltips,
     overviewX = margin.overviewAxis.left,
     chart = null,
+    zoomStartId = null,
+    zoomEndId = null,
     zoomStart = null,
     trimmed = false,
     trimmingDidNothing = false,
@@ -1045,6 +1047,31 @@ var clinicalTimeline = (function(){
       return zoomStart
     }
     zoomStart = update;
+    return timeline;
+  }
+
+  /**
+   * The id of the first timeline element inside the zoom region
+   * @param {number} update
+   * @returns {object} clinicalTimeline object | number
+   */
+  timeline.zoomStartId = function (update) {
+    if (!arguments.length) {
+      return zoomStartId;
+    }
+    zoomStartId = update;
+    return timeline;
+  }
+  /**
+   * The id of the last timeline element inside the zoom region
+   * @param {number} update
+   * @returns {object} clinicalTimeline object | number
+   */
+  timeline.zoomEndId = function (update) {
+    if (!arguments.length) {
+      return zoomEndId;
+    }
+    zoomEndId = update;
     return timeline;
   }
 

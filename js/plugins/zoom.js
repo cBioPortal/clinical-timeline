@@ -61,6 +61,70 @@ function calculateZoomEnd(zoomStart, startTick, endTick, timeline) {
 }
 
 /**
+ * Gets all the data points, grouped by series, sorted by x position
+ * @param {string} divId 
+ * @returns {Object} mapping from string to element
+ */
+function getOrderedDataPoints(divId) {
+  var dataPoints = d3.selectAll(divId + " g circle,rect");
+  var filteredPoints = [];
+  var seriesRegex = /(:?timelineSeries_)(\d+)/;
+
+  for (var i = 0; i< dataPoints[0].length; i++) {
+    var point = dataPoints[0][i];
+    if (!point.getAttribute("id") || !point.getAttribute("id").startsWith("timelineItem")) {
+      continue;
+    }
+    filteredPoints.push(point);
+  }
+
+  
+  filteredPoints.sort(function (a, b) {
+    return parseFloat(a.getAttribute("x")) - parseFloat(b.getAttribute("x"))
+  });
+
+  return filteredPoints;
+}
+
+/**
+ * @param {string} divId 
+ * @param {number} brushPixelStart 
+ * @returns {string | null}
+ */
+function findIdOfFirstDataPointInZoomRegion(divId, brushPixelStart) {
+  var timelineElements = getOrderedDataPoints(divId);
+
+  for (var i = 0; i < timelineElements.length; i++) {
+    var tElement = timelineElements[i];
+
+    var x = parseFloat(tElement.getAttribute("x"))
+    if (brushPixelStart - 5 < x) { // add a buffer of 5 pixels for user error
+      return tElement.getAttribute("id");
+    }
+  }
+  return null;
+}
+
+/**
+ * @param {string} divId 
+ * @param {number} brushPixelStart 
+ * @returns {string | null}
+ */
+function findIdOfLastDataPointInZoomRegion(divId, brushPixelEnd) {
+  var timelineElements = getOrderedDataPoints(divId);
+
+  for (var i = 0; i < timelineElements.length; i++) {
+    var tElement = timelineElements[i];
+
+    var x = parseFloat(tElement.getAttribute("x"))
+    if (brushPixelEnd + 5 < x) { // add a buffer of 5 pixels for user error
+      return tElement.getAttribute("id");
+    }
+  }
+  return null;
+}
+
+/**
  * runs the clinicalTimelineZoom plugin
  * @param  {function} timeline    clinicalTimeline object
  * @param  {Object}   [spec=null] specification specific to the plugin
@@ -110,6 +174,12 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
         var zoomEnd = timeline.approximateTickToDayValue(endTick.textContent);
       }
       timeline.zoomStart(zoomStart);
+      if (!zoomFactor) {
+        var zoomStartId = findIdOfFirstDataPointInZoomRegion(divId, extendLeft);
+        var zoomEndId = findIdOfLastDataPointInZoomRegion(divId, extendRight);
+        timeline.zoomStartId(zoomStartId);
+        timeline.zoomEndId(zoomEndId);
+      }
 
       var originalZoomLevel = timeline.computeZoomLevel(minDays, maxDays, width, timeline.fractionTimelineShown());
       //handle positioning of the overview rectangle post zoom in.
@@ -121,13 +191,29 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
 
       var xDaysRect = brush.extent()[0].valueOf();
       var selectWidth = parseInt(d3.select(timeline.divId()+" .extent").attr("width"));
-      // Seems like things always zoom in a little too far, so make it zoom out a bit?
-      // Seriously, this seems to work, and I'm at my wit's end.
-      // So for now, just multiply the value that totally makes sense and should work
-      // by 0.75, because that works better.
-      // Also, if the zoomFactor was predetermined as a result of the user clicking
-      // rather than clicking and dragging, use that value
-      timeline.zoomFactor(zoomFactor ? zoomFactor : 0.75 * width / selectWidth);
+      
+      // Zoom factor is a number representing how zoomed in the timeline should be.
+      // 1 is not zoomed in at all, and values greater than 1 zoom the timeline in.
+      // Zoom factor is calculated one of three ways:
+      // 1. If the user clicked but did not drag, the zoom factor is 2
+      // 2. If the user clicked and dragged and created a region with at least two timeline
+      //    events within it, the zoom factor will be the pixel distance between
+      //    the start of the first event and the end of the second event divided by the
+      //    timeline width.
+      // 3. If the user clicked and dragged but selected a region with one or fewer
+      //    timeline events, the closest markers on the timeline ruler will be used
+      //    to calculate the zoom region.
+      if (zoomStartId && zoomEndId && zoomStartId !== zoomEndId) {
+        zoomStart = parseFloat(d3.select("#" + zoomStartId)[0][0].getAttribute("x"));
+
+        var zoomEndElement = d3.select("#" + zoomEndId)[0][0];
+        zoomEnd = parseFloat(zoomEndElement.getAttribute("x"));
+        if (zoomEndElement.localname === "rect") {
+          zoomEnd += parseFloat(zoomEndElement.getAttribute("width"))
+        }
+        zoomFactor = width / (zoomEnd - zoomStart);
+      }
+      timeline.zoomFactor(zoomFactor ? zoomFactor : width / selectWidth);
       if (timeline.zoomFactor() > 0) {
         timeline.zoomFactor(Math.min(timeline.zoomFactor(), timeline.computeZoomFactor("days", minDays, maxDays, width)));
       } else {
