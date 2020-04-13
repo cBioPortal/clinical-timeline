@@ -287,20 +287,22 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
     // This will shift the points, so then refind the start point, find its
     // x coordinate and calculate the translate from there
     if (timeline.zoomStartId() && timeline.zoomEndId() && timeline.zoomStartId() !== timeline.zoomEndId()) {
-      var zoomStart = parseFloat(d3.select("#" + timeline.zoomStartId())[0][0].getAttribute("x")) - 20;
+      var zoomStart = getStartPosOfElement(d3.select("#" + timeline.zoomStartId())[0][0]) - 20;
+      var zoomEnd = getEndPosOfElement(d3.select("#" + timeline.zoomEndId())[0][0]) + 20;
+      var timeStart = getStartPosOfElement(d3.select("#" + timeline.firstElementId())[0][0]);
+      var timeEnd = getEndPosOfElement(d3.select("#" + timeline.lastElementId())[0][0]);
 
-      var zoomEndElement = d3.select("#" + timeline.zoomEndId())[0][0];
-      var zoomEnd = parseFloat(zoomEndElement.getAttribute("x")) + 20;
-      if (zoomEndElement.localname === "rect") {
-        zoomEnd += parseFloat(zoomEndElement.getAttribute("width"))
-      }
-      timeline.zoomFactor(width / (zoomEnd - zoomStart));
-      
+      timeline.zoomFactor((timeEnd - timeStart) / (zoomEnd - zoomStart));
+
       d3.select(divId).style("visibility", "hidden");
       timeline();
       d3.select(divId).style("visibility", "visible");
-      
-      var zoomStart = parseFloat(d3.select("#" + timeline.zoomStartId())[0][0].getAttribute("x"));
+
+      var zoomStart = getStartPosOfElement(d3.select("#" + timeline.zoomStartId())[0][0]);
+      // the x value for the data points isnt a pixel value
+      // so we translate it into an approximate pixel value using the width of the timeline and
+      // the difference between the last and first timeline elements
+      zoomStart = zoomStart / ((timeEnd - timeStart) / width);
       timeline.translateX("-" + Math.max(zoomStart - 250, 0));
     } else {
       var regex = /(:?translate.)(\d+)(:?.*)/;
@@ -318,7 +320,7 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
       var translate = "-" + (closestTickOffset - baseOffset);
       timeline.translateX(translate)
     }
-    
+
     d3.select(divId).style("visibility", "hidden");
     timeline();
     d3.select(divId).style("visibility", "visible");
@@ -327,6 +329,22 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
   timeline.fractionTimelineShown(ticksToShow.length / tickValues.length);
   if (ticksToShow.length === tickValues.length) {
     timeline.trimmingDidNothing(true);
+  }
+}
+
+function getStartPosOfElement(element) {
+  if (element.localName === "circle") {
+    return parseFloat(element.getAttribute("cx")) - parseFloat(element.getAttribute("width"));
+  } else { //rect
+    return parseFloat(element.getAttribute("x"));
+  }
+}
+
+function getEndPosOfElement(element) {
+  if (element.localName === "circle") {
+    return parseFloat(element.getAttribute("cx")) + parseFloat(element.getAttribute("width"));
+  } else { //rect
+    return parseFloat(element.getAttribute("x")) + parseFloat(element.getAttribute("width"));
   }
 }
 
