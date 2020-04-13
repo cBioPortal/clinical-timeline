@@ -122,7 +122,6 @@ var clinicalTimeline = (function(){
     ending = tickValues[tickValues.length-1];
     overviewAxisWidth = width - 200;
 
-    console.log("zoom factor when rendering: ", zoomFactor);
 
     var chart = d3.timeline()
       .stack()

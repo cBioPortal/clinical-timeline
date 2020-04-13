@@ -98,7 +98,7 @@ function findIdOfFirstDataPointInZoomRegion(divId, brushPixelStart) {
     var tElement = timelineElements[i];
 
     var x = parseFloat(tElement.getAttribute("x"))
-    if (brushPixelStart < x) { // add a buffer of 5 pixels for user error
+    if (brushPixelStart < x) {
       return tElement.getAttribute("id");
     }
   }
