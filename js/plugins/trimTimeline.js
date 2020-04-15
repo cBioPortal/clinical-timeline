@@ -14,18 +14,22 @@ function trimClinicalTimeline(name, spec){
  * @param  {Object}   [spec=null] specification specific to the plugin
  */
 trimClinicalTimeline.prototype.run = function (timeline, spec) {
+  // skip when zoomed in, because trimming behaves oddly in those cases
+  if (timeline.zoomFactor() !== 1) {
+      return;
+  }
   var toleranceRatio = 0.2, //cut the timeline after how much of inactivity in terms of percentage of width of timeline
     timelineElements = [],
     breakTimelineForKinkIndex = [],
     breakTimelineForKink = [],
     tickCoordinatesKink = [],
     divId = timeline.divId(),
-    svg = timeline.zoomFactor() > 1 ? d3.select(timeline.divId()+" .scrollable g") : d3.select(timeline.divId()+" .timeline"),
+    svg = d3.select(timeline.divId()+" .timeline"),
     maxDays = timeline.getReadOnlyVars().maxDays,
     minDays = timeline.getReadOnlyVars().minDays,
-    width = timeline.zoomFactor() * timeline.width(),
+    width = timeline.width(),
     margin = timeline.getReadOnlyVars().margin,
-    zoomLevel = timeline.computeZoomLevel(minDays, maxDays, width, timeline.fractionTimelineShown()),
+    zoomLevel = timeline.computeZoomLevel(minDays, maxDays, width),
     tickValues = timeline.getTickValues(minDays, maxDays, zoomLevel),
     kinkLineData = [{ "x": 75,  "y": 0  }, { "x": 80,  "y": 5 }, //drawing the kink svg
                     { "x": 85,  "y": -5 }, { "x": 90,  "y": 5 },
@@ -39,26 +43,12 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
     tickValuesInt = tickValues.map(function(x) {
       return Math.round(x);
     }),
-    // the first and last ticks on the timeline, as ints
     ticksToShow = [tickValuesInt[0], tickValuesInt[tickValuesInt.length - 1]],
     expandedXAxis = d3.select(timeline.divId()+" > svg > g > g.axis");
-  
-  if (timeline.trimmingDidNothing()) {
-    // if the first trim, which happens when not zoomed
-    // does nothing, future trims should also do nothing.
-    // without this, there is a chance that they do, as zooming in
-    // changes the precision of the tick values, which decreases the duration
-    // needed to trigger a trim
-    return;
-  }
 
-  
   expandedXAxis.style("visibility", "hidden");
 
-  var select = timeline.zoomFactor() > 1 ?
-    (divId+" .scrollable g rect,"+divId+" .scrollable g circle") :
-    (divId+" .timeline g rect,"+divId+" .timeline g circle")
-  d3.selectAll(select).each(function(d, e) {
+  d3.selectAll(divId+" .timeline g rect,"+divId+" .timeline g circle").each(function(d, e) {
    for (var i = parseInt(d.starting_time); i <= parseInt(d.ending_time) + parseInt(clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel)); i += clinicalTimelineUtil.getDifferenceTicksDays(zoomLevel)) {
       if (timelineElements.indexOf(i) === -1) {
         timelineElements.push(parseInt(i));
@@ -69,9 +59,7 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
   timelineElements.sort(function(a, b) { return a - b; });
 
   timelineElements.forEach(function(value, index) {
-    // if point is within the timeline range
     if (value > tickValuesInt[0] && value < tickValuesInt[tickValuesInt.length - 1]) {
-      // find the index of the tick directly to the left of the value
       for (var i = 0; i < tickValuesInt.length - 1; i++) {
         if (value >= tickValuesInt[i] && value <= tickValuesInt[i + 1]) {
           break;
@@ -242,109 +230,6 @@ trimClinicalTimeline.prototype.run = function (timeline, spec) {
       })
       .append("svg:title")
       .text("Click to trim the timeline");
-    if (timeline.zoomFactor() > 1) {
-      var chart = timeline.getReadOnlyVars().chart;
-      var _svg = d3.select(divId + " svg");
-      // i zoomed
-      d3.select(divId + " svg")
-          .insert("rect")
-          .attr("transform", "translate("+(parseInt(_svg.attr("width"))-72)+", "+parseInt(_svg.attr("height")-16)+")")
-          .attr("width", 68)
-          .attr("height", 14)
-          .attr("ry", 2)
-          .attr("rx", 2)
-          .style("stroke-width", 1)
-          .style("fill", "lightgray")
-          .style("stroke", "gray");
-      
-      var zoomBtn = d3.select(divId + " svg")
-          .insert("text")
-          .attr("transform", "translate("+(parseInt(_svg.attr("width"))-70)+", "+parseInt(_svg.attr("height")-5)+")")
-          .attr("class", "timeline-label")
-          .text("Reset zoom")
-          .style("cursor", "zoom-out")
-          .attr("id", "timelineZoomOut");
-      zoomBtn.on("click", function() {
-        timeline.zoomFactor(1);
-        timeline.overviewX(margin.overviewAxis.left);
-        $('.'+divId.substr(1)+'-qtip').qtip("hide");
-        d3.select(divId).style("visibility", "hidden");
-        timeline();
-        d3.select(divId).style("visibility", "visible");
-        chart.scrolledX(null);
-        this.remove();
-      });
-    }
-  }
-
-  // Adjust where in the timeline we are, since zoom doesn't know about
-  // The trimmed timeline, as it renders after zoom
-  if (timeline.zoomStart() !== null && !timeline.trimmed()) {
-    timeline.trimmed(true);
-
-    // If there is a zoom start id and end id, calculate the zoom factor
-    // using those two pieces of information, then re render the timeline
-    // This will shift the points, so then refind the start point, find its
-    // x coordinate and calculate the translate from there
-    if (timeline.zoomStartId() && timeline.zoomEndId() && timeline.zoomStartId() !== timeline.zoomEndId()) {
-      var zoomStart = getStartPosOfElement(d3.select("#" + timeline.zoomStartId())[0][0]) - 20;
-      var zoomEnd = getEndPosOfElement(d3.select("#" + timeline.zoomEndId())[0][0]) + 20;
-      var timeStart = getStartPosOfElement(d3.select("#" + timeline.firstElementId())[0][0]);
-      var timeEnd = getEndPosOfElement(d3.select("#" + timeline.lastElementId())[0][0]);
-
-      timeline.zoomFactor((timeEnd - timeStart) / (zoomEnd - zoomStart));
-
-      d3.select(divId).style("visibility", "hidden");
-      timeline();
-      d3.select(divId).style("visibility", "visible");
-
-      var zoomStart = getStartPosOfElement(d3.select("#" + timeline.zoomStartId())[0][0]);
-      // the x value for the data points isnt a pixel value
-      // so we translate it into an approximate pixel value using the width of the timeline and
-      // the difference between the last and first timeline elements
-      zoomStart = zoomStart / ((timeEnd - timeStart) / width);
-      timeline.translateX("-" + Math.max(zoomStart - 250, 0));
-    } else {
-      var regex = /(:?translate.)(\d+)(:?.*)/;
-      var ticks = d3.selectAll(divId + " svg .x .tick")[0];
-      var tick = ticks[0];
-      var baseOffset = parseInt(tick.getAttribute("transform").match(regex)[2]);
-      for (var i = 0; i < ticks.length; i++) {
-        var newTick = ticks[i];
-        if (timeline.zoomStart() - timeline.approximateTickToDayValue(newTick.textContent) < 0) {
-          break;
-        }
-        tick = newTick;
-      }
-      var closestTickOffset = parseInt(tick.getAttribute("transform").match(regex)[2]);
-      var translate = "-" + (closestTickOffset - baseOffset);
-      timeline.translateX(translate)
-    }
-
-    d3.select(divId).style("visibility", "hidden");
-    timeline();
-    d3.select(divId).style("visibility", "visible");
-  }
-
-  timeline.fractionTimelineShown(ticksToShow.length / tickValues.length);
-  if (ticksToShow.length === tickValues.length) {
-    timeline.trimmingDidNothing(true);
-  }
-}
-
-function getStartPosOfElement(element) {
-  if (element.localName === "circle") {
-    return parseFloat(element.getAttribute("cx")) - parseFloat(element.getAttribute("width"));
-  } else { //rect
-    return parseFloat(element.getAttribute("x"));
-  }
-}
-
-function getEndPosOfElement(element) {
-  if (element.localName === "circle") {
-    return parseFloat(element.getAttribute("cx")) + parseFloat(element.getAttribute("width"));
-  } else { //rect
-    return parseFloat(element.getAttribute("x")) + parseFloat(element.getAttribute("width"));
   }
 }
 

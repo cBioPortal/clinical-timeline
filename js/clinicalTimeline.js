@@ -2,53 +2,6 @@
 /* start-test-code-not-included-in-build */
 d3 = require('d3');
 /* end-test-code-not-included-in-build */
-
-formatDayMonthYear = function(time) {
-  if (Math.abs(time.m) === 12) {
-    time.y = time.y + time.m / 12;
-    time.m = 0;
-  }
-
-  if (time.y !== 0) {
-    if (time.m !== 0) {
-      if (time.d !== 0) {
-        return time.y + "y" + Math.abs(time.m) + "m" + Math.abs(time.d) + "d";
-      } else {
-        return time.y + "y" + Math.abs(time.m) + "m";
-      }
-    } else if (time.d !== 0) {
-      return time.y + "y" + Math.abs(time.d) + "d";
-    } else {
-      return time.y + "y";
-    }
-  } else if (time.m !== 0) {
-    if (time.d !== 0) {
-      return time.m + "m" + Math.abs(time.d) + "d";
-    } else {
-      return time.m + "m";
-    }
-  } else {
-    return time.d + "d";
-  }
-}
-
-formatMonthYear = function(time) {
-  if (Math.abs(time.m) === 12) {
-    time.y = time.y + time.m / 12;
-    time.m = 0;
-  }
-  
-  if (time.y !== 0) {
-    if (time.m !== 0) {
-      return time.y + "y" + Math.abs(time.m) + "m";
-    } else {
-      return time.y + "y";
-    }
-  } else {
-    return time.m + "m";
-  }
-}
-
 var clinicalTimeline = (function(){
   "use strict";
 
@@ -75,16 +28,8 @@ var clinicalTimeline = (function(){
     enableTrackTooltips,
     overviewX = margin.overviewAxis.left,
     chart = null,
-    zoomStartId = null,
-    zoomEndId = null,
-    zoomStart = null,
-    firstElementId = null,
-    lastElementId = null,
-    trimmed = false,
-    trimmingDidNothing = false,
     clinicalTimelinePlugins,
-    clinicalTimelineReadOnlyVars,
-    fractionTimelineShown = 1.0;
+    clinicalTimelineReadOnlyVars;
 
   function getTrack(data, track) {
     return data.filter(function(x) {
@@ -115,13 +60,12 @@ var clinicalTimeline = (function(){
     }
     
     minDays = Math.min(getMinStartingTime(allData), 0);
-    var zoomLevel = timeline.computeZoomLevel(minDays, maxDays, width * zoomFactor, timeline.fractionTimelineShown()),
+    var zoomLevel = timeline.computeZoomLevel(minDays, maxDays, width * zoomFactor),
       tickValues = timeline.getTickValues(minDays, maxDays, zoomLevel);
     
     beginning = tickValues[0];
     ending = tickValues[tickValues.length-1];
     overviewAxisWidth = width - 200;
-
 
     var chart = d3.timeline()
       .stack()
@@ -463,6 +407,52 @@ var clinicalTimeline = (function(){
       if ("color" in times[i]) {
         delete times[i].color;
       }
+    }
+  }
+
+  function formatDayMonthYear(time) {
+    if (Math.abs(time.m) === 12) {
+      time.y = time.y + time.m / 12;
+      time.m = 0;
+    }
+  
+    if (time.y !== 0) {
+      if (time.m !== 0) {
+        if (time.d !== 0) {
+          return time.y + "y" + Math.abs(time.m) + "m" + Math.abs(time.d) + "d";
+        } else {
+          return time.y + "y" + Math.abs(time.m) + "m";
+        }
+      } else if (time.d !== 0) {
+        return time.y + "y" + Math.abs(time.d) + "d";
+      } else {
+        return time.y + "y";
+      }
+    } else if (time.m !== 0) {
+      if (time.d !== 0) {
+        return time.m + "m" + Math.abs(time.d) + "d";
+      } else {
+        return time.m + "m";
+      }
+    } else {
+      return time.d + "d";
+    }
+  }
+  
+  function formatMonthYear(time) {
+    if (Math.abs(time.m) === 12) {
+      time.y = time.y + time.m / 12;
+      time.m = 0;
+    }
+  
+    if (time.y !== 0) {
+      if (time.m !== 0) {
+        return time.y + "y" + Math.abs(time.m) + "m";
+      } else {
+        return time.y + "y";
+      }
+    } else {
+      return time.m + "m";
     }
   }
 
@@ -849,28 +839,6 @@ var clinicalTimeline = (function(){
     }
   }
 
-  timeline.approximateTickToDayValue = function approximateTickToDayValue(tick) {
-    var dayRegex = /(-?)((\d+)(?:y))?((\d+)(?:m))?((\d+)(?:d))/
-    var monthRegex = /(-?)((\d+)(?:y))?((\d+)(?:m))/
-    var yearRegex = /(-?)((\d+)(?:y))/
-
-    var uParse = function (num) { return num === undefined ? 0 : parseInt(num); };
-
-    var match = tick.match(dayRegex);
-    if (match) {
-      return uParse(match[1] + "1") * (uParse(match[3]) * 365 + uParse(match[5]) * 30.5 + uParse(match[7]))
-    }
-    match = tick.match(monthRegex);
-    if (match) {
-      return uParse(match[1] + "1") * (uParse(match[3]) * 365 + uParse(match[5]) * 30.5)
-    }
-    match = tick.match(yearRegex);
-    if (match) {
-      return uParse(match[1] + "1") * (uParse(match[3]) * 365)
-    }
-    return 0;
-  }
-
   /**
    * Return zoomFactor by specifying what kind of zoomLevel on the x axis 
    * (e.g. years, days) is desired
@@ -1008,101 +976,6 @@ var clinicalTimeline = (function(){
     if (!arguments.length) return stackSlack;
     return timeline;
   };
-
-  timeline.fractionTimelineShown = function (update) {
-    if (!arguments.length) {
-      return fractionTimelineShown
-    }
-    fractionTimelineShown = update;
-    return timeline;
-  }
-
-  /**
-   * Has the timeline been trimmed yet?
-   * Used to avoid render loops when trimmed and zoomed
-   * 
-   * @param {boolean} update
-   * @returns {object} clinicalTimeline object | boolean
-   */
-  timeline.trimmed = function (update) {
-    if (!arguments.length) {
-      return trimmed
-    }
-    trimmed = update;
-    return timeline;
-  }
-
-  timeline.trimmingDidNothing = function (update) {
-    if (!arguments.length) {
-      return trimmingDidNothing
-    }
-    trimmingDidNothing = update;
-    return timeline;
-  }
-
-  /**
-   * The position in days of the start of the zoom region
-   * @param {number} update
-   * @returns {object} clinicalTimeline object | number
-   */
-  timeline.zoomStart = function (update) {
-    if (!arguments.length) {
-      return zoomStart
-    }
-    zoomStart = update;
-    return timeline;
-  }
-
-  /**
-   * The id of the first timeline element inside the zoom region
-   * @param {number} update
-   * @returns {object} clinicalTimeline object | number
-   */
-  timeline.zoomStartId = function (update) {
-    if (!arguments.length) {
-      return zoomStartId;
-    }
-    zoomStartId = update;
-    return timeline;
-  }
-  /**
-   * The id of the last timeline element inside the zoom region
-   * @param {number} update
-   * @returns {object} clinicalTimeline object | number
-   */
-  timeline.zoomEndId = function (update) {
-    if (!arguments.length) {
-      return zoomEndId;
-    }
-    zoomEndId = update;
-    return timeline;
-  }
-
-    /**
-   * The id of the last timeline element
-   * @param {number} update
-   * @returns {object} clinicalTimeline object | number
-   */
-  timeline.lastElementId = function (update) {
-    if (!arguments.length) {
-      return lastElementId;
-    }
-    lastElementId = update;
-    return timeline;
-  }
-
-  /**
-   * The id of the first element on the timeline
-   * @param {number} update
-   * @returns {object} clinicalTimeline object | number
-   */
-  timeline.firstElementId = function (update) {
-    if (!arguments.length) {
-      return firstElementId;
-    }
-    firstElementId = update;
-    return timeline;
-  }
 
   /**
    * Change the value of the variable allData of clinicalTimeline

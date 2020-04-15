@@ -8,58 +8,6 @@ function clinicalTimelineZoom(name, spec){
   this.id = "zoom";
 }
 
-function findNearestTick(position, divId) {
-  var regex = /(:?translate.)(\d+)(:?.*)/;
-  var ticks = d3.selectAll(divId + " .x .tick")[0];
-  if (!ticks[0]) {
-    ticks = d3.selectAll(divId + " g .axis .tick")[0];
-  }
-  var tick = ticks[0];
-  var distance = Number.MAX_SAFE_INTEGER;
-
-  for (var i = 0; i < ticks.length; i++) {
-    var newTick = ticks[i];
-    var tickPosition = newTick.getAttribute("transform").match(regex)[2];
-    var newDistance = Math.abs(position - parseInt(tickPosition));
-    if (distance < newDistance) {
-      return tick;
-    } else {
-      distance = newDistance;
-      tick = newTick;
-    }
-  }
-  return tick;
-}
-
-/**
- * The zoom end has to be calculated by taking the pixel distance between
- * the start and end ticks, then translating pixel distance into actual distance
- * because otherwise when you zoom over a trimmed region, you will not zoom in an
- * appropriate ammount.
- */
-function calculateZoomEnd(zoomStart, startTick, endTick, timeline) {
-  var regex = /(:?translate.)(\d+)(:?.*)/;
-  var ticks = d3.selectAll(timeline.divId() + " .x .tick")[0];
-  var firstTick = ticks[0];
-  var secondTick = ticks[1];
-  var tickPixelDistance = (
-    parseInt(secondTick.getAttribute("transform").match(regex)[2])
-    -
-    parseInt(firstTick.getAttribute("transform").match(regex)[2])
-  )
-  var tickValueDistance = (
-    timeline.approximateTickToDayValue(secondTick.textContent)
-    -
-    timeline.approximateTickToDayValue(firstTick.textContent)
-  )
-  var zoomPixelDistance = (
-    parseInt(endTick.getAttribute("transform").match(regex)[2])
-    -
-    parseInt(startTick.getAttribute("transform").match(regex)[2])
-  )
-  return zoomStart + (tickValueDistance / tickPixelDistance)*zoomPixelDistance;
-}
-
 /**
  * Gets all the data points, grouped by series, sorted by x position
  * @param {string} divId
@@ -68,7 +16,6 @@ function calculateZoomEnd(zoomStart, startTick, endTick, timeline) {
 function getOrderedDataPoints(divId) {
   var dataPoints = d3.selectAll(divId + " g circle,rect");
   var filteredPoints = [];
-  var seriesRegex = /(:?timelineSeries_)(\d+)/;
 
   for (var i = 0; i< dataPoints[0].length; i++) {
     var point = dataPoints[0][i];
@@ -80,10 +27,27 @@ function getOrderedDataPoints(divId) {
 
 
   filteredPoints.sort(function (a, b) {
-    return parseFloat(a.getAttribute("x")) - parseFloat(b.getAttribute("x"))
+    return getPixelStartEndOfElement(a).start - getPixelStartEndOfElement(b).start;
   });
 
   return filteredPoints;
+}
+
+function getPixelStartEndOfElement(element) {
+  if (element.localName === "circle") {
+    // some circles don't have centers (!)
+    var x = element.getAttribute("cx") ? element.getAttribute("cx") : element.getAttribute("x");
+    var start = parseFloat(x) - parseFloat(element.getAttribute("width"));
+    var end = parseFloat(x) + parseFloat(element.getAttribute("width"));
+  } else { // rect
+    var start = parseFloat(element.getAttribute("x"));
+    var end = start + parseFloat(element.getAttribute("width"));
+  }
+
+  return {
+    start: start,
+    end: end,
+  }
 }
 
 /**
@@ -91,15 +55,18 @@ function getOrderedDataPoints(divId) {
  * @param {number} brushPixelStart
  * @returns {string | null}
  */
-function findIdOfFirstDataPointInZoomRegion(divId, brushPixelStart) {
+function findFirstDataPointInZoomRegion(divId, brushPixelStart) {
   var timelineElements = getOrderedDataPoints(divId);
 
   for (var i = 0; i < timelineElements.length; i++) {
     var tElement = timelineElements[i];
 
-    var x = parseFloat(tElement.getAttribute("x"))
-    if (brushPixelStart < x) {
-      return tElement.getAttribute("id");
+    var start = getPixelStartEndOfElement(tElement).start;
+    if (brushPixelStart < start + 10) { // add a buffer for user error
+      var id = "#" + tElement.getAttribute("id");
+      var day;
+      d3.select(id).each(function (e) {day = e.ending_time ? e.ending_time : e.starting_time;});
+      return {id: id, day: day};
     }
   }
   return null;
@@ -110,15 +77,18 @@ function findIdOfFirstDataPointInZoomRegion(divId, brushPixelStart) {
  * @param {number} brushPixelStart
  * @returns {string | null}
  */
-function findIdOfLastDataPointInZoomRegion(divId, brushPixelEnd) {
+function findDateLastDataPointInZoomRegion(divId, brushPixelEnd) {
   var timelineElements = getOrderedDataPoints(divId);
 
   for (var i = 0; i < timelineElements.length; i++) {
     var tElement = timelineElements[i];
 
-    var x = parseFloat(tElement.getAttribute("x"))
-    if (brushPixelEnd < x) { // add a buffer of 5 pixels for user error
-      return tElement.getAttribute("id");
+    var end = getPixelStartEndOfElement(tElement).end
+    if (brushPixelEnd < end - 10) { // add a buffer of 10 pixels for user error
+      var id = tElement.getAttribute("id");
+      var time;
+      d3.select("#" + id).each(function (x) {time = x.starting_time;});
+      return time;
     }
   }
   return null;
@@ -146,100 +116,65 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
     g = d3.select(divId + " svg g"),
     gBoundingBox = g[0][0].getBoundingClientRect();
 
-  timeline.zoomStart(null)
   if (timeline.zoomFactor() === 1) {
     /**
      * Add rectangular zoom selection
      * zoom in after brush ends
      */
     var brushend = function() {
-      timeline.trimmed(false); // this will get switched back to true by timTimeline
-      var extendLeft = parseInt(d3.select(timeline.divId()+" .extent").attr("x"));
-      var extendRight = extendLeft + parseInt(d3.select(timeline.divId()+" .extent").attr("width"));
-      
-      // if the zoom region is tiny, the user clicked instead of clicking 
+      var extentStart = parseInt(d3.select(divId + " .extent").attr("x"));
+      var extentEnd = extentStart + parseInt(d3.select(divId+" .extent").attr("width"));
+      var zoomFactor, translate;
+      // if the zoom region is tiny, the user clicked instead of clicking
       // and dragging. In this case, just make the zoom region half of the timeline,
       // centered around where they clicked
-      if (extendRight < extendLeft + 2) {
+      if (extentStart + 2 > extentEnd) {
         var zoomFactor = 2.0;
-        extendLeft = Math.max(0, extendLeft - width / 4);
-        extendRight = Math.min(width, extendRight + width / 4);
-      }
-      var startTick = findNearestTick(extendLeft, timeline.divId());
-      var endTick = findNearestTick(extendRight, timeline.divId());
-      var zoomStart = timeline.approximateTickToDayValue(startTick.textContent);
-      if (d3.selectAll(timeline.divId() + " .x .tick")[0][0]) {
-        var zoomEnd = calculateZoomEnd(zoomStart, startTick, endTick, timeline);
+        var translate = (zoomFactor * width) / 4;
+        extentEnd = Math.max(0, extentEnd - width / 4);
+        extentStart = Math.min(width, extentStart + width / 4);
       } else {
-        var zoomEnd = timeline.approximateTickToDayValue(endTick.textContent);
-      }
-      timeline.zoomStart(zoomStart);
-      if (!zoomFactor) {
-        var points = getOrderedDataPoints(divId);
-        var zoomStartId = findIdOfFirstDataPointInZoomRegion(divId, extendLeft);
-        var zoomEndId = findIdOfLastDataPointInZoomRegion(divId, extendRight);
-        var firstPointId = points[0].getAttribute("id");
-        var lastPointId = points[points.length - 1].getAttribute("id");
-        timeline.zoomStartId(zoomStartId);
-        timeline.zoomEndId(zoomEndId);
-        timeline.firstElementId(firstPointId);
-        timeline.lastElementId(lastPointId);
+        var zoomStartDay, zoomStartId;
+        var zoomStart = findFirstDataPointInZoomRegion(divId, extentStart);
+        zoomStartId = zoomStart ? zoomStart.id : null;
+        zoomStartDay = zoomStart ? zoomStart.day : null;
+        var zoomEndDay = findDateLastDataPointInZoomRegion(divId, extentEnd);
+        zoomFactor = zoomFactor ? zoomFactor : 0.9 * (maxDays - minDays) / (zoomEndDay - zoomStartDay);
       }
 
-      var originalZoomLevel = timeline.computeZoomLevel(minDays, maxDays, width, timeline.fractionTimelineShown());
+      var originalZoomLevel = timeline.computeZoomLevel(minDays, maxDays, width);
       //handle positioning of the overview rectangle post zoom in.
       var overViewScale = d3.time.scale()
         .domain([roundDown(minDays, clinicalTimelineUtil.getDifferenceTicksDays(originalZoomLevel)), roundUp(maxDays, clinicalTimelineUtil.getDifferenceTicksDays(originalZoomLevel))])
         .range([0 + margin.overviewAxis.left, overviewAxisWidth - margin.overviewAxis.right]);
 
-      timeline.overviewX(overViewScale(brush.extent()[0].valueOf()));
+      timeline.overviewX(zoomStartDay !== undefined ? zoomStartDay : overViewScale(brush.extent()[0].valueOf()));
 
-      var xDaysRect = brush.extent()[0].valueOf();
-      var selectWidth = parseInt(d3.select(timeline.divId()+" .extent").attr("width"));
-
-      // Zoom factor is a number representing how zoomed in the timeline should be.
-      // 1 is not zoomed in at all, and values greater than 1 zoom the timeline in.
-      // Zoom factor is calculated one of three ways:
-      // 1. If the user clicked but did not drag, the zoom factor is 2
-      // 2. If the user clicked and dragged and created a region with at least two timeline
-      //    events within it, the zoom factor will be the pixel distance between
-      //    the start of the first event and the end of the second event divided by the
-      //    timeline width.
-      // 3. If the user clicked and dragged but selected a region with one or fewer
-      //    timeline events, the closest markers on the timeline ruler will be used
-      //    to calculate the zoom region.
-      if (zoomStartId && zoomEndId && zoomStartId !== zoomEndId) {
-        zoomStart = parseFloat(d3.select("#" + zoomStartId)[0][0].getAttribute("x"));
-
-        var zoomEndElement = d3.select("#" + zoomEndId)[0][0];
-        zoomEnd = parseFloat(zoomEndElement.getAttribute("x"));
-        if (zoomEndElement.localname === "rect") {
-          zoomEnd += parseFloat(zoomEndElement.getAttribute("width"))
-        }
-        zoomFactor = width / (zoomEnd - zoomStart);
-      }
-      timeline.zoomFactor(zoomFactor ? zoomFactor : width / selectWidth);
+      timeline.zoomFactor(zoomFactor);
       if (timeline.zoomFactor() > 0) {
         timeline.zoomFactor(Math.min(timeline.zoomFactor(), timeline.computeZoomFactor("days", minDays, maxDays, width)));
       } else {
-        timeline.zoomFactor(timeline.computeZoomFactor("days", minDays, maxDays, width));
+       timeline.zoomFactor(timeline.computeZoomFactor("days", minDays, maxDays, width));
       }
 
-      var zoomLevel = timeline.computeZoomLevel(zoomStart, zoomEnd, timeline.width(), 1);
-      var tickValues = timeline.getTickValues(readOnlyVars.minDays, readOnlyVars.maxDays, zoomLevel);
-      // TODO: Translation post zooming is not entirely correct
-      if (xDaysRect > minDays) {
-        var xZoomScale = d3.time.scale()
-           .domain([tickValues[0], tickValues[tickValues.length-1]])
-           .range([margin.left, width * timeline.zoomFactor() - margin.right]);
-        timeline.translateX(-xZoomScale(xDaysRect));
-      } else {
-        timeline.translateX(0);
-      }
       $('.'+divId.substr(1)+'-qtip').qtip("hide");
       d3.select(divId).style("visibility", "hidden");
       timeline();
       d3.select(divId).style("visibility", "visible");
+
+      //now that the timeline is at its zoom level, translate and rerender
+      if (translate) {
+        timeline.translateX(-translate);
+      } else  if (zoomStartDay && zoomStartDay > minDays) {
+        translate = parseFloat(d3.select(zoomStartId)[0][0].getAttribute("x")) - 200;
+        timeline.translateX(-translate);
+      } else {
+        timeline.translateX(0);
+      }
+      d3.select(divId).style("visibility", "hidden");
+      timeline();
+      d3.select(divId).style("visibility", "visible");
+      
       d3.select(divId + " svg")
         .insert("rect")
         .attr("transform", "translate("+(parseInt(svg.attr("width"))-72)+", "+parseInt(svg.attr("height")-16)+")")
@@ -254,7 +189,7 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
         .insert("text")
         .attr("transform", "translate("+(parseInt(svg.attr("width"))-70)+", "+parseInt(svg.attr("height")-5)+")")
         .attr("class", "timeline-label")
-        .text("Reset zoom")
+       .text("Reset zoom")
         .style("cursor", "zoom-out")
         .attr("id", "timelineZoomOut");
       zoomBtn.on("click", function() {
@@ -269,7 +204,7 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
       });
     };
 
-    if (timeline.computeZoomLevel(minDays, maxDays, width * timeline.zoomFactor(), timeline.fractionTimelineShown()) !== "days") {
+    if (timeline.computeZoomLevel(minDays, maxDays, width * timeline.zoomFactor()) !== "days") {
       // add brush overlay
       var xScale = d3.time.scale()
          .domain([beginning, ending])
@@ -296,9 +231,6 @@ clinicalTimelineZoom.prototype.run = function(timeline, spec) {
       });
     }
   } else {
-    if (d3.selectAll("#timelineZoomOut")[0].length > 1) {
-      return;
-    }
     // Add panning explanation and visual indicator
     zoomExplanation(divId, svg, "Scroll/drag to move", "visible", 180);
     d3.select(divId + " svg").style("cursor", "move");
